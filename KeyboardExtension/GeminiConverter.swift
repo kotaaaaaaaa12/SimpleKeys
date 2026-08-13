@@ -34,6 +34,7 @@ class GeminiConverter {
         let body: [String: Any] = [
             "model": "models/\(cleanModel)",
             "input": [
+                "type": "user_input",
                 "parts": [
                     ["text": prompt]
                 ]
