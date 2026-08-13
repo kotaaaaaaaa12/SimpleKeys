@@ -749,7 +749,6 @@ class FlickKeyboardView: UIView {
         
         // Update sidebar highlights
         let isDark = self.isDarkMode
-        let normalColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
         let activeColor = isDark ? UIColor.systemBlue : UIColor.systemBlue.withAlphaComponent(0.2)
         
