@@ -1245,7 +1245,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         qwertyShifted = (shiftState != .off)
         rebuildQWERTYLayout()
         updateButtonColors()
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func switchToNumbers() {
@@ -1258,19 +1258,19 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             currentMode = .qwertyNumbers
         }
         applyMode()
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func switchToSymbols() {
         currentMode = .qwertySymbols
         applyMode()
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func switchToEnglish() {
         currentMode = .qwertyEnglish
         applyMode()
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func spacePressed() {
@@ -1279,7 +1279,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         } else {
             textDocumentProxy.insertText(" ")
         }
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func returnPressed() {
@@ -1290,11 +1290,11 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             if !text.isEmpty { textDocumentProxy.insertText(text) }
             englishBuffer = ""
             updateConversionBar()
-            triggerHaptic()
+            triggerHaptic(isSpecialKey: true)
             return
         }
         textDocumentProxy.insertText("\n")
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func deleteTouchDown() {
@@ -1334,7 +1334,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         } else {
             textDocumentProxy.deleteBackward()
         }
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     @objc private func keyTouchDown(_ sender: UIButton) {
@@ -1346,7 +1346,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     @objc private func keyTouchUp(_ sender: UIButton) {
         lastFlickTapBaseChar = nil
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+=", "空白", "space"].contains(sender.titleLabel?.text ?? ""))
         UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = .identity
             sender.alpha = 1.0
@@ -1372,17 +1372,17 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         if gesture.state == .began {
             qwertySpaceDragStart = point
             setKeyboardLabelsAlpha(0.0)
-            triggerHaptic()
+            triggerHaptic(isSpecialKey: true)
         } else if gesture.state == .changed {
             let dx = point.x - qwertySpaceDragStart.x
             if dx > threshold {
                 textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
                 qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x + threshold, y: qwertySpaceDragStart.y)
-                triggerHaptic()
+                triggerHaptic(isSpecialKey: true)
             } else if dx < -threshold {
                 textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
                 qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x - threshold, y: qwertySpaceDragStart.y)
-                triggerHaptic()
+                triggerHaptic(isSpecialKey: true)
             }
         } else if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
             setKeyboardLabelsAlpha(1.0)
@@ -1531,7 +1531,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         
         currentMode = nextMode
         applyMode()
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView) {
@@ -1546,7 +1546,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     func flickKeyboardDidFlickDeleteLeft(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
         
         if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
             _ = romajiConverter.commit()
@@ -1573,7 +1573,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     func flickKeyboardDidFlickDeleteUp(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
         
         if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
             _ = romajiConverter.commit()
@@ -1599,16 +1599,16 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         lastFlickTapBaseChar = nil
         if direction == .right {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
-            triggerHaptic()
+            triggerHaptic(isSpecialKey: true)
         } else if direction == .left {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
-            triggerHaptic()
+            triggerHaptic(isSpecialKey: true)
         }
     }
     
     func flickKeyboardDidBeginSpaceDrag(_ keyboard: FlickKeyboardView) {
         setKeyboardLabelsAlpha(0.0)
-        triggerHaptic()
+        triggerHaptic(isSpecialKey: true)
     }
     
     func flickKeyboardDidEndSpaceDrag(_ keyboard: FlickKeyboardView) {
@@ -1752,8 +1752,12 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     }
     
     // MARK: - Haptic Feedback
-    func triggerHaptic() {
+    func triggerHaptic(isSpecialKey: Bool = false) {
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
+            let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
+            if mode == 1 && isSpecialKey { return }
+            if mode == 2 && !isSpecialKey { return }
+            
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }

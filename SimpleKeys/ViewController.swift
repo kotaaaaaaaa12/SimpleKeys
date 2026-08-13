@@ -1307,6 +1307,7 @@ class HapticsSensitivityViewController: UITableViewController {
     
     private let hapticSwitch = UISwitch()
     private let hapticSlider = UISlider()
+    private let hapticTargetSegment = UISegmentedControl()
     private let cursorSlider = UISlider()
     
     init() {
@@ -1335,6 +1336,12 @@ class HapticsSensitivityViewController: UITableViewController {
         cursorSlider.maximumValue = 2.5
         cursorSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "cursorSensitivity") as? Float ?? 1.0
         cursorSlider.addTarget(self, action: #selector(cursorSliderChanged), for: .valueChanged)
+        
+        hapticTargetSegment.insertSegment(withTitle: isEn ? "All" : "すべて", at: 0, animated: false)
+        hapticTargetSegment.insertSegment(withTitle: isEn ? "Chars" : "文字のみ", at: 1, animated: false)
+        hapticTargetSegment.insertSegment(withTitle: isEn ? "Special" : "特殊のみ", at: 2, animated: false)
+        hapticTargetSegment.selectedSegmentIndex = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
+        hapticTargetSegment.addTarget(self, action: #selector(hapticTargetChanged), for: .valueChanged)
     }
     
     @objc private func hapticSwitchChanged() {
@@ -1369,13 +1376,17 @@ class HapticsSensitivityViewController: UITableViewController {
         AppGroupHelper.shared.userDefaults?.set(cursorSlider.value, forKey: "cursorSensitivity")
     }
     
+    @objc private func hapticTargetChanged() {
+        AppGroupHelper.shared.userDefaults?.set(hapticTargetSegment.selectedSegmentIndex, forKey: "hapticTriggerMode")
+    }
+    
     override func numberOfSections(in tableView: UITableView) -> Int {
         return 3
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
-            return hapticSwitch.isOn ? 2 : 1
+            return hapticSwitch.isOn ? 3 : 1
         }
         return 1
     }
@@ -1435,6 +1446,10 @@ class HapticsSensitivityViewController: UITableViewController {
                     hapticSlider.trailingAnchor.constraint(equalTo: maxLabel.leadingAnchor, constant: -16),
                     hapticSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
                 ])
+            } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "Target Keys" : "対象キー"
+                hapticTargetSegment.sizeToFit()
+                cell.accessoryView = hapticTargetSegment
             }
         } else if indexPath.section == 1 {
             cursorSlider.translatesAutoresizingMaskIntoConstraints = false
@@ -1480,10 +1495,12 @@ class HapticsSensitivityViewController: UITableViewController {
             tableView.deselectRow(at: indexPath, animated: true)
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customHapticEnabled")
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customHapticStrength")
+            AppGroupHelper.shared.userDefaults?.removeObject(forKey: "hapticTriggerMode")
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "cursorSensitivity")
             
             hapticSwitch.isOn = false
             hapticSlider.value = 0.0
+            hapticTargetSegment.selectedSegmentIndex = 0
             cursorSlider.value = 1.0
             
             tableView.reloadData()

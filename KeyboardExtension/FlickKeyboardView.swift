@@ -719,7 +719,7 @@ class FlickKeyboardView: UIView {
             self?.deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 guard let self = self else { return }
                 self.delegate?.flickKeyboardDidPressDelete(self)
-                self.triggerHaptic()
+                self.triggerHaptic(isSpecialKey: true)
             }
         }
     }
@@ -1182,8 +1182,11 @@ class FlickKeyboardView: UIView {
     }
     
     // MARK: - Haptic Feedback
-    private func triggerHaptic() {
+    private func triggerHaptic(isSpecialKey: Bool = false) {
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
+            let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
+            if mode == 1 && isSpecialKey { return }
+            if mode == 2 && !isSpecialKey { return }
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
