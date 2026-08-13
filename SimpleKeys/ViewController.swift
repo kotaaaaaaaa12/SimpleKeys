@@ -763,7 +763,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     
     private var pickingColorFor: String?
     
-    private let keyboardVC = KeyboardViewController()
+    private let keyboardVC = UIViewController() // TEMPORARY TO TEST CRASH
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -771,7 +771,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         title = isEn ? "Edit Theme" : "テーマ編集"
         view.backgroundColor = .systemGroupedBackground
         
-        keyboardVC.isPreviewMode = true
+        // keyboardVC.isPreviewMode = true
         
         if let t = theme {
             currentTheme = t
@@ -863,7 +863,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     @objc private func keyboardTypeChanged() {
-        keyboardVC.setPreviewMode(isQwerty: keyboardTypeSegment.selectedSegmentIndex == 1)
+        // keyboardVC.setPreviewMode(isQwerty: keyboardTypeSegment.selectedSegmentIndex == 1)
         updatePreview()
     }
     
@@ -883,8 +883,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     private func updatePreview() {
-        keyboardVC.previewTheme = currentTheme
-        keyboardVC.updatePreviewTheme()
+        // keyboardVC.previewTheme = currentTheme
+        // keyboardVC.updatePreviewTheme()
     }
     
     @objc private func saveTapped() {
