@@ -24,7 +24,11 @@ No ads. No tracking. Just a keyboard that works.
 - **Offline Kanji Conversion:** Powered by the open-source SKK dictionary (~130,000 entries), SimpleKeys converts Hiragana to Kanji completely offline. No network requests are made.
 - **Privacy First:** Your keystrokes never leave your device.
 - **QWERTY & Flick Input:** Supports both classic QWERTY Romaji input and Japanese Flick input.
-- **App Group Syncing:** Dynamically resolves App Group IDs to fully support sideloading (AltStore/SideStore).
+- **Advanced Theme Engine:** Fully customize your keyboard's look and feel with an intuitive in-app editor.
+  - **Styles & Shapes:** Choose between Standard, Frosted Glass, Flat, or Clear Glass key styles. Customize key shapes (Rounded, Oval, Rectangle).
+  - **Live Preview:** See exactly how your keyboard will look with an interactive, pixel-perfect layout preview (switchable between QWERTY and Flick).
+  - **Deep Color Customization:** Use the native Apple Color Picker to select exact Hex/RGB colors for key backgrounds, text, and borders with full opacity control.
+- **App Group Syncing:** Dynamically resolves App Group IDs to fully support sideloading (AltStore/SideStore) and syncs custom themes perfectly to the keyboard extension.
 
 ---
 
@@ -56,7 +60,7 @@ GitHub Actions automatically builds an unsigned IPA on every push.
 Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleKeys
 ```
 
-> **Note:** Turn on **"Allow Full Access"** to sync your preferences between the app and the keyboard extension via App Groups.
+> **Note:** Turn on **"Allow Full Access"** to sync your preferences and custom themes between the app and the keyboard extension via App Groups.
 
 ---
 
