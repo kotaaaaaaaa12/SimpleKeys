@@ -965,29 +965,39 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             let row1 = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
             let row2 = ["Z", "X", "C", "V", "B", "N", "M"]
             
-            let r0Stack = UIStackView()
-            r0Stack.axis = .horizontal; r0Stack.distribution = .fillEqually; r0Stack.spacing = 6
-            for k in row0 { r0Stack.addArrangedSubview(createPreviewKey(k)) }
+            let r0Stack = UIStackView(); r0Stack.axis = .horizontal; r0Stack.distribution = .fill; r0Stack.spacing = 6
+            var allNormalKeys: [UIView] = []
             
-            let r1Stack = UIStackView()
-            r1Stack.axis = .horizontal; r1Stack.distribution = .fillEqually; r1Stack.spacing = 6
+            for k in row0 {
+                let key = createPreviewKey(k)
+                r0Stack.addArrangedSubview(key)
+                allNormalKeys.append(key)
+            }
+            
+            let r1Stack = UIStackView(); r1Stack.axis = .horizontal; r1Stack.distribution = .fill; r1Stack.spacing = 6
             let r1SpacerL = UIView(); let r1SpacerR = UIView()
             r1Stack.addArrangedSubview(r1SpacerL)
-            for k in row1 { r1Stack.addArrangedSubview(createPreviewKey(k)) }
+            for k in row1 {
+                let key = createPreviewKey(k)
+                r1Stack.addArrangedSubview(key)
+                allNormalKeys.append(key)
+            }
             r1Stack.addArrangedSubview(r1SpacerR)
             
-            let r2Stack = UIStackView()
-            r2Stack.axis = .horizontal; r2Stack.distribution = .fillEqually; r2Stack.spacing = 6
-            let shiftKey = createPreviewKey("⇧", isSpecial: true)
+            let r2Stack = UIStackView(); r2Stack.axis = .horizontal; r2Stack.distribution = .fill; r2Stack.spacing = 6
+            let shiftKey = createPreviewKey("shift", isSystemImage: true, isSpecial: true)
             r2Stack.addArrangedSubview(shiftKey)
-            for k in row2 { r2Stack.addArrangedSubview(createPreviewKey(k)) }
-            let delKey = createPreviewKey("⌫", isSpecial: true)
+            for k in row2 {
+                let key = createPreviewKey(k)
+                r2Stack.addArrangedSubview(key)
+                allNormalKeys.append(key)
+            }
+            let delKey = createPreviewKey("delete.left", isSystemImage: true, isSpecial: true)
             r2Stack.addArrangedSubview(delKey)
             
-            let r3Stack = UIStackView()
-            r3Stack.axis = .horizontal; r3Stack.distribution = .fill; r3Stack.spacing = 6
+            let r3Stack = UIStackView(); r3Stack.axis = .horizontal; r3Stack.distribution = .fill; r3Stack.spacing = 6
             let numKey = createPreviewKey("123", isSpecial: true)
-            let globeKey = createPreviewKey("🌐", isSpecial: true)
+            let globeKey = createPreviewKey("globe", isSystemImage: true, isSpecial: true)
             let spaceKey = createPreviewKey("space")
             let returnKey = createPreviewKey("return", isSpecial: true)
             r3Stack.addArrangedSubview(numKey)
@@ -1000,7 +1010,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             previewGrid.addArrangedSubview(r2Stack)
             previewGrid.addArrangedSubview(r3Stack)
             
-            if let firstKey = r0Stack.arrangedSubviews.first {
+            if let firstKey = allNormalKeys.first {
+                for key in allNormalKeys.dropFirst() {
+                    key.widthAnchor.constraint(equalTo: firstKey.widthAnchor).isActive = true
+                }
                 r1SpacerL.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 0.5).isActive = true
                 r1SpacerR.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 0.5).isActive = true
                 shiftKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.3).isActive = true
@@ -1014,7 +1027,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             previewGrid.axis = .horizontal
             
             let cols = [
-                ["☆123", "ABC", "^_^", "🌐"],
+                ["☆123", "ABC", "^_^", "globe"],
                 ["あ", "た", "ま", "小/濁"],
                 ["か", "な", "や", "わ"],
                 ["さ", "は", "ら", "、"]
@@ -1024,14 +1037,15 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 let colStack = UIStackView()
                 colStack.axis = .vertical; colStack.distribution = .fillEqually; colStack.spacing = 8
                 for k in col {
-                    colStack.addArrangedSubview(createPreviewKey(k, isSpecial: i == 0 || (i == 1 && k == "小/濁")))
+                    let isGlobe = (k == "globe")
+                    colStack.addArrangedSubview(createPreviewKey(k, isSystemImage: isGlobe, isSpecial: i == 0 || (i == 1 && k == "小/濁")))
                 }
                 previewGrid.addArrangedSubview(colStack)
             }
             
             let rightCol = UIStackView()
             rightCol.axis = .vertical; rightCol.distribution = .fill; rightCol.spacing = 8
-            let delKey = createPreviewKey("⌫", isSpecial: true)
+            let delKey = createPreviewKey("delete.left", isSystemImage: true, isSpecial: true)
             let spcKey = createPreviewKey("空白")
             let retKey = createPreviewKey("改行", isSpecial: true)
             rightCol.addArrangedSubview(delKey)
@@ -1044,20 +1058,34 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         }
     }
     
-    private func createPreviewKey(_ title: String, isSpecial: Bool = false) -> PreviewKeyView {
+    private func createPreviewKey(_ title: String, isSystemImage: Bool = false, isSpecial: Bool = false) -> PreviewKeyView {
         let key = PreviewKeyView()
         key.isSpecial = isSpecial
-        let label = UILabel()
-        label.text = title
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: title.count > 1 ? 14 : 18)
-        label.tag = 777
-        label.translatesAutoresizingMaskIntoConstraints = false
-        key.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: key.centerYAnchor)
-        ])
+        
+        if isSystemImage {
+            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+            let imageView = UIImageView(image: UIImage(systemName: title, withConfiguration: config))
+            imageView.tintColor = .black
+            imageView.tag = 778
+            imageView.translatesAutoresizingMaskIntoConstraints = false
+            key.addSubview(imageView)
+            NSLayoutConstraint.activate([
+                imageView.centerXAnchor.constraint(equalTo: key.centerXAnchor),
+                imageView.centerYAnchor.constraint(equalTo: key.centerYAnchor)
+            ])
+        } else {
+            let label = UILabel()
+            label.text = title
+            label.textAlignment = .center
+            label.font = .systemFont(ofSize: title.count > 1 ? 14 : 18)
+            label.tag = 777
+            label.translatesAutoresizingMaskIntoConstraints = false
+            key.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
+                label.centerYAnchor.constraint(equalTo: key.centerYAnchor)
+            ])
+        }
         return key
     }
     
@@ -1110,6 +1138,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             
             if let label = keyView.viewWithTag(777) as? UILabel {
                 label.textColor = textCol
+            }
+            if let imageView = keyView.viewWithTag(778) as? UIImageView {
+                imageView.tintColor = textCol
             }
             
             keyView.shape = shape
