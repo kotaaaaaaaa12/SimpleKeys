@@ -124,9 +124,19 @@ class ViewController: UITabBarController {
 class SettingsViewController: UITableViewController {
     
     private let flickSwitch = UISwitch()
-    private let flickAlphabetQwertySwitch = UISwitch()
     private let qwertyEnglishSwitch = UISwitch()
     private let qwertyRomajiSwitch = UISwitch()
+    private let flickAlphabetQwertySwitch = UISwitch()
+    
+    private let geminiSwitch = UISwitch()
+    private let geminiApiKeyField: UITextField = {
+        let tf = UITextField()
+        tf.borderStyle = .roundedRect
+        tf.isSecureTextEntry = true
+        tf.returnKeyType = .done
+        return tf
+    }()
+    
     private let languageSegment = UISegmentedControl(items: ["日本語", "English"])
     
     private let sharedDefaults = AppGroupHelper.shared.userDefaults
@@ -179,6 +189,10 @@ class SettingsViewController: UITableViewController {
         qwertyEnglishSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyRomajiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         languageSegment.addTarget(self, action: #selector(languageChanged), for: .valueChanged)
+        
+        geminiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
+        geminiApiKeyField.addTarget(self, action: #selector(apiKeyChanged), for: .editingChanged)
+        geminiApiKeyField.delegate = self
     }
     
     private func loadSettings() {
@@ -190,6 +204,9 @@ class SettingsViewController: UITableViewController {
         
         let lang = defaults?.string(forKey: "appLanguage") ?? "ja"
         languageSegment.selectedSegmentIndex = lang == "en" ? 1 : 0
+        
+        geminiSwitch.isOn = defaults?.bool(forKey: "enableGemini") ?? false
+        geminiApiKeyField.text = defaults?.string(forKey: "geminiApiKey")
     }
     
     @objc private func settingsChanged() {
@@ -202,6 +219,12 @@ class SettingsViewController: UITableViewController {
         sharedDefaults?.set(flickAlphabetQwertySwitch.isOn, forKey: "flickAlphabetIsQwerty")
         sharedDefaults?.set(qwertyEnglishSwitch.isOn, forKey: "enableQwertyEnglish")
         sharedDefaults?.set(qwertyRomajiSwitch.isOn, forKey: "enableQwertyRomaji")
+        sharedDefaults?.set(geminiSwitch.isOn, forKey: "enableGemini")
+        sharedDefaults?.synchronize()
+    }
+    
+    @objc private func apiKeyChanged() {
+        sharedDefaults?.set(geminiApiKeyField.text, forKey: "geminiApiKey")
         sharedDefaults?.synchronize()
     }
     
@@ -220,15 +243,16 @@ class SettingsViewController: UITableViewController {
         }
     }
     
-    override func numberOfSections(in tableView: UITableView) -> Int { return 5 }
+    override func numberOfSections(in tableView: UITableView) -> Int { return 6 }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return 1 // App Language
-        case 1: return 1 // Guide
-        case 2: return 3 // Modes
-        case 3: return 1 // Flick settings
-        case 4: return 4 // Future
+        case 0: return 1
+        case 1: return 1
+        case 2: return 3
+        case 3: return 1
+        case 4: return 2
+        case 5: return 4
         default: return 0
         }
     }
@@ -240,7 +264,8 @@ class SettingsViewController: UITableViewController {
         case 1: return isEn ? "How to use" : "使い方"
         case 2: return isEn ? "Keyboard Modes" : "有効にする入力モード"
         case 3: return isEn ? "Flick Settings" : "フリック入力の詳細設定"
-        case 4: return isEn ? "Coming Soon" : "開発中・実装予定の機能 (Coming Soon)"
+        case 4: return isEn ? "AI Conversion (Gemini)" : "AI変換設定 (Gemini)"
+        case 5: return isEn ? "Coming Soon" : "開発中・実装予定の機能 (Coming Soon)"
         default: return nil
         }
     }
@@ -249,7 +274,8 @@ class SettingsViewController: UITableViewController {
         let isEn = languageSegment.selectedSegmentIndex == 1
         switch section {
         case 1: return isEn ? "Go to Settings > General > Keyboard, add SimpleKeys, and Allow Full Access." : "設定アプリからキーボードを追加し、「フルアクセスを許可」をオンにしてください。"
-        case 4: return isEn ? "These features will be available in future updates." : "これらの機能は今後のアップデートで追加される予定です。"
+        case 4: return isEn ? "Enter your Gemini API key to use cloud AI conversion. This requires Full Access." : "AI変換を利用するには、Gemini APIキーを入力してください（フルアクセス許可が必要です）。"
+        case 5: return isEn ? "These features will be available in future updates." : "これらの機能は今後のアップデートで追加される予定です。"
         default: return nil
         }
     }
@@ -295,16 +321,24 @@ class SettingsViewController: UITableViewController {
                 cell.imageView?.tintColor = .systemRed
             }
         } else if indexPath.section == 3 {
-            cell.textLabel?.text = isEn ? "QWERTY for Alphabet" : "英字をQWERTY化"
-            cell.detailTextLabel?.text = isEn ? "Switch to QWERTY when tapping 'ABC' in flick layout" : "フリック入力中の「ABC」を押した時にQWERTY英語キーボードに切り替えます"
-            cell.detailTextLabel?.numberOfLines = 0
+            cell.textLabel?.text = isEn ? "Alphabet layout is QWERTY" : "アルファベットをQWERTYにする"
+            cell.detailTextLabel?.text = isEn ? "Use QWERTY layout for Alphabet in Flick keyboard" : "フリックキーボードの英字モードをQWERTYにします"
             cell.accessoryView = flickAlphabetQwertySwitch
-            cell.imageView?.image = UIImage(systemName: "arrow.triangle.2.circlepath")
-            cell.imageView?.tintColor = .systemOrange
         } else if indexPath.section == 4 {
-            let fakeSwitch = UISwitch()
-            fakeSwitch.isEnabled = false
-            cell.accessoryView = fakeSwitch
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Enable Gemini AI Conversion" : "Gemini AI変換を有効にする"
+                cell.accessoryView = geminiSwitch
+            } else if indexPath.row == 1 {
+                cell.contentView.addSubview(geminiApiKeyField)
+                geminiApiKeyField.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    geminiApiKeyField.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    geminiApiKeyField.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    geminiApiKeyField.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
+                ])
+                geminiApiKeyField.placeholder = isEn ? "Enter Gemini API Key..." : "Gemini APIキーを入力..."
+            }
+        } else if indexPath.section == 5 {
             cell.textLabel?.textColor = .secondaryLabel
             cell.detailTextLabel?.textColor = .tertiaryLabel
             cell.imageView?.tintColor = .systemGray
@@ -338,6 +372,13 @@ class SettingsViewController: UITableViewController {
                 UIApplication.shared.open(url)
             }
         }
+    }
+}
+
+extension SettingsViewController: UITextFieldDelegate {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
     }
 }
 

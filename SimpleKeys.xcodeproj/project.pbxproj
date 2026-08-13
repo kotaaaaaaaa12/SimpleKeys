@@ -17,6 +17,7 @@
 		A1B2C3D4E5F647A8B9C0D1E2 /* RomajiConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A647089A1B2C3D /* RomajiConverter.swift */; };
 		AC8828B81E0C48FEBC3F281F /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F566660790C4999AF0DCE56 /* SceneDelegate.swift */; };
 		B2C3D4E5F6A748B9C0D1E2F3 /* FlickKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */; };
+		CEC04C27969EE97F1CD08D1A /* GeminiConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5594A1288B49A2347260DB4 /* GeminiConverter.swift */; };
 		D43DF93FFEC34597814DF736 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D11DDBD48E420491C7B850 /* AppDelegate.swift */; };
 		E24A4B5DB7030C9397722D45 /* EnglishConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */; };
 /* End PBXBuildFile section */
@@ -57,6 +58,7 @@
 		8F566660790C4999AF0DCE56 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnglishConverter.swift; path = KeyboardExtension/EnglishConverter.swift; sourceTree = SOURCE_ROOT; };
 		9D78686BB7EE46D682C6CEA1 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		C5594A1288B49A2347260DB4 /* GeminiConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GeminiConverter.swift; path = KeyboardExtension/GeminiConverter.swift; sourceTree = SOURCE_ROOT; };
 		E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickKeyboardView.swift; sourceTree = "<group>"; };
 		E88F5E118CC2494582BAE89E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F1E2D3C4B5A647089A1B2C3D /* RomajiConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RomajiConverter.swift; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 				6B1949EE878530580F760DC6 /* dictionary.json */,
 				92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */,
 				F4314D8190D000FF4B389B22 /* StringTransformExtensions.swift */,
+				C5594A1288B49A2347260DB4 /* GeminiConverter.swift */,
 			);
 			path = KeyboardExtension;
 			sourceTree = "<group>";
@@ -249,6 +252,7 @@
 				590049E99FC882749C9FBFBE /* KanjiConverter.swift in Sources */,
 				E24A4B5DB7030C9397722D45 /* EnglishConverter.swift in Sources */,
 				75794178B8D65DEF322E0D7C /* StringTransformExtensions.swift in Sources */,
+				CEC04C27969EE97F1CD08D1A /* GeminiConverter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

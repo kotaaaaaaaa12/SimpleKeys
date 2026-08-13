@@ -57,6 +57,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var englishBuffer: String = ""
     private var qwertyReturnButton: UIButton?
     
+    private var geminiDebounceTimer: Timer?
+    
     private let kanjiConverter = KanjiConverter.shared
     
     private let letterRows: [[String]] = [
@@ -304,7 +306,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             if currentCandidates.isEmpty {
                 currentCandidates = [display]
             }
-            
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
@@ -343,6 +344,72 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             
             if isExpanded {
                 candidateCollectionView.reloadData()
+            }
+            
+            // Trigger Gemini Conversion if enabled
+            let defaults = AppGroupHelper.shared.userDefaults
+            let enableGemini = defaults?.bool(forKey: "enableGemini") ?? false
+            let apiKey = defaults?.string(forKey: "geminiApiKey") ?? ""
+            
+            geminiDebounceTimer?.invalidate()
+            if enableGemini && !apiKey.isEmpty && !displayRomaji.isEmpty {
+                let currentText = displayRomaji
+                geminiDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                    GeminiConverter.shared.convert(text: currentText, apiKey: apiKey) { [weak self] geminiCandidates in
+                        guard let self = self, self.romajiConverter.displayText == currentText, !geminiCandidates.isEmpty else { return }
+                        
+                        // Prepended Gemini candidates
+                        var newCandidates = geminiCandidates
+                        newCandidates.append(contentsOf: self.currentCandidates)
+                        
+                        // Deduplicate keeping order
+                        var unique = [String]()
+                        for c in newCandidates {
+                            if !unique.contains(c) { unique.append(c) }
+                        }
+                        self.currentCandidates = unique
+                        
+                        // Re-render
+                        for subview in self.candidateStack.arrangedSubviews {
+                            subview.removeFromSuperview()
+                        }
+                        for (index, candidate) in self.currentCandidates.enumerated() {
+                            let button = UIButton(type: .system)
+                            button.setTitle(candidate, for: .normal)
+                            button.titleLabel?.font = .systemFont(ofSize: 18)
+                            button.setTitleColor(.label, for: .normal)
+                            button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+                            button.tag = index
+                            button.addTarget(self, action: #selector(self.candidateTapped(_:)), for: .touchUpInside)
+                            
+                            let container = UIView()
+                            container.addSubview(button)
+                            button.translatesAutoresizingMaskIntoConstraints = false
+                            NSLayoutConstraint.activate([
+                                button.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                                button.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                                button.topAnchor.constraint(equalTo: container.topAnchor),
+                                button.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+                            ])
+                            if index < self.currentCandidates.count - 1 {
+                                let sep = UIView()
+                                sep.backgroundColor = .separator
+                                sep.translatesAutoresizingMaskIntoConstraints = false
+                                container.addSubview(sep)
+                                NSLayoutConstraint.activate([
+                                    sep.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                                    sep.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                                    sep.heightAnchor.constraint(equalTo: container.heightAnchor, multiplier: 0.5),
+                                    sep.widthAnchor.constraint(equalToConstant: 1)
+                                ])
+                            }
+                            self.candidateStack.addArrangedSubview(container)
+                        }
+                        if self.isExpanded {
+                            self.candidateCollectionView.reloadData()
+                        }
+                    }
+                }
             }
         }
     }
