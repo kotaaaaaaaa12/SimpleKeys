@@ -50,7 +50,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete nightly --cleanup-tag -y || true
+          gh api repos/${{ github.repository }}/releases --jq '.[].id' | xargs -I {} gh api -X DELETE repos/${{ github.repository }}/releases/{} || true
+          git tag -d nightly 2>/dev/null || true
+          git push origin :refs/tags/nightly 2>/dev/null || true
 
       - name: Get build info
         id: info
