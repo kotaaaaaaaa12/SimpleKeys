@@ -5,7 +5,7 @@ class CustomFontManager {
     static let shared = CustomFontManager()
     
     private let fontsDirectory: URL? = {
-        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.simplekeys.app") else { return nil }
+        guard let groupURL = AppGroupHelper.shared.containerURL() else { return nil }
         let dir = groupURL.appendingPathComponent("Fonts", isDirectory: true)
         if !FileManager.default.fileExists(atPath: dir.path) {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
