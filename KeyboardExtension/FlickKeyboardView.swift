@@ -450,9 +450,10 @@ class FlickKeyboardView: UIView {
                 keyView.layer.borderWidth = 0
                 if existingBlur == nil {
                     let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                    blur.alpha = 0.7
                     blur.tag = 8888
                     blur.layer.cornerRadius = 6
+                    blur.layer.borderWidth = 0.5
+                    blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
                     blur.clipsToBounds = true
                     blur.isUserInteractionEnabled = false
                     blur.translatesAutoresizingMaskIntoConstraints = false
