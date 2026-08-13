@@ -6,6 +6,7 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView)
 }
 
 class FlickKeyboardView: UIView {
@@ -28,7 +29,7 @@ class FlickKeyboardView: UIView {
     
     weak var delegate: FlickKeyboardDelegate?
     
-    private var currentPage: KeyboardPage = .kana
+    private(set) var currentPage: KeyboardPage = .kana
     private var isShifted = false // For ABC caps
     
     private var activeTouch: UITouch?
@@ -312,12 +313,7 @@ class FlickKeyboardView: UIView {
                         delegate?.flickKeyboardDidPressDakuten(self)
                     }
                 } else if btn.accessibilityIdentifier == "abc_switch" {
-                    if currentPage == .alphabet {
-                        currentPage = .kana
-                    } else {
-                        currentPage = .alphabet
-                    }
-                    updatePageUI()
+                    delegate?.flickKeyboardDidPressABC(self)
                 } else if btn.accessibilityIdentifier == "num_switch" {
                     if currentPage == .number {
                         currentPage = .kana
@@ -468,6 +464,11 @@ class FlickKeyboardView: UIView {
     }
     
     // MARK: - Page Switching
+    
+    func switchToPage(_ page: KeyboardPage) {
+        currentPage = page
+        updatePageUI()
+    }
     
     private func updatePageUI() {
         let keys: [[FlickKey]]

@@ -564,6 +564,24 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         textDocumentProxy.insertText(" ")
     }
     
+    func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
+        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let style = defaults?.integer(forKey: "englishInputStyle") ?? 0
+        
+        if style == 0 {
+            // Flick Alphabet
+            if keyboard.currentPage == .alphabet {
+                keyboard.switchToPage(.kana)
+            } else {
+                keyboard.switchToPage(.alphabet)
+            }
+        } else {
+            // QWERTY English
+            currentMode = .qwertyEnglish
+            applyMode()
+        }
+    }
+    
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
         guard let before = textDocumentProxy.documentContextBeforeInput,
               let lastChar = before.last else { return }
