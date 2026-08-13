@@ -34,7 +34,7 @@ struct FlickKeyboardData {
         [
             FlickKey(center: "゛゜小", left: nil, up: nil, right: nil, down: nil),
             FlickKey(center: "わ", left: "を", up: "ん", right: "ー", down: "〜"),
-            FlickKey(center: "、", left: "。", up: "？", right: "！", down: "…")
+            FlickKey(center: "、。？！", left: "。", up: "？", right: "！", down: "…")
         ]
     ]
 
@@ -78,8 +78,8 @@ struct FlickKeyboardData {
             FlickKey(center: "9", left: "＾", up: "｜", right: "＼", down: nil)
         ],
         [
-            FlickKey(center: "+-*/", left: "+", up: "-", right: "*", down: nil),
-            FlickKey(center: "0", left: "…", up: "‥", right: "_", down: nil),
+            FlickKey(center: "()[]", left: "(", up: ")", right: "[", down: "]"),
+            FlickKey(center: "0", left: "～", up: "…", right: nil, down: nil),
             FlickKey(center: ".", left: ",", up: "-", right: "/", down: nil)
         ]
     ]
@@ -605,11 +605,20 @@ class FlickKeyboardView: UIView {
     private func textForDirection(_ direction: FlickDirection, key: FlickKey) -> String? {
         var text: String?
         switch direction {
-        case .center: text = (currentPage == .alphabet) ? (key.left ?? key.center) : key.center
-        case .left: text = key.left ?? key.center
-        case .up: text = key.up ?? key.center
-        case .right: text = key.right ?? key.center
-        case .down: text = key.down ?? key.center
+        case .center:
+            if currentPage == .alphabet && key.center.count > 1 && key.center != "a/A" {
+                text = String(key.center.first!)
+            } else if currentPage == .kana && key.center == "、。？！" {
+                text = "、"
+            } else if currentPage == .number && key.center == "()[]" {
+                text = "("
+            } else {
+                text = key.center
+            }
+        case .left: text = key.left
+        case .up: text = key.up
+        case .right: text = key.right
+        case .down: text = key.down
         }
         
         if currentPage == .alphabet && !isShifted {
@@ -750,10 +759,11 @@ class FlickKeyboardView: UIView {
         // Update sidebar highlights
         let isDark = self.isDarkMode
         let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+        let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         let activeColor = isDark ? UIColor.systemBlue : UIColor.systemBlue.withAlphaComponent(0.2)
         
-        abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : keyBg
-        numButton.backgroundColor = (currentPage == .number) ? activeColor : keyBg
+        abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : specialBg
+        numButton.backgroundColor = (currentPage == .number) ? activeColor : specialBg
         
         if let abcLbl = abcButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
             abcLbl.text = (currentPage == .alphabet) ? "あいう" : "ABC"
@@ -807,16 +817,16 @@ class FlickKeyboardView: UIView {
         
         backgroundColor = bg
         
-        spaceButton.backgroundColor = keyBg
-        abcButton.backgroundColor = keyBg
-        numButton.backgroundColor = keyBg
-        faceButton.backgroundColor = keyBg
+        spaceButton.backgroundColor = specialBg
+        abcButton.backgroundColor = specialBg
+        numButton.backgroundColor = specialBg
+        faceButton.backgroundColor = specialBg
         globeButton.backgroundColor = specialBg
         deleteButton.backgroundColor = specialBg
         returnButton.backgroundColor = specialBg
         
         func apply(to view: UIView) {
-            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton)
+            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view == faceButton || view == spaceButton || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "あいう" || ($0 as? UILabel)?.text == "^_^" || ($0 as? UILabel)?.text == "空白" }) != nil)
             
             if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
                 view.backgroundColor = isSpecial ? specialBg : keyBg
