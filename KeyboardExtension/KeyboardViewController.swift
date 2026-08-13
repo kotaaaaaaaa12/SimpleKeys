@@ -12,6 +12,7 @@ class MockDocumentProxy: NSObject, UITextDocumentProxy {
     var hasText: Bool = false
     func insertText(_ text: String) {}
     func deleteBackward() {}
+    var keyboardAppearance: UIKeyboardAppearance = .default
 }
 
 @objc(KeyboardViewController)
