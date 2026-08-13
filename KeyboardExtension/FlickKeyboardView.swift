@@ -73,6 +73,8 @@ class FlickKeyboardView: UIView {
     
     // MARK: - Setup
     
+    private var allButtons: [UIView] = []
+    
     private func setupView() {
         containerView = UIView()
         containerView.translatesAutoresizingMaskIntoConstraints = false
@@ -85,95 +87,103 @@ class FlickKeyboardView: UIView {
             containerView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
         ])
         
-        // Main Horizontal Stack: [ Left Sidebar ] [ Center Grid ] [ Right Sidebar ]
-        let mainStack = UIStackView()
-        mainStack.axis = .horizontal
-        mainStack.spacing = 6
-        mainStack.distribution = .fillProportionally
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(mainStack)
+        // Define a 5x5 grid using layout guides
+        var rowGuides: [UILayoutGuide] = []
+        var colGuides: [UILayoutGuide] = []
         
+        for _ in 0..<5 {
+            let rg = UILayoutGuide()
+            containerView.addLayoutGuide(rg)
+            rowGuides.append(rg)
+            
+            let cg = UILayoutGuide()
+            containerView.addLayoutGuide(cg)
+            colGuides.append(cg)
+        }
+        
+        // Setup Equal Heights/Widths for guides
+        for i in 0..<5 {
+            NSLayoutConstraint.activate([
+                rowGuides[i].leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                rowGuides[i].trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                colGuides[i].topAnchor.constraint(equalTo: containerView.topAnchor),
+                colGuides[i].bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+            ])
+            
+            if i > 0 {
+                NSLayoutConstraint.activate([
+                    rowGuides[i].heightAnchor.constraint(equalTo: rowGuides[0].heightAnchor),
+                    rowGuides[i].topAnchor.constraint(equalTo: rowGuides[i-1].bottomAnchor, constant: 6),
+                    colGuides[i].widthAnchor.constraint(equalTo: colGuides[0].widthAnchor),
+                    colGuides[i].leadingAnchor.constraint(equalTo: colGuides[i-1].trailingAnchor, constant: 6)
+                ])
+            }
+        }
+        
+        // Pin outer guides
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: containerView.topAnchor),
-            mainStack.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            mainStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            mainStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+            rowGuides[0].topAnchor.constraint(equalTo: containerView.topAnchor),
+            rowGuides[4].bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            colGuides[0].leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            colGuides[4].trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
         ])
         
-        // 1. Left Sidebar
-        let leftStack = UIStackView()
-        leftStack.axis = .vertical
-        leftStack.spacing = 6
-        leftStack.distribution = .fillEqually
+        // Helper to place a view in the grid
+        func place(view: UIView, row: Int, col: Int, rowSpan: Int = 1, colSpan: Int = 1) {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(view)
+            allButtons.append(view)
+            
+            NSLayoutConstraint.activate([
+                view.topAnchor.constraint(equalTo: rowGuides[row].topAnchor),
+                view.bottomAnchor.constraint(equalTo: rowGuides[row + rowSpan - 1].bottomAnchor),
+                view.leadingAnchor.constraint(equalTo: colGuides[col].leadingAnchor),
+                view.trailingAnchor.constraint(equalTo: colGuides[col + colSpan - 1].trailingAnchor)
+            ])
+        }
         
+        // 1. Left Sidebar
         numButton = createSpecialKey(title: "☆123")
         numButton.accessibilityIdentifier = "num_switch"
+        place(view: numButton, row: 0, col: 0)
         
         abcButton = createSpecialKey(title: "ABC")
         abcButton.accessibilityIdentifier = "abc_switch"
+        place(view: abcButton, row: 1, col: 0)
         
         kaomojiButton = createSpecialKey(title: "^_^")
         kaomojiButton.accessibilityIdentifier = "kaomoji_switch"
+        place(view: kaomojiButton, row: 2, col: 0)
         
         globeButton = createSpecialKey(title: "🌐")
-        
-        leftStack.addArrangedSubview(numButton)
-        leftStack.addArrangedSubview(abcButton)
-        leftStack.addArrangedSubview(kaomojiButton)
-        leftStack.addArrangedSubview(globeButton)
-        leftStack.widthAnchor.constraint(equalToConstant: 44).isActive = true
-        mainStack.addArrangedSubview(leftStack)
+        place(view: globeButton, row: 4, col: 0) // Globe in bottom left
         
         // 2. Center Grid
-        let centerStack = UIStackView()
-        centerStack.axis = .vertical
-        centerStack.spacing = 6
-        centerStack.distribution = .fillEqually
-        
+        gridButtons = Array(repeating: Array(repeating: UIView(), count: 3), count: 4)
         for rowIndex in 0..<4 {
-            let rowStack = UIStackView()
-            rowStack.axis = .horizontal
-            rowStack.spacing = 6
-            rowStack.distribution = .fillEqually
-            
-            var rowButtons: [UIView] = []
-            
             for colIndex in 0..<3 {
                 let keyData = FlickKeyboardData.kanaKeys[rowIndex][colIndex]
                 let isSpecial = (rowIndex == 3 && colIndex == 0)
                 let btn = isSpecial ? createSpecialKey(title: keyData.center) : createFlickKey(keyData)
                 if isSpecial { btn.accessibilityIdentifier = "dakuten" }
-                rowStack.addArrangedSubview(btn)
-                rowButtons.append(btn)
+                
+                place(view: btn, row: rowIndex, col: colIndex + 1)
+                gridButtons[rowIndex][colIndex] = btn
             }
-            centerStack.addArrangedSubview(rowStack)
-            gridButtons.append(rowButtons)
         }
         
-        // Add space bar below center grid? 
-        // Apple puts Space in the bottom row, spanning across.
-        // For simplicity, let's just make a 5th row in centerStack for Space
-        spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
-        if let lbl = spaceButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
-        centerStack.addArrangedSubview(spaceButton)
-        
-        mainStack.addArrangedSubview(centerStack)
-        
         // 3. Right Sidebar
-        let rightStack = UIStackView()
-        rightStack.axis = .vertical
-        rightStack.spacing = 6
-        
         deleteButton = createSpecialKey(title: "⌫")
+        place(view: deleteButton, row: 0, col: 4)
+        
         returnButton = createSpecialKey(title: "改行")
         if let lbl = returnButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        place(view: returnButton, row: 1, col: 4, rowSpan: 3) // Spans rows 1,2,3
         
-        rightStack.addArrangedSubview(deleteButton)
-        rightStack.addArrangedSubview(returnButton)
-        
-        deleteButton.heightAnchor.constraint(equalTo: rightStack.heightAnchor, multiplier: 0.2).isActive = true
-        rightStack.widthAnchor.constraint(equalToConstant: 54).isActive = true
-        mainStack.addArrangedSubview(rightStack)
+        // 4. Bottom Row
+        spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
+        if let lbl = spaceButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        place(view: spaceButton, row: 4, col: 1, colSpan: 4) // Spans from col 1 to 4
     }
     
     // MARK: - Key Builders
@@ -332,19 +342,13 @@ class FlickKeyboardView: UIView {
     }
     
     private func findButton(at point: CGPoint) -> UIView? {
-        // Deep search for the lowest level view that looks like a button
-        func search(in view: UIView) -> UIView? {
-            for sub in view.subviews.reversed() { // search top-most first
-                if sub.frame.contains(view.convert(point, to: sub.superview)) {
-                    if sub.backgroundColor != nil && sub.layer.cornerRadius > 0 {
-                        return sub
-                    }
-                    if let found = search(in: sub) { return found }
-                }
+        for btn in allButtons {
+            let localPoint = self.convert(point, to: btn.superview)
+            if btn.frame.contains(localPoint) {
+                return btn
             }
-            return nil
         }
-        return search(in: self)
+        return nil
     }
     
     // MARK: - Flick Logic

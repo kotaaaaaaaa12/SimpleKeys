@@ -220,27 +220,19 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         updateAppearance()
     }
     
-    @objc private func cycleModePressed() {
+    @objc private func switchToKanaPressed() {
         if currentMode == .qwertyJapanese && !romajiConverter.displayText.isEmpty {
             let text = romajiConverter.commit()
             textDocumentProxy.insertText(text)
         }
         
-        switch currentMode {
-        case .qwertyEnglish: currentMode = .qwertyJapanese
-        case .qwertyJapanese: currentMode = .flick
-        case .flick: currentMode = .qwertyEnglish
-        }
-        
+        currentMode = .flick
+        flickKeyboard?.switchToPage(.kana)
         applyMode()
     }
     
     private func updateModeButtonLabel() {
-        switch currentMode {
-        case .qwertyEnglish: modeButton?.setTitle("EN", for: .normal)
-        case .qwertyJapanese: modeButton?.setTitle("JA", for: .normal)
-        case .flick: modeButton?.setTitle("FL", for: .normal)
-        }
+        // Now it's just 'あいう', so no dynamic updates needed
     }
     
     // MARK: - Conversion Bar
@@ -312,7 +304,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         stack.addArrangedSubview(lettersStack)
         
         let delete = createSpecialKeyButton(title: "⌫")
-        delete.addTarget(self, action: #selector(deletePressed), for: .touchUpInside)
+        delete.addTarget(self, action: #selector(deletePressed), for: .touchDown)
         delete.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         delete.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         delete.widthAnchor.constraint(equalToConstant: 42).isActive = true
@@ -344,11 +336,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         self.nextKeyboardButton = globe
         stack.addArrangedSubview(globe)
         
-        // Mode toggle
-        let mode = createSpecialKeyButton(title: "EN")
+        // Return to Flick (あいう)
+        let mode = createSpecialKeyButton(title: "あいう")
         mode.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        mode.addTarget(self, action: #selector(cycleModePressed), for: .touchUpInside)
-        mode.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        mode.addTarget(self, action: #selector(switchToKanaPressed), for: .touchDown)
+        mode.widthAnchor.constraint(equalToConstant: 50).isActive = true
         self.modeButton = mode
         stack.addArrangedSubview(mode)
         
@@ -363,7 +355,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         // Return
         let returnKey = createSpecialKeyButton(title: "return")
         returnKey.titleLabel?.font = .systemFont(ofSize: 15)
-        returnKey.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
+        returnKey.addTarget(self, action: #selector(returnPressed), for: .touchDown)
         returnKey.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         returnKey.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         returnKey.widthAnchor.constraint(equalToConstant: 84).isActive = true
