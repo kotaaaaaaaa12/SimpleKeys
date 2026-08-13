@@ -748,7 +748,7 @@ class MyThemesViewController: UITableViewController {
     }
 }
 
-class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIColorPickerViewControllerDelegate, UIDocumentPickerDelegate {
+class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIColorPickerViewControllerDelegate {
     var theme: ThemeSettings?
     var onSave: ((ThemeSettings) -> Void)?
     
@@ -800,6 +800,12 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         }
         
         setupUI()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
+    }
         updatePreview()
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Save" : "保存", style: .done, target: self, action: #selector(saveTapped))
@@ -1061,8 +1067,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             
             let customFonts = CustomFontManager.shared.getCustomFonts()
             for cf in customFonts {
-                fontNames.append(cf)
-                fontLabels.append(cf)
+                fontNames.append(cf.fontName)
+                fontLabels.append(cf.displayName)
             }
             
             let alert = UIAlertController(title: isEn ? "Select Font" : "フォントを選択", message: nil, preferredStyle: .actionSheet)
@@ -1076,11 +1082,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 alert.addAction(action)
             }
             
-            let importAction = UIAlertAction(title: isEn ? "Import Font..." : "フォントをインポート...", style: .default) { [weak self] _ in
-                let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.font, .data])
-                documentPicker.delegate = self
-                documentPicker.allowsMultipleSelection = false
-                self?.present(documentPicker, animated: true)
+            let importAction = UIAlertAction(title: isEn ? "Manage Fonts..." : "フォント管理...", style: .default) { [weak self] _ in
+                let fontVC = FontManagerViewController()
+                self?.navigationController?.pushViewController(fontVC, animated: true)
             }
             alert.addAction(importAction)
             
@@ -1161,33 +1165,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
         } else {
             picker.dismiss(animated: true)
-        }
-    }
-
-    // MARK: - UIDocumentPickerDelegate
-    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        guard let url = urls.first else { return }
-        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
-        
-        let shouldStopAccessing = url.startAccessingSecurityScopedResource()
-        defer {
-            if shouldStopAccessing {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-        
-        CustomFontManager.shared.importFont(from: url) { [weak self] fontName, errorStr in
-            DispatchQueue.main.async {
-                if let err = errorStr {
-                    let alert = UIAlertController(title: isEn ? "Error" : "エラー", message: err, preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "OK", style: .default))
-                    self?.present(alert, animated: true)
-                } else if let fontName = fontName {
-                    self?.currentTheme.fontName = fontName
-                    self?.updatePreview()
-                    self?.tableView.reloadData()
-                }
-            }
         }
     }
 }
