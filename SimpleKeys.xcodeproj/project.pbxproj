@@ -15,7 +15,6 @@
 		3259926AD30F4595AADD427B /* KeyboardExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 6C8B24F59036483E9B399E08 /* KeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		38F0D9C9CF52C15F7CB55453 /* EnglishConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */; };
 		39484B6395CF909372299556 /* dictionary.json in Resources */ = {isa = PBXBuildFile; fileRef = 6B1949EE878530580F760DC6 /* dictionary.json */; };
-		3CC946F0AFA0F17BB00068EA /* BaseKeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E84A4A648E10B3CBE5C7C9F4 /* BaseKeyboardViewController.swift */; };
 		590049E99FC882749C9FBFBE /* KanjiConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64264595B193456E64B99E42 /* KanjiConverter.swift */; };
 		6B2478EBF01D4B48B735D221 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D78686BB7EE46D682C6CEA1 /* ViewController.swift */; };
 		6D835E5D4FF343A9BFB3CB0E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81695A31AA1E4F638EC94CD6 /* Assets.xcassets */; };
@@ -30,7 +29,6 @@
 		CEC04C27969EE97F1CD08D1A /* GeminiConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5594A1288B49A2347260DB4 /* GeminiConverter.swift */; };
 		D43DF93FFEC34597814DF736 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D11DDBD48E420491C7B850 /* AppDelegate.swift */; };
 		E24A4B5DB7030C9397722D45 /* EnglishConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */; };
-		ED7343FDA39FD70C9FB70255 /* BaseKeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8F473DBE8FB8079F338E18 /* BaseKeyboardViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,7 +56,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0A8F473DBE8FB8079F338E18 /* BaseKeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BaseKeyboardViewController.swift; path = SimpleKeys/BaseKeyboardViewController.swift; sourceTree = SOURCE_ROOT; };
 		0FAA318E14C24688B64D6030 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		523D4EAE37C84348A7B9F4D9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		64264595B193456E64B99E42 /* KanjiConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KanjiConverter.swift; path = KeyboardExtension/KanjiConverter.swift; sourceTree = SOURCE_ROOT; };
@@ -74,7 +71,6 @@
 		C5594A1288B49A2347260DB4 /* GeminiConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GeminiConverter.swift; path = KeyboardExtension/GeminiConverter.swift; sourceTree = SOURCE_ROOT; };
 		D8634D2B83A4AF9BD8CA04BC /* BaseKeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BaseKeyboardViewController.swift; path = SimpleKeys/BaseKeyboardViewController.swift; sourceTree = SOURCE_ROOT; };
 		E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickKeyboardView.swift; sourceTree = "<group>"; };
-		E84A4A648E10B3CBE5C7C9F4 /* BaseKeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BaseKeyboardViewController.swift; path = KeyboardExtension/BaseKeyboardViewController.swift; sourceTree = SOURCE_ROOT; };
 		E88F5E118CC2494582BAE89E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F1E2D3C4B5A647089A1B2C3D /* RomajiConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RomajiConverter.swift; sourceTree = "<group>"; };
 		F4314D8190D000FF4B389B22 /* StringTransformExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StringTransformExtensions.swift; path = KeyboardExtension/StringTransformExtensions.swift; sourceTree = SOURCE_ROOT; };
@@ -107,7 +103,6 @@
 				81695A31AA1E4F638EC94CD6 /* Assets.xcassets */,
 				E88F5E118CC2494582BAE89E /* Info.plist */,
 				D8634D2B83A4AF9BD8CA04BC /* BaseKeyboardViewController.swift */,
-				0A8F473DBE8FB8079F338E18 /* BaseKeyboardViewController.swift */,
 			);
 			path = SimpleKeys;
 			sourceTree = "<group>";
@@ -150,7 +145,6 @@
 				92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */,
 				F4314D8190D000FF4B389B22 /* StringTransformExtensions.swift */,
 				C5594A1288B49A2347260DB4 /* GeminiConverter.swift */,
-				E84A4A648E10B3CBE5C7C9F4 /* BaseKeyboardViewController.swift */,
 				BBB74F8D9DCE399E721CA234 /* BaseKeyboardViewController.swift */,
 			);
 			path = KeyboardExtension;
@@ -266,7 +260,6 @@
 				96E248584F26268DCC8A5605 /* StringTransformExtensions.swift in Sources */,
 				1307DE6E791AD439C6CDEC32 /* GeminiConverter.swift in Sources */,
 				B6804FDFA7A646A7EB8DCF9B /* BaseKeyboardViewController.swift in Sources */,
-				ED7343FDA39FD70C9FB70255 /* BaseKeyboardViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,7 +274,6 @@
 				E24A4B5DB7030C9397722D45 /* EnglishConverter.swift in Sources */,
 				75794178B8D65DEF322E0D7C /* StringTransformExtensions.swift in Sources */,
 				CEC04C27969EE97F1CD08D1A /* GeminiConverter.swift in Sources */,
-				3CC946F0AFA0F17BB00068EA /* BaseKeyboardViewController.swift in Sources */,
 				1EE8468E91E0C6DC64F94DAA /* BaseKeyboardViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
