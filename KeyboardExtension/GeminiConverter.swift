@@ -10,13 +10,13 @@ class GeminiConverter {
         currentTask?.cancel()
         
         guard !text.isEmpty, !apiKey.isEmpty else {
-            completion([])
+            completion(["[AI] 無効なリクエスト"])
             return
         }
         
         let urlString = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(apiKey)"
         guard let url = URL(string: urlString) else {
-            completion([])
+            completion(["[AI] URLエラー"])
             return
         }
         
@@ -47,12 +47,19 @@ class GeminiConverter {
             if let error = error {
                 if (error as NSError).code == NSURLErrorCancelled { return }
                 print("Gemini API Error: \(error.localizedDescription)")
-                DispatchQueue.main.async { completion([]) }
+                DispatchQueue.main.async { completion(["[AI] 通信エラー: \((error as NSError).code)"]) }
                 return
             }
             
             guard let data = data else {
-                DispatchQueue.main.async { completion([]) }
+                DispatchQueue.main.async { completion(["[AI] データなし"]) }
+                return
+            }
+            
+            // Check HTTP status code
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+                let errorBody = String(data: data, encoding: .utf8) ?? ""
+                DispatchQueue.main.async { completion(["[AI] エラー: \(httpResponse.statusCode)"]) }
                 return
             }
             
@@ -73,11 +80,11 @@ class GeminiConverter {
                         completion(lines)
                     }
                 } else {
-                    DispatchQueue.main.async { completion([]) }
+                    DispatchQueue.main.async { completion(["[AI] パース失敗"]) }
                 }
             } catch {
                 print("Gemini API JSON Error: \(error)")
-                DispatchQueue.main.async { completion([]) }
+                DispatchQueue.main.async { completion(["[AI] JSONエラー"]) }
             }
         }
         

@@ -306,6 +306,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             if currentCandidates.isEmpty {
                 currentCandidates = [display]
             }
+            
+            let defaults = AppGroupHelper.shared.userDefaults
+            let enableGemini = defaults?.bool(forKey: "enableGemini") ?? false
+            let apiKey = defaults?.string(forKey: "geminiApiKey") ?? ""
+            
+            if displayRomaji == "あぷり" {
+                currentCandidates.insert("Grp: \(AppGroupHelper.shared.appGroupID) Key:\(apiKey.isEmpty ? "無" : "有") On:\(enableGemini)", at: 0)
+            }
+            
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
