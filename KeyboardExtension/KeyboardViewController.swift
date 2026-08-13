@@ -1,5 +1,6 @@
 import UIKit
 
+@objcMembers
 class MockDocumentProxy: NSObject, UITextDocumentProxy {
     var documentContextBeforeInput: String? = nil
     var documentContextAfterInput: String? = nil
@@ -13,6 +14,16 @@ class MockDocumentProxy: NSObject, UITextDocumentProxy {
     func insertText(_ text: String) {}
     func deleteBackward() {}
     var keyboardAppearance: UIKeyboardAppearance = .default
+    var keyboardType: UIKeyboardType = .default
+    var returnKeyType: UIReturnKeyType = .default
+    var enablesReturnKeyAutomatically: Bool = false
+    var isSecureTextEntry: Bool = false
+    var autocapitalizationType: UITextAutocapitalizationType = .none
+    var autocorrectionType: UITextAutocorrectionType = .no
+    var spellCheckingType: UITextSpellCheckingType = .no
+    var smartQuotesType: UITextSmartQuotesType = .no
+    var smartDashesType: UITextSmartDashesType = .no
+    var smartInsertDeleteType: UITextSmartInsertDeleteType = .no
 }
 
 @objc(KeyboardViewController)
@@ -91,6 +102,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     override var textDocumentProxy: UITextDocumentProxy {
         return isPreviewMode ? mockProxy : super.textDocumentProxy
+    }
+    
+    override var needsInputModeSwitchKey: Bool {
+        if isPreviewMode { return true }
+        return super.needsInputModeSwitchKey
     }
     
     private let kanjiConverter = KanjiConverter.shared
