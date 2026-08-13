@@ -215,7 +215,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             conversionBar.topAnchor.constraint(equalTo: view.topAnchor),
             conversionBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             conversionBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            conversionBar.heightAnchor.constraint(equalToConstant: 36),
+            conversionBar.heightAnchor.constraint(equalToConstant: 46),
             
             conversionLabel.leadingAnchor.constraint(equalTo: conversionBar.leadingAnchor, constant: 12),
             conversionLabel.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
@@ -224,7 +224,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             expandButton.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor),
             expandButton.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
             expandButton.widthAnchor.constraint(equalToConstant: 44),
-            expandButton.heightAnchor.constraint(equalToConstant: 36),
+            expandButton.heightAnchor.constraint(equalToConstant: 46),
             
             candidateScrollView.leadingAnchor.constraint(equalTo: conversionLabel.trailingAnchor, constant: 8),
             candidateScrollView.trailingAnchor.constraint(equalTo: expandButton.leadingAnchor),
@@ -437,7 +437,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                         for (index, candidate) in self.currentCandidates.enumerated() {
                             let button = UIButton(type: .system)
                             button.setTitle(candidate, for: .normal)
-                            button.titleLabel?.font = .systemFont(ofSize: 18)
+                            button.titleLabel?.font = .systemFont(ofSize: 20)
                             button.setTitleColor(.label, for: .normal)
                             button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
                             button.tag = index

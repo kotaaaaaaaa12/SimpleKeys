@@ -119,7 +119,7 @@ class FlickKeyboardView: UIView {
     private var startPoints: [UITouch: CGPoint] = [:]
     private var popupViews: [UITouch: UIView] = [:]
     private var popupLabelsDict: [UITouch: [FlickDirection: UILabel]] = [:]
-    private var popupArrowDict: [UITouch: UIView] = [:]
+    private var popupBgLayers: [UITouch: CAShapeLayer] = [:]
     private var popupTimers: [UITouch: Timer] = [:]
     private var fullPopupModes: [UITouch: Bool] = [:]
     
@@ -277,6 +277,7 @@ class FlickKeyboardView: UIView {
         // 3. Right Sidebar
         deleteButton = createSpecialImageKey(systemName: "delete.left")
         deleteButton.accessibilityIdentifier = "delete"
+        keysMap[deleteButton] = FlickKey(center: "⌫", left: "文消", up: "全消", right: nil, down: nil)
         place(view: deleteButton, row: 0, col: 4)
         
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
@@ -514,9 +515,12 @@ class FlickKeyboardView: UIView {
                         startPoints[touch] = CGPoint(x: start.x - 20, y: start.y)
                     }
                 } else {
-                    if abs(dx) > 10 {
+                    if abs(dx) > 15 {
                         spaceTimers[touch]?.invalidate()
                         spaceTimers.removeValue(forKey: touch)
+                        isSpaceDragging[touch] = true
+                        startPoints[touch] = currentPoint
+                        delegate?.flickKeyboardDidBeginSpaceDrag(self)
                     }
                 }
                 continue
@@ -774,23 +778,14 @@ class FlickKeyboardView: UIView {
             ])
         }
         
-        let arrow = UIView()
-        arrow.translatesAutoresizingMaskIntoConstraints = false
-        arrow.backgroundColor = .systemBlue
-        arrow.layer.shadowColor = UIColor.black.cgColor
-        arrow.layer.shadowOpacity = 0.2
-        arrow.layer.shadowOffset = CGSize(width: 0, height: 1)
-        arrow.layer.shadowRadius = 2
-        arrow.transform = CGAffineTransform(rotationAngle: .pi / 4)
-        popup.addSubview(arrow)
-        popupArrowDict[touch] = arrow
-        
-        NSLayoutConstraint.activate([
-            arrow.widthAnchor.constraint(equalToConstant: 24),
-            arrow.heightAnchor.constraint(equalToConstant: 24),
-            arrow.centerXAnchor.constraint(equalTo: popup.centerXAnchor),
-            arrow.centerYAnchor.constraint(equalTo: popup.centerYAnchor)
-        ])
+        let bgLayer = CAShapeLayer()
+        bgLayer.fillColor = UIColor.white.cgColor
+        bgLayer.shadowColor = UIColor.black.cgColor
+        bgLayer.shadowOpacity = 0.2
+        bgLayer.shadowOffset = CGSize(width: 0, height: 1)
+        bgLayer.shadowRadius = 2
+        popup.layer.insertSublayer(bgLayer, at: 0)
+        popupBgLayers[touch] = bgLayer
         
         addSubview(popup)
         popupViews[touch] = popup
@@ -805,37 +800,68 @@ class FlickKeyboardView: UIView {
     }
     
     private func updatePopup(direction: FlickDirection, for touch: UITouch) {
-        guard let popup = popupViews[touch], let labels = popupLabelsDict[touch], let arrow = popupArrowDict[touch] else { return }
+        guard let popup = popupViews[touch], let labels = popupLabelsDict[touch] else { return }
         let isFull = fullPopupModes[touch] ?? false
-        
-        arrow.isHidden = isFull || direction == .center
+        let bgLayer = popupBgLayers[touch]
         
         for (dir, label) in labels {
             if dir == direction {
-                label.backgroundColor = UIColor.systemBlue
-                label.textColor = .white
-                label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
                 label.isHidden = false
                 popup.bringSubviewToFront(label)
-                if !isFull && dir != .center {
-                    // Position arrow
-                    let offset: CGFloat = 20
-                    var trans = CGAffineTransform(rotationAngle: .pi / 4)
-                    switch dir {
-                    case .left: trans = trans.translatedBy(x: -offset, y: -offset)
-                    case .right: trans = trans.translatedBy(x: offset, y: offset)
-                    case .up: trans = trans.translatedBy(x: offset, y: -offset)
-                    case .down: trans = trans.translatedBy(x: -offset, y: offset)
-                    default: break
-                    }
-                    arrow.transform = trans
+                if isFull {
+                    label.backgroundColor = UIColor.systemBlue
+                    label.textColor = .white
+                    label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+                } else {
+                    label.backgroundColor = .clear
+                    label.textColor = .black
+                    label.transform = .identity
                 }
             } else {
-                label.backgroundColor = .white
-                label.textColor = .black
-                label.transform = .identity
-                label.isHidden = !isFull
+                if isFull {
+                    label.backgroundColor = .white
+                    label.textColor = .black
+                    label.transform = .identity
+                    label.isHidden = false
+                } else {
+                    label.isHidden = true
+                }
             }
+        }
+        
+        if !isFull && direction != .center {
+            guard let label = labels[direction] else { return }
+            let f = label.frame
+            let path = UIBezierPath(roundedRect: f, cornerRadius: 6)
+            let arrow = UIBezierPath()
+            let aw: CGFloat = 16 // arrow width
+            let ah: CGFloat = 12 // arrow height pointing inward
+            
+            switch direction {
+            case .left:
+                arrow.move(to: CGPoint(x: f.maxX, y: f.midY - aw/2))
+                arrow.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
+                arrow.addLine(to: CGPoint(x: f.maxX, y: f.midY + aw/2))
+            case .right:
+                arrow.move(to: CGPoint(x: f.minX, y: f.midY - aw/2))
+                arrow.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
+                arrow.addLine(to: CGPoint(x: f.minX, y: f.midY + aw/2))
+            case .up:
+                arrow.move(to: CGPoint(x: f.midX - aw/2, y: f.maxY))
+                arrow.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
+                arrow.addLine(to: CGPoint(x: f.midX + aw/2, y: f.maxY))
+            case .down:
+                arrow.move(to: CGPoint(x: f.midX - aw/2, y: f.minY))
+                arrow.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
+                arrow.addLine(to: CGPoint(x: f.midX + aw/2, y: f.minY))
+            default: break
+            }
+            arrow.close()
+            path.append(arrow)
+            bgLayer?.path = path.cgPath
+            bgLayer?.fillColor = UIColor.white.cgColor
+        } else {
+            bgLayer?.path = nil
         }
     }
     
@@ -843,7 +869,7 @@ class FlickKeyboardView: UIView {
         popupViews[touch]?.removeFromSuperview()
         popupViews.removeValue(forKey: touch)
         popupLabelsDict.removeValue(forKey: touch)
-        popupArrowDict.removeValue(forKey: touch)
+        popupBgLayers.removeValue(forKey: touch)
         fullPopupModes.removeValue(forKey: touch)
     }
     
