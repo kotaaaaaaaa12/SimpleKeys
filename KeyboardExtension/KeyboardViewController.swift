@@ -136,8 +136,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-        updateAppearance()
         updateOneHandedMode()
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if self.traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateAppearance()
+        }
     }
     
     private func updateOneHandedMode() {
@@ -821,34 +827,39 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     private func applyThemeToQwertyButton(_ b: UIButton, isSpecialKey: Bool, theme: ThemeSettings, letterBg: UIColor, specialBg: UIColor) {
-        // Remove previous visual effect
-        b.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+        let existingBlur = b.viewWithTag(8888) as? UIVisualEffectView
         
         if theme.keyStyle == 1 { // Glass
             b.backgroundColor = .clear
             b.layer.shadowOpacity = 0
             b.layer.borderWidth = 0
-            let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
-            blur.layer.cornerRadius = 5
-            blur.clipsToBounds = true
-            blur.isUserInteractionEnabled = false
-            blur.translatesAutoresizingMaskIntoConstraints = false
-            b.insertSubview(blur, at: 0)
-            NSLayoutConstraint.activate([
-                blur.leadingAnchor.constraint(equalTo: b.leadingAnchor),
-                blur.trailingAnchor.constraint(equalTo: b.trailingAnchor),
-                blur.topAnchor.constraint(equalTo: b.topAnchor),
-                blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
-            ])
-        } else if theme.keyStyle == 2 { // Flat
-            b.backgroundColor = .clear
-            b.layer.shadowOpacity = 0
-            b.layer.borderWidth = 1
-            b.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+            if existingBlur == nil {
+                let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+                blur.tag = 8888
+                blur.layer.cornerRadius = 5
+                blur.clipsToBounds = true
+                blur.isUserInteractionEnabled = false
+                blur.translatesAutoresizingMaskIntoConstraints = false
+                b.insertSubview(blur, at: 0)
+                NSLayoutConstraint.activate([
+                    blur.leadingAnchor.constraint(equalTo: b.leadingAnchor),
+                    blur.trailingAnchor.constraint(equalTo: b.trailingAnchor),
+                    blur.topAnchor.constraint(equalTo: b.topAnchor),
+                    blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
+                ])
+            }
         } else {
-            b.backgroundColor = isSpecialKey ? specialBg : letterBg
-            b.layer.shadowOpacity = 0.3
-            b.layer.borderWidth = 0
+            existingBlur?.removeFromSuperview()
+            if theme.keyStyle == 2 { // Flat
+                b.backgroundColor = .clear
+                b.layer.shadowOpacity = 0
+                b.layer.borderWidth = 1
+                b.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+            } else {
+                b.backgroundColor = isSpecialKey ? specialBg : letterBg
+                b.layer.shadowOpacity = 0.3
+                b.layer.borderWidth = 0
+            }
         }
     }
     
