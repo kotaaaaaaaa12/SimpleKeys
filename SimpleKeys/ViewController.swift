@@ -748,7 +748,7 @@ class MyThemesViewController: UITableViewController {
     }
 }
 
-class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIColorPickerViewControllerDelegate {
+class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIColorPickerViewControllerDelegate, UIDocumentPickerDelegate {
     var theme: ThemeSettings?
     var onSave: ((ThemeSettings) -> Void)?
     
@@ -771,6 +771,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         title = isEn ? "Edit Theme" : "テーマ編集"
         view.backgroundColor = .systemGroupedBackground
+        
+        CustomFontManager.shared.registerAllCustomFonts()
+        navigationController?.navigationBar.prefersLargeTitles = true
         
         keyboardVC.isPreviewMode = true
         
@@ -802,11 +805,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Save" : "保存", style: .done, target: self, action: #selector(saveTapped))
     }
     
-    // Removed keyboardTypeSegment
-    
     private func setupUI() {
-        
-        
         previewContainer.translatesAutoresizingMaskIntoConstraints = false
         previewContainer.backgroundColor = .systemGray5
         previewContainer.layer.cornerRadius = 12
@@ -1148,5 +1147,31 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             picker.dismiss(animated: true)
         }
     }
-}
 
+    // MARK: - UIDocumentPickerDelegate
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else { return }
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        
+        let shouldStopAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if shouldStopAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        CustomFontManager.shared.importFont(from: url) { [weak self] fontName, errorStr in
+            DispatchQueue.main.async {
+                if let err = errorStr {
+                    let alert = UIAlertController(title: isEn ? "Error" : "エラー", message: err, preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self?.present(alert, animated: true)
+                } else if let fontName = fontName {
+                    self?.currentTheme.fontName = fontName
+                    self?.updatePreview()
+                    self?.tableView.reloadData()
+                }
+            }
+        }
+    }
+}

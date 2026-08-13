@@ -1,0 +1,73 @@
+import UIKit
+import CoreText
+
+class CustomFontManager {
+    static let shared = CustomFontManager()
+    
+    private let fontsDirectory: URL? = {
+        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.simplekeys.app") else { return nil }
+        let dir = groupURL.appendingPathComponent("Fonts", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+        }
+        return dir
+    }()
+    
+    func registerAllCustomFonts() {
+        guard let fontsDirectory = fontsDirectory else { return }
+        guard let files = try? FileManager.default.contentsOfDirectory(at: fontsDirectory, includingPropertiesForKeys: nil) else { return }
+        
+        for fileURL in files where fileURL.pathExtension.lowercased() == "ttf" || fileURL.pathExtension.lowercased() == "otf" {
+            var error: Unmanaged<CFError>?
+            CTFontManagerRegisterFontsForURL(fileURL as CFURL, .process, &error)
+        }
+    }
+    
+    func importFont(from url: URL, completion: @escaping (String?, String?) -> Void) {
+        guard let fontsDirectory = fontsDirectory else {
+            completion(nil, "App Group directory not found")
+            return
+        }
+        
+        let destinationURL = fontsDirectory.appendingPathComponent(url.lastPathComponent)
+        
+        do {
+            if FileManager.default.fileExists(atPath: destinationURL.path) {
+                try FileManager.default.removeItem(at: destinationURL)
+            }
+            try FileManager.default.copyItem(at: url, to: destinationURL)
+            
+            var error: Unmanaged<CFError>?
+            if CTFontManagerRegisterFontsForURL(destinationURL as CFURL, .process, &error) {
+                // Get the actual font name
+                if let descriptors = CTFontManagerCreateFontDescriptorsFromURL(destinationURL as CFURL) as? [CTFontDescriptor],
+                   let descriptor = descriptors.first {
+                    let fontName = CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute) as? String
+                    completion(fontName, nil)
+                } else {
+                    completion(nil, "Could not read font name")
+                }
+            } else {
+                let errStr = error?.takeRetainedValue().localizedDescription ?? "Unknown error"
+                completion(nil, "Failed to register font: \(errStr)")
+            }
+        } catch {
+            completion(nil, "Failed to copy file: \(error.localizedDescription)")
+        }
+    }
+    
+    func getCustomFonts() -> [String] {
+        guard let fontsDirectory = fontsDirectory else { return [] }
+        guard let files = try? FileManager.default.contentsOfDirectory(at: fontsDirectory, includingPropertiesForKeys: nil) else { return [] }
+        
+        var fontNames: [String] = []
+        for fileURL in files {
+            if let descriptors = CTFontManagerCreateFontDescriptorsFromURL(fileURL as CFURL) as? [CTFontDescriptor],
+               let descriptor = descriptors.first,
+               let fontName = CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute) as? String {
+                fontNames.append(fontName)
+            }
+        }
+        return fontNames
+    }
+}

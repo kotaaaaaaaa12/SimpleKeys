@@ -132,6 +132,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        CustomFontManager.shared.registerAllCustomFonts()
         
         // Read default keyboard mode
         let defaults = AppGroupHelper.shared.userDefaults
