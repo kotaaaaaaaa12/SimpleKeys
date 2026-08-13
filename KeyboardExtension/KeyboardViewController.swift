@@ -63,6 +63,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var englishBuffer: String = ""
     private var qwertyReturnButton: UIButton?
     
+    private var qwertySpaceDragStart: CGPoint = .zero
+    
+    // UI Elements
     private var geminiDebounceTimer: Timer?
     
     private let kanjiConverter = KanjiConverter.shared
@@ -654,6 +657,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
                 spaceBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
                 spaceBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleQwertySpaceLongPress(_:)))
+                longPress.minimumPressDuration = 0.35
+                spaceBtn.addGestureRecognizer(longPress)
                 bottomStack.addArrangedSubview(spaceBtn)
             } else if key == "return" {
                 let retBtn = createSpecialKeyButton(title: "return")
@@ -705,6 +711,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             flickLeadingConstraint,
             flickTrailingConstraint
         ])
+        
+        flickKeyboard.layer.zPosition = 1000
     }
     
     // MARK: - Next Keyboard Button Visibility
@@ -1128,6 +1136,53 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         flickKeyboard.updateAppearance(isDark: textDocumentProxy.keyboardAppearance == .dark)
     }
     
+    // MARK: - QWERTY Space Drag
+    
+    @objc private func handleQwertySpaceLongPress(_ gesture: UILongPressGestureRecognizer) {
+        let point = gesture.location(in: view)
+        
+        if gesture.state == .began {
+            qwertySpaceDragStart = point
+            setKeyboardLabelsAlpha(0.0)
+            UIDevice.current.playInputClick()
+        } else if gesture.state == .changed {
+            let dx = point.x - qwertySpaceDragStart.x
+            if dx > 20 {
+                textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
+                qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x + 20, y: qwertySpaceDragStart.y)
+                UIDevice.current.playInputClick()
+            } else if dx < -20 {
+                textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
+                qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x - 20, y: qwertySpaceDragStart.y)
+                UIDevice.current.playInputClick()
+            }
+        } else if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
+            setKeyboardLabelsAlpha(1.0)
+            // Normal space press is handled by spacePressed since touchUpInside might trigger.
+            // But actually touchUpInside is cancelled by long press.
+        }
+    }
+    
+    // MARK: - Label Fade (Blur)
+    
+    private func setKeyboardLabelsAlpha(_ alpha: CGFloat) {
+        UIView.animate(withDuration: 0.15) {
+            // For QWERTY
+            self.qwertyStack.arrangedSubviews.forEach { row in
+                if let stackRow = row as? UIStackView {
+                    stackRow.arrangedSubviews.forEach { btn in
+                        if let btn = btn as? UIButton, btn.accessibilityIdentifier != "space" {
+                            btn.titleLabel?.alpha = alpha
+                            btn.imageView?.alpha = alpha
+                        }
+                    }
+                }
+            }
+            // For Flick
+            self.flickKeyboard.setKeysAlpha(alpha)
+        }
+    }
+    
     // MARK: - FlickKeyboardDelegate
     
     @objc private func handleQWERTYGlobeTap(_ gesture: UITapGestureRecognizer) {
@@ -1261,7 +1316,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         deletePressed()
     }
     
-    func flickKeyboardDidFlickDeleteRight(_ keyboard: FlickKeyboardView) {
+    func flickKeyboardDidFlickDeleteLeft(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
         UIDevice.current.playInputClick()
         
@@ -1316,9 +1371,20 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         lastFlickTapBaseChar = nil
         if direction == .right {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
+            UIDevice.current.playInputClick()
         } else if direction == .left {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
+            UIDevice.current.playInputClick()
         }
+    }
+    
+    func flickKeyboardDidBeginSpaceDrag(_ keyboard: FlickKeyboardView) {
+        setKeyboardLabelsAlpha(0.0)
+        UIDevice.current.playInputClick()
+    }
+    
+    func flickKeyboardDidEndSpaceDrag(_ keyboard: FlickKeyboardView) {
+        setKeyboardLabelsAlpha(1.0)
     }
     
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView) {

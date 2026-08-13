@@ -92,9 +92,11 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView)
-    func flickKeyboardDidFlickDeleteRight(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidFlickDeleteLeft(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidFlickDeleteUp(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidSwipeSpace(_ keyboard: FlickKeyboardView, direction: FlickKeyboardView.FlickDirection)
+    func flickKeyboardDidBeginSpaceDrag(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidEndSpaceDrag(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView)
 }
 
@@ -117,8 +119,12 @@ class FlickKeyboardView: UIView {
     private var startPoints: [UITouch: CGPoint] = [:]
     private var popupViews: [UITouch: UIView] = [:]
     private var popupLabelsDict: [UITouch: [FlickDirection: UILabel]] = [:]
+    private var popupArrowDict: [UITouch: UIView] = [:]
     private var popupTimers: [UITouch: Timer] = [:]
     private var fullPopupModes: [UITouch: Bool] = [:]
+    
+    private var spaceTimers: [UITouch: Timer] = [:]
+    private var isSpaceDragging: [UITouch: Bool] = [:]
     
     // State
     private var isDarkMode = false
@@ -463,6 +469,15 @@ class FlickKeyboardView: UIView {
                     popupTimers[touch] = timer
                 } else if btn.accessibilityIdentifier == "delete" {
                     startDeleteTimer()
+                } else if btn.accessibilityIdentifier == "space" {
+                    let timer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
+                        guard let self = self else { return }
+                        if self.activeTouches[touch] == btn {
+                            self.isSpaceDragging[touch] = true
+                            self.delegate?.flickKeyboardDidBeginSpaceDrag(self)
+                        }
+                    }
+                    spaceTimers[touch] = timer
                 }
             }
         }
@@ -474,13 +489,22 @@ class FlickKeyboardView: UIView {
             let currentPoint = touch.location(in: containerView)
             
             if btn.accessibilityIdentifier == "space" {
+                let isDragging = isSpaceDragging[touch] ?? false
                 let dx = currentPoint.x - start.x
-                if dx > 25 {
-                    delegate?.flickKeyboardDidSwipeSpace(self, direction: .right)
-                    startPoints[touch] = CGPoint(x: start.x + 25, y: start.y)
-                } else if dx < -25 {
-                    delegate?.flickKeyboardDidSwipeSpace(self, direction: .left)
-                    startPoints[touch] = CGPoint(x: start.x - 25, y: start.y)
+                
+                if isDragging {
+                    if dx > 20 {
+                        delegate?.flickKeyboardDidSwipeSpace(self, direction: .right)
+                        startPoints[touch] = CGPoint(x: start.x + 20, y: start.y)
+                    } else if dx < -20 {
+                        delegate?.flickKeyboardDidSwipeSpace(self, direction: .left)
+                        startPoints[touch] = CGPoint(x: start.x - 20, y: start.y)
+                    }
+                } else {
+                    if abs(dx) > 10 {
+                        spaceTimers[touch]?.invalidate()
+                        spaceTimers.removeValue(forKey: touch)
+                    }
                 }
                 continue
             }
@@ -505,10 +529,21 @@ class FlickKeyboardView: UIView {
         for touch in touches {
             popupTimers[touch]?.invalidate()
             popupTimers.removeValue(forKey: touch)
+            spaceTimers[touch]?.invalidate()
+            spaceTimers.removeValue(forKey: touch)
+            
             if activeTouches[touch]?.accessibilityIdentifier == "delete" {
                 stopDeleteTimer()
             }
-            finishTouch(touch: touch, cancelled: false)
+            
+            var cancelled = false
+            if activeTouches[touch]?.accessibilityIdentifier == "space", let isDragging = isSpaceDragging[touch], isDragging {
+                cancelled = true
+                isSpaceDragging.removeValue(forKey: touch)
+                delegate?.flickKeyboardDidEndSpaceDrag(self)
+            }
+            
+            finishTouch(touch: touch, cancelled: cancelled)
         }
     }
     
@@ -516,9 +551,18 @@ class FlickKeyboardView: UIView {
         for touch in touches {
             popupTimers[touch]?.invalidate()
             popupTimers.removeValue(forKey: touch)
+            spaceTimers[touch]?.invalidate()
+            spaceTimers.removeValue(forKey: touch)
+            
             if activeTouches[touch]?.accessibilityIdentifier == "delete" {
                 stopDeleteTimer()
             }
+            
+            if activeTouches[touch]?.accessibilityIdentifier == "space", let isDragging = isSpaceDragging[touch], isDragging {
+                isSpaceDragging.removeValue(forKey: touch)
+                delegate?.flickKeyboardDidEndSpaceDrag(self)
+            }
+            
             finishTouch(touch: touch, cancelled: true)
         }
     }
@@ -573,8 +617,8 @@ class FlickKeyboardView: UIView {
                         let dx = point.x - startPoint.x
                         let dy = point.y - startPoint.y
                         let direction = detectDirection(dx: dx, dy: dy)
-                        if direction == .right {
-                            delegate?.flickKeyboardDidFlickDeleteRight(self)
+                        if direction == .left {
+                            delegate?.flickKeyboardDidFlickDeleteLeft(self)
                         } else if direction == .up {
                             delegate?.flickKeyboardDidFlickDeleteUp(self)
                         } else {
@@ -717,6 +761,24 @@ class FlickKeyboardView: UIView {
             ])
         }
         
+        let arrow = UIView()
+        arrow.translatesAutoresizingMaskIntoConstraints = false
+        arrow.backgroundColor = .systemBlue
+        arrow.layer.shadowColor = UIColor.black.cgColor
+        arrow.layer.shadowOpacity = 0.2
+        arrow.layer.shadowOffset = CGSize(width: 0, height: 1)
+        arrow.layer.shadowRadius = 2
+        arrow.transform = CGAffineTransform(rotationAngle: .pi / 4)
+        popup.addSubview(arrow)
+        popupArrowDict[touch] = arrow
+        
+        NSLayoutConstraint.activate([
+            arrow.widthAnchor.constraint(equalToConstant: 24),
+            arrow.heightAnchor.constraint(equalToConstant: 24),
+            arrow.centerXAnchor.constraint(equalTo: popup.centerXAnchor),
+            arrow.centerYAnchor.constraint(equalTo: popup.centerYAnchor)
+        ])
+        
         addSubview(popup)
         popupViews[touch] = popup
         popupLabelsDict[touch] = labels
@@ -730,8 +792,10 @@ class FlickKeyboardView: UIView {
     }
     
     private func updatePopup(direction: FlickDirection, for touch: UITouch) {
-        guard let popup = popupViews[touch], let labels = popupLabelsDict[touch] else { return }
+        guard let popup = popupViews[touch], let labels = popupLabelsDict[touch], let arrow = popupArrowDict[touch] else { return }
         let isFull = fullPopupModes[touch] ?? false
+        
+        arrow.isHidden = isFull || direction == .center
         
         for (dir, label) in labels {
             if dir == direction {
@@ -740,6 +804,19 @@ class FlickKeyboardView: UIView {
                 label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
                 label.isHidden = false
                 popup.bringSubviewToFront(label)
+                if !isFull && dir != .center {
+                    // Position arrow
+                    let offset: CGFloat = 20
+                    var trans = CGAffineTransform(rotationAngle: .pi / 4)
+                    switch dir {
+                    case .left: trans = trans.translatedBy(x: -offset, y: -offset)
+                    case .right: trans = trans.translatedBy(x: offset, y: offset)
+                    case .up: trans = trans.translatedBy(x: offset, y: -offset)
+                    case .down: trans = trans.translatedBy(x: -offset, y: offset)
+                    default: break
+                    }
+                    arrow.transform = trans
+                }
             } else {
                 label.backgroundColor = .white
                 label.textColor = .black
@@ -753,6 +830,7 @@ class FlickKeyboardView: UIView {
         popupViews[touch]?.removeFromSuperview()
         popupViews.removeValue(forKey: touch)
         popupLabelsDict.removeValue(forKey: touch)
+        popupArrowDict.removeValue(forKey: touch)
         fullPopupModes.removeValue(forKey: touch)
     }
     
