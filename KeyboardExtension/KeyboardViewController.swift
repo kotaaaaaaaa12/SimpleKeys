@@ -458,7 +458,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     @objc private func letterKeyPressed(_ sender: UIButton) {
         guard let title = sender.titleLabel?.text else { return }
         if currentMode == .qwertyRomaji {
-            romajiConverter.insert(title.lowercased())
+            if let char = title.lowercased().first {
+                _ = romajiConverter.input(char)
+            }
             let display = romajiConverter.displayText
             textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
             updateConversionBar()
