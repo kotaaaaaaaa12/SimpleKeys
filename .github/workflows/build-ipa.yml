@@ -1,0 +1,42 @@
+name: Build SimpleKeys for SideStore
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Build SimpleKeys App
+        run: |
+          xcodebuild -project SimpleKeys.xcodeproj \
+            -scheme 'SimpleKeys' \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            EXPANDED_CODE_SIGN_IDENTITY=''
+
+      - name: Package IPA
+        run: |
+          mkdir -p payload/Payload
+          APP_PATH=$(find build/DerivedData -name "*.app" -type d | head -n 1)
+          echo "Found app at: $APP_PATH"
+          cp -R "$APP_PATH" payload/Payload/
+          cd payload
+          zip -r ../SimpleKeys-SideStore.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleKeys-SideStore-IPA
+          path: SimpleKeys-SideStore.ipa
