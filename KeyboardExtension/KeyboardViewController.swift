@@ -43,6 +43,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var conversionLabel: UILabel!
     private var candidateScrollView: UIScrollView!
     private var candidateStack: UIStackView!
+    private var expandButton: UIButton!
     private var currentCandidates: [String] = []
     
     private let kanjiConverter = KanjiConverter.shared
@@ -143,6 +144,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         candidateStack.translatesAutoresizingMaskIntoConstraints = false
         candidateScrollView.addSubview(candidateStack)
         
+        expandButton = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(weight: .bold)
+        expandButton.setImage(UIImage(systemName: "chevron.down", withConfiguration: config), for: .normal)
+        expandButton.tintColor = .label
+        expandButton.translatesAutoresizingMaskIntoConstraints = false
+        expandButton.addTarget(self, action: #selector(expandButtonTapped), for: .touchUpInside)
+        conversionBar.addSubview(expandButton)
+        
         NSLayoutConstraint.activate([
             conversionBar.topAnchor.constraint(equalTo: view.topAnchor),
             conversionBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -153,8 +162,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             conversionLabel.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
             conversionLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 80),
             
+            expandButton.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor),
+            expandButton.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
+            expandButton.widthAnchor.constraint(equalToConstant: 44),
+            expandButton.heightAnchor.constraint(equalToConstant: 36),
+            
             candidateScrollView.leadingAnchor.constraint(equalTo: conversionLabel.trailingAnchor, constant: 8),
-            candidateScrollView.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor),
+            candidateScrollView.trailingAnchor.constraint(equalTo: expandButton.leadingAnchor),
             candidateScrollView.topAnchor.constraint(equalTo: conversionBar.topAnchor),
             candidateScrollView.bottomAnchor.constraint(equalTo: conversionBar.bottomAnchor),
             
@@ -164,6 +178,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             candidateStack.bottomAnchor.constraint(equalTo: candidateScrollView.contentLayoutGuide.bottomAnchor),
             candidateStack.heightAnchor.constraint(equalTo: candidateScrollView.frameLayoutGuide.heightAnchor)
         ])
+    }
+    
+    @objc private func expandButtonTapped() {
+        // TODO: Expand candidates view
+        print("Expand tapped")
     }
     
     private func updateConversionBar() {
@@ -191,7 +210,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 16)
+                button.titleLabel?.font = .systemFont(ofSize: 18)
                 button.setTitleColor(.label, for: .normal)
                 button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
                 button.tag = index
@@ -862,7 +881,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String) {
-        textDocumentProxy.insertText(text)
+        if currentMode == .flickKana {
+            romajiConverter.inputKana(text)
+            let display = romajiConverter.displayText
+            textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+            updateConversionBar()
+        } else {
+            textDocumentProxy.insertText(text)
+        }
     }
     
     @objc private func toggleMainMode() {
@@ -895,15 +921,39 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
-        textDocumentProxy.deleteBackward()
+        if currentMode == .flickKana && romajiConverter.hasPendingInput {
+            romajiConverter.deleteBackward()
+            let display = romajiConverter.displayText
+            if display.isEmpty {
+                textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            } else {
+                textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+            }
+            updateConversionBar()
+        } else {
+            textDocumentProxy.deleteBackward()
+        }
     }
     
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView) {
-        textDocumentProxy.insertText("\n")
+        if romajiConverter.hasPendingInput {
+            commitConversion()
+        } else {
+            textDocumentProxy.insertText("\n")
+        }
     }
     
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView) {
-        textDocumentProxy.insertText(" ")
+        if romajiConverter.hasPendingInput && !currentCandidates.isEmpty {
+            // Commit top candidate for now
+            let text = currentCandidates[0]
+            textDocumentProxy.insertText(text)
+            _ = romajiConverter.commit()
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            updateConversionBar()
+        } else {
+            textDocumentProxy.insertText(" ")
+        }
     }
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
@@ -923,6 +973,51 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
+        if keyboard.currentPage == .kana && romajiConverter.hasPendingInput {
+            guard let lastChar = romajiConverter.displayText.last else { return }
+            let charString = String(lastChar)
+            let map: [String: String] = [
+                "あ": "ぁ", "ぁ": "あ",
+                "い": "ぃ", "ぃ": "い",
+                "う": "ぅ", "ぅ": "ゔ", "ゔ": "う",
+                "え": "ぇ", "ぇ": "え",
+                "お": "ぉ", "ぉ": "お",
+                "か": "が", "が": "ヵ", "ヵ": "か",
+                "き": "ぎ", "ぎ": "き",
+                "く": "ぐ", "ぐ": "く",
+                "け": "げ", "げ": "ヶ", "ヶ": "け",
+                "こ": "ご", "ご": "こ",
+                "さ": "ざ", "ざ": "さ",
+                "し": "じ", "じ": "し",
+                "す": "ず", "ず": "す",
+                "せ": "ぜ", "ぜ": "せ",
+                "そ": "ぞ", "ぞ": "そ",
+                "た": "だ", "だ": "た",
+                "ち": "ぢ", "ぢ": "ち",
+                "つ": "っ", "っ": "づ", "づ": "つ",
+                "て": "で", "で": "て",
+                "と": "ど", "ど": "と",
+                "は": "ば", "ば": "ぱ", "ぱ": "は",
+                "ひ": "び", "び": "ぴ", "ぴ": "ひ",
+                "ふ": "ぶ", "ぶ": "ぷ", "ぷ": "ふ",
+                "へ": "べ", "べ": "ぺ", "ぺ": "へ",
+                "ほ": "ぼ", "ぼ": "ぽ", "ぽ": "ほ",
+                "や": "ゃ", "ゃ": "や",
+                "ゆ": "ゅ", "ゅ": "ゆ",
+                "よ": "ょ", "ょ": "よ",
+                "わ": "ゎ", "ゎ": "わ", "ん": "ん" // ん is not modified
+            ]
+            
+            if let newChar = map[charString] {
+                romajiConverter.replaceLastKana(with: newChar)
+                let display = romajiConverter.displayText
+                textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+                updateConversionBar()
+            }
+            UIDevice.current.playInputClick()
+            return
+        }
+        
         guard let before = textDocumentProxy.documentContextBeforeInput,
               let lastChar = before.last else { return }
         

@@ -166,6 +166,26 @@ class RomajiConverter {
         return result
     }
     
+    /// カナを直接入力する（フリック用）
+    func inputKana(_ text: String) {
+        convertedText += text
+    }
+    
+    /// 最後のカナを置換する（フリックの濁点・半濁点用）
+    func replaceLastKana(with text: String) {
+        if !buffer.isEmpty {
+            buffer.removeLast()
+            buffer += text
+        } else if !convertedText.isEmpty {
+            convertedText.removeLast()
+            convertedText += text
+        }
+    }
+    
+    var hasPendingInput: Bool {
+        return !buffer.isEmpty || !convertedText.isEmpty
+    }
+    
     /// 現在の表示テキスト（変換済み + バッファ）
     var displayText: String {
         return convertedText + buffer
