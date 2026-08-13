@@ -829,26 +829,31 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func applyThemeToQwertyButton(_ b: UIButton, isSpecialKey: Bool, theme: ThemeSettings, letterBg: UIColor, specialBg: UIColor) {
         let existingBlur = b.viewWithTag(8888) as? UIVisualEffectView
         
-        if theme.keyStyle == 1 { // Glass
-            b.backgroundColor = .clear
+        if theme.keyStyle == 1 || theme.keyStyle == 3 { // Frosted or Clear Glass
+            b.backgroundColor = theme.keyStyle == 3 ? UIColor.white.withAlphaComponent(0.15) : .clear
             b.layer.shadowOpacity = 0
-            b.layer.borderWidth = 0
-            if existingBlur == nil {
-                let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                blur.tag = 8888
-                blur.layer.cornerRadius = 5
-                blur.layer.borderWidth = 0.5
-                blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
-                blur.clipsToBounds = true
-                blur.isUserInteractionEnabled = false
-                blur.translatesAutoresizingMaskIntoConstraints = false
-                b.insertSubview(blur, at: 0)
-                NSLayoutConstraint.activate([
-                    blur.leadingAnchor.constraint(equalTo: b.leadingAnchor),
-                    blur.trailingAnchor.constraint(equalTo: b.trailingAnchor),
-                    blur.topAnchor.constraint(equalTo: b.topAnchor),
-                    blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
-                ])
+            b.layer.borderWidth = 0.5
+            b.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+            if theme.keyStyle == 1 {
+                if existingBlur == nil {
+                    let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                    blur.tag = 8888
+                    blur.layer.cornerRadius = 5
+                    blur.layer.borderWidth = 0.5
+                    blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+                    blur.clipsToBounds = true
+                    blur.isUserInteractionEnabled = false
+                    blur.translatesAutoresizingMaskIntoConstraints = false
+                    b.insertSubview(blur, at: 0)
+                    NSLayoutConstraint.activate([
+                        blur.leadingAnchor.constraint(equalTo: b.leadingAnchor),
+                        blur.trailingAnchor.constraint(equalTo: b.trailingAnchor),
+                        blur.topAnchor.constraint(equalTo: b.topAnchor),
+                        blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
+                    ])
+                }
+            } else {
+                existingBlur?.removeFromSuperview()
             }
         } else {
             existingBlur?.removeFromSuperview()
@@ -857,7 +862,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 b.layer.shadowOpacity = 0
                 b.layer.borderWidth = 1
                 b.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
-            } else {
+            } else { // Standard
                 b.backgroundColor = isSpecialKey ? specialBg : letterBg
                 b.layer.shadowOpacity = 0.3
                 b.layer.borderWidth = 0
@@ -1643,14 +1648,19 @@ class AppGroupHelper {
 }
 
 // MARK: - Theme Models
-struct ThemeSettings: Codable {
+struct ThemeSettings: Codable, Equatable {
+    var id: String?
+    var name: String?
     var backgroundImageFileName: String?
     var backgroundColorHex: String?
-    var keyStyle: Int // 0: standard, 1: glass, 2: flat
+    var keyStyle: Int // 0: standard, 1: frosted glass, 2: flat, 3: clear glass
+    var buttonShape: Int? // 0: rounded, 1: oval, 2: rect
+    var fontName: String?
     var keyColorHex: String?
     var textColorHex: String?
     
     static let sharedKey = "customThemeSettings"
+    static let themesArrayKey = "savedCustomThemes"
 }
 
 // MARK: - Expanded Candidate View CollectionView

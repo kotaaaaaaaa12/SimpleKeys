@@ -429,8 +429,9 @@ class FlickKeyboardView: UIView {
     }
     
     func applyTheme(_ theme: ThemeSettings) {
-        let isGlass = theme.keyStyle == 1
+        let isFrosted = theme.keyStyle == 1
         let isFlat = theme.keyStyle == 2
+        let isClear = theme.keyStyle == 3
         
         let allKeys = Array(keysMap.keys) + [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].compactMap { $0 }
         
@@ -444,26 +445,32 @@ class FlickKeyboardView: UIView {
                 keyView.layer.shadowOpacity = 0
                 keyView.layer.borderWidth = 1
                 keyView.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
-            } else if isGlass {
-                keyView.backgroundColor = .clear
+            } else if isFrosted || isClear {
+                keyView.backgroundColor = isClear ? UIColor.white.withAlphaComponent(0.15) : .clear
                 keyView.layer.shadowOpacity = 0
-                keyView.layer.borderWidth = 0
-                if existingBlur == nil {
-                    let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                    blur.tag = 8888
-                    blur.layer.cornerRadius = 6
-                    blur.layer.borderWidth = 0.5
-                    blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
-                    blur.clipsToBounds = true
-                    blur.isUserInteractionEnabled = false
-                    blur.translatesAutoresizingMaskIntoConstraints = false
-                    keyView.insertSubview(blur, at: 0)
-                    NSLayoutConstraint.activate([
-                        blur.leadingAnchor.constraint(equalTo: keyView.leadingAnchor),
-                        blur.trailingAnchor.constraint(equalTo: keyView.trailingAnchor),
-                        blur.topAnchor.constraint(equalTo: keyView.topAnchor),
-                        blur.bottomAnchor.constraint(equalTo: keyView.bottomAnchor)
-                    ])
+                keyView.layer.borderWidth = 0.5
+                keyView.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+                
+                if isFrosted {
+                    if existingBlur == nil {
+                        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                        blur.tag = 8888
+                        blur.layer.cornerRadius = 6
+                        blur.layer.borderWidth = 0.5
+                        blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+                        blur.clipsToBounds = true
+                        blur.isUserInteractionEnabled = false
+                        blur.translatesAutoresizingMaskIntoConstraints = false
+                        keyView.insertSubview(blur, at: 0)
+                        NSLayoutConstraint.activate([
+                            blur.leadingAnchor.constraint(equalTo: keyView.leadingAnchor),
+                            blur.trailingAnchor.constraint(equalTo: keyView.trailingAnchor),
+                            blur.topAnchor.constraint(equalTo: keyView.topAnchor),
+                            blur.bottomAnchor.constraint(equalTo: keyView.bottomAnchor)
+                        ])
+                    }
+                } else {
+                    existingBlur?.removeFromSuperview()
                 }
             } else {
                 existingBlur?.removeFromSuperview()

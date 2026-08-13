@@ -64,14 +64,19 @@ class AppGroupHelper {
 }
 
 // MARK: - Theme Models
-struct ThemeSettings: Codable {
+struct ThemeSettings: Codable, Equatable {
+    var id: String?
+    var name: String?
     var backgroundImageFileName: String?
     var backgroundColorHex: String?
-    var keyStyle: Int // 0: standard, 1: glass, 2: flat
+    var keyStyle: Int // 0: standard, 1: frosted glass, 2: flat, 3: clear glass
+    var buttonShape: Int? // 0: rounded, 1: oval, 2: rect
+    var fontName: String?
     var keyColorHex: String?
     var textColorHex: String?
     
     static let sharedKey = "customThemeSettings"
+    static let themesArrayKey = "savedCustomThemes"
 }
 
 // MARK: - Models
@@ -692,7 +697,7 @@ class ThemeSettingsViewController: UITableViewController, UIImagePickerControlle
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         title = isEn ? "Custom Theme" : "カスタムテーマ"
         
-        let items = isEn ? ["Standard", "Glass", "Flat"] : ["標準", "ガラス", "フラット"]
+        let items = isEn ? ["Standard", "Frosted Glass", "Flat", "Clear Glass"] : ["標準", "磨りガラス", "フラット", "クリアガラス"]
         keyStyleSegment = UISegmentedControl(items: items)
         
         loadTheme()
