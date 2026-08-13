@@ -17,7 +17,7 @@ class GeminiConverter {
         
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
-        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/\(cleanModel):createInteraction?key=\(cleanApiKey)"
+        let urlString = "https://generativelanguage.googleapis.com/v1beta/interactions?key=\(cleanApiKey)"
         guard let url = URL(string: urlString) else {
             completion(["[AI] URLエラー"])
             return
@@ -67,17 +67,32 @@ class GeminiConverter {
             // Check HTTP status code
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
                 var errMsg = "\(httpResponse.statusCode)"
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                
+                // Error can be an object or an array of objects
+                if let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                   let first = jsonArray.first, let err = first["error"] as? [String: Any], let msg = err["message"] as? String {
+                    errMsg = "\(httpResponse.statusCode) \(msg)"
+                } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let errObj = json["error"] as? [String: Any],
                    let msg = errObj["message"] as? String {
                     errMsg = "\(httpResponse.statusCode) \(msg)"
                 }
+                
                 DispatchQueue.main.async { completion(["[AI] エラー: \(errMsg)"]) }
                 return
             }
             
             do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let parsedJson = try JSONSerialization.jsonObject(with: data)
+                
+                var jsonDict: [String: Any]?
+                if let dict = parsedJson as? [String: Any] {
+                    jsonDict = dict
+                } else if let array = parsedJson as? [[String: Any]], let first = array.first {
+                    jsonDict = first
+                }
+                
+                if let json = jsonDict {
                     var responseText = ""
                     // Interactions API response
                     if let steps = json["steps"] as? [[String: Any]],
