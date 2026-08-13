@@ -127,6 +127,7 @@ class SettingsViewController: UITableViewController {
     private let qwertyEnglishSwitch = UISwitch()
     private let qwertyRomajiSwitch = UISwitch()
     private let flickAlphabetQwertySwitch = UISwitch()
+    private let flickOnlySwitch = UISwitch()
     
     private let geminiSwitch = UISwitch()
     private let geminiApiKeyField: UITextField = {
@@ -193,6 +194,7 @@ class SettingsViewController: UITableViewController {
     private func setupControls() {
         flickSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         flickAlphabetQwertySwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
+        flickOnlySwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyEnglishSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyRomajiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         languageSegment.addTarget(self, action: #selector(languageChanged), for: .valueChanged)
@@ -209,6 +211,7 @@ class SettingsViewController: UITableViewController {
         let defaults = sharedDefaults
         flickSwitch.isOn = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
         flickAlphabetQwertySwitch.isOn = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
+        flickOnlySwitch.isOn = defaults?.bool(forKey: "flickOnly") ?? false
         qwertyEnglishSwitch.isOn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
         qwertyRomajiSwitch.isOn = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
         
@@ -229,6 +232,7 @@ class SettingsViewController: UITableViewController {
         
         sharedDefaults?.set(flickSwitch.isOn, forKey: "enableFlick")
         sharedDefaults?.set(flickAlphabetQwertySwitch.isOn, forKey: "flickAlphabetIsQwerty")
+        sharedDefaults?.set(flickOnlySwitch.isOn, forKey: "flickOnly")
         sharedDefaults?.set(qwertyEnglishSwitch.isOn, forKey: "enableQwertyEnglish")
         sharedDefaults?.set(qwertyRomajiSwitch.isOn, forKey: "enableQwertyRomaji")
         sharedDefaults?.set(geminiSwitch.isOn, forKey: "enableGemini")
@@ -267,9 +271,9 @@ class SettingsViewController: UITableViewController {
         case 0: return 1
         case 1: return 1
         case 2: return 3
-        case 3: return 1
+        case 3: return 2
         case 4: return 3
-        case 5: return 4
+        case 5: return 3
         default: return 0
         }
     }
@@ -338,9 +342,15 @@ class SettingsViewController: UITableViewController {
                 cell.imageView?.tintColor = .systemRed
             }
         } else if indexPath.section == 3 {
-            cell.textLabel?.text = isEn ? "Alphabet layout is QWERTY" : "アルファベットをQWERTYにする"
-            cell.detailTextLabel?.text = isEn ? "Use QWERTY layout for Alphabet in Flick keyboard" : "フリックキーボードの英字モードをQWERTYにします"
-            cell.accessoryView = flickAlphabetQwertySwitch
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Alphabet layout is QWERTY" : "アルファベットをQWERTYにする"
+                cell.detailTextLabel?.text = isEn ? "Use QWERTY layout for Alphabet in Flick keyboard" : "フリックキーボードの英字モードをQWERTYにします"
+                cell.accessoryView = flickAlphabetQwertySwitch
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Flick Only (Disable Toggle)" : "フリックのみ (ガラケー打ち無効)"
+                cell.detailTextLabel?.text = isEn ? "Disable multiple taps to cycle characters" : "同じキーを連続タップしたときの文字切り替えを無効にします"
+                cell.accessoryView = flickOnlySwitch
+            }
         } else if indexPath.section == 4 {
             if indexPath.row == 0 {
                 cell.textLabel?.text = isEn ? "Enable Gemini AI Conversion" : "Gemini AI変換を有効にする"
@@ -378,10 +388,6 @@ class SettingsViewController: UITableViewController {
                 cell.detailTextLabel?.text = isEn ? "Register frequently used words" : "よく使う単語を登録できます"
                 cell.imageView?.image = UIImage(systemName: "book.fill")
             } else if indexPath.row == 2 {
-                cell.textLabel?.text = isEn ? "Toggle Input" : "トグル入力 (ガラケー打ち)"
-                cell.detailTextLabel?.text = isEn ? "Multi-tap to cycle through characters" : "ボタンを何度も押して文字を切り替えます"
-                cell.imageView?.image = UIImage(systemName: "candybarphone")
-            } else if indexPath.row == 3 {
                 cell.textLabel?.text = isEn ? "One-Handed Mode" : "片手モード"
                 cell.detailTextLabel?.text = isEn ? "Shift keyboard left/right for easy typing" : "キーボードを左右に寄せて片手で入力しやすくします"
                 cell.imageView?.image = UIImage(systemName: "hand.point.up.left")

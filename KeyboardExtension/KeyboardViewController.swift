@@ -1056,6 +1056,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func keyTouchUp(_ sender: UIButton) {
+        lastFlickTapBaseChar = nil
+        UIDevice.current.playInputClick()
         UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = .identity
             sender.alpha = 1.0
@@ -1076,13 +1078,71 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         toggleMainMode()
     }
     
-    func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String) {
+    private var lastFlickTapTime: Date?
+    private var lastFlickTapBaseChar: String?
+    private var toggleIndex = 0
+    
+    private func getToggleChar(baseChar: String, index: Int) -> String {
+        let groups = [
+            ["あ", "い", "う", "え", "お", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ"],
+            ["か", "き", "く", "け", "こ"],
+            ["さ", "し", "す", "せ", "そ"],
+            ["た", "ち", "つ", "て", "と", "っ"],
+            ["な", "に", "ぬ", "ね", "の"],
+            ["は", "ひ", "ふ", "へ", "ほ"],
+            ["ま", "み", "む", "め", "も"],
+            ["や", "ゆ", "よ", "ゃ", "ゅ", "ょ"],
+            ["ら", "り", "る", "れ", "ろ"],
+            ["わ", "を", "ん", "ー", "ゎ"],
+            ["、", "。", "？", "！"],
+            ["abc", "a", "b", "c", "A", "B", "C"],
+            ["def", "d", "e", "f", "D", "E", "F"],
+            ["ghi", "g", "h", "i", "G", "H", "I"],
+            ["jkl", "j", "k", "l", "J", "K", "L"],
+            ["mno", "m", "n", "o", "M", "N", "O"],
+            ["pqrs", "p", "q", "r", "s", "P", "Q", "R", "S"],
+            ["tuv", "t", "u", "v", "T", "U", "V"],
+            ["wxyz", "w", "x", "y", "z", "W", "X", "Y", "Z"]
+        ]
+        
+        for group in groups {
+            if group.first == baseChar {
+                return group[index % group.count]
+            }
+        }
+        return baseChar
+    }
+    
+    func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String, direction: FlickKeyboardView.FlickDirection) {
         if keyboard.currentPage == .kana {
+            let flickOnly = AppGroupHelper.shared.userDefaults?.bool(forKey: "flickOnly") ?? false
+            
+            if !flickOnly && direction == .center {
+                if let baseChar = lastFlickTapBaseChar, text == baseChar, let lastTime = lastFlickTapTime, Date().timeIntervalSince(lastTime) < 1.0 {
+                    toggleIndex += 1
+                    let newChar = getToggleChar(baseChar: baseChar, index: toggleIndex)
+                    romajiConverter.replaceLastKana(with: newChar)
+                    lastFlickTapTime = Date()
+                    let display = romajiConverter.displayText
+                    textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+                    updateConversionBar()
+                    return
+                } else {
+                    lastFlickTapBaseChar = text
+                    lastFlickTapTime = Date()
+                    toggleIndex = 0
+                }
+            } else {
+                lastFlickTapBaseChar = nil
+                toggleIndex = 0
+            }
+            
             romajiConverter.inputKana(text)
             let display = romajiConverter.displayText
             textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
             updateConversionBar()
         } else {
+            // English / Number
             englishBuffer += text
             textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
             updateConversionBar()
@@ -1115,22 +1175,27 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
         toggleMainMode()
     }
     
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
         deletePressed()
     }
     
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
         returnPressed()
     }
     
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
         spacePressed()
     }
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
         let defaults = AppGroupHelper.shared.userDefaults
         let flickAlphabetIsQwerty = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         
@@ -1147,6 +1212,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
         if keyboard.currentPage == .kana && romajiConverter.hasPendingInput {
             guard let lastChar = romajiConverter.displayText.last else { return }
             let charString = String(lastChar)

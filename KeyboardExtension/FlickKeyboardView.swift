@@ -86,7 +86,7 @@ struct FlickKeyboardData {
 }
 
 protocol FlickKeyboardDelegate: AnyObject {
-    func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String)
+    func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String, direction: FlickKeyboardView.FlickDirection)
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
@@ -545,7 +545,7 @@ class FlickKeyboardView: UIView {
                         if text == "空白" {
                             delegate?.flickKeyboardDidPressSpace(self)
                         } else {
-                            delegate?.flickKeyboard(self, didInputText: text)
+                            delegate?.flickKeyboard(self, didInputText: text, direction: direction)
                         }
                     }
                 }
@@ -567,7 +567,7 @@ class FlickKeyboardView: UIView {
                         }
                         updatePageUI()
                     } else if btn.accessibilityIdentifier == "face_mark" {
-                        delegate?.flickKeyboard(self, didInputText: "^_^")
+                        delegate?.flickKeyboard(self, didInputText: "^_^", direction: .center)
                     } else if btn.accessibilityIdentifier == "space" {
                         delegate?.flickKeyboardDidPressSpace(self)
                     }
