@@ -800,15 +800,14 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         }
         
         setupUI()
+        updatePreview()
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Save" : "保存", style: .done, target: self, action: #selector(saveTapped))
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tableView.reloadData()
-    }
-        updatePreview()
-        
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Save" : "保存", style: .done, target: self, action: #selector(saveTapped))
     }
     
     private func setupUI() {
