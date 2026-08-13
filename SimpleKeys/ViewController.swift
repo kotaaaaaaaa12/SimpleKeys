@@ -1129,13 +1129,23 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
 
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        picker.dismiss(animated: true)
         if let image = info[.originalImage] as? UIImage {
-            let fileName = "\(UUID().uuidString).jpg"
-            if AppGroupHelper.shared.saveImage(image, fileName: fileName) {
-                currentTheme.backgroundImageFileName = fileName
-                updatePreview()
+            picker.dismiss(animated: true) { [weak self] in
+                let cropVC = ImageCropViewController()
+                cropVC.originalImage = image
+                cropVC.onCrop = { [weak self] croppedImage in
+                    guard let self = self else { return }
+                    let fileName = "\(UUID().uuidString).jpg"
+                    if AppGroupHelper.shared.saveImage(croppedImage, fileName: fileName) {
+                        self.currentTheme.backgroundImageFileName = fileName
+                        self.updatePreview()
+                    }
+                }
+                cropVC.modalPresentationStyle = .fullScreen
+                self?.present(cropVC, animated: true)
             }
+        } else {
+            picker.dismiss(animated: true)
         }
     }
 }
