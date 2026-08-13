@@ -223,26 +223,32 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         padding2.widthAnchor.constraint(equalTo: padding2R.widthAnchor).isActive = true
         
         let row3 = createLetterRow(letters: rows[2])
-        let leftSpecial = createSpecialKeyButton(title: thirdRowSpecials.left)
+        let leftSpecial: UIButton
         if thirdRowSpecials.left == "⇧" {
-            let shiftTitle: String
+            let imgName: String
             switch shiftState {
-            case .off: shiftTitle = "⇧"
-            case .shifted: shiftTitle = "⬆︎"
-            case .capsLock: shiftTitle = "⇪"
+            case .off: imgName = "shift"
+            case .shifted: imgName = "shift.fill"
+            case .capsLock: imgName = "capslock.fill"
             }
-            leftSpecial.setTitle(shiftTitle, for: .normal)
+            leftSpecial = createSpecialImageKeyButton(systemName: imgName)
             leftSpecial.addTarget(self, action: #selector(shiftPressed), for: .touchUpInside)
-        } else if thirdRowSpecials.left == "#+=" {
-            leftSpecial.addTarget(self, action: #selector(switchToSymbols), for: .touchUpInside)
-        } else if thirdRowSpecials.left == "123" {
-            leftSpecial.addTarget(self, action: #selector(switchToNumbers), for: .touchUpInside)
+        } else {
+            leftSpecial = createSpecialKeyButton(title: thirdRowSpecials.left)
+            if thirdRowSpecials.left == "#+=" {
+                leftSpecial.addTarget(self, action: #selector(switchToSymbols), for: .touchUpInside)
+            } else if thirdRowSpecials.left == "123" {
+                leftSpecial.addTarget(self, action: #selector(switchToNumbers), for: .touchUpInside)
+            }
         }
         
-        let rightSpecial = createSpecialKeyButton(title: thirdRowSpecials.right)
+        let rightSpecial: UIButton
         if thirdRowSpecials.right == "⌫" {
+            rightSpecial = createSpecialImageKeyButton(systemName: "delete.left")
             rightSpecial.addTarget(self, action: #selector(deleteTouchDown), for: .touchDown)
             rightSpecial.addTarget(self, action: #selector(deleteTouchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        } else {
+            rightSpecial = createSpecialKeyButton(title: thirdRowSpecials.right)
         }
         
         leftSpecial.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
@@ -455,7 +461,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                     btn.setTitleColor(textColor, for: .normal)
                     btn.tintColor = textColor
                     let title = btn.titleLabel?.text ?? ""
-                    let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
+                    let isSpecialKey = btn.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
                     btn.backgroundColor = isSpecialKey ? specialBg : letterBg
                 } else if let nestedStack = sub as? UIStackView {
                     nestedStack.arrangedSubviews.forEach { btn in
@@ -463,7 +469,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                             b.setTitleColor(textColor, for: .normal)
                             b.tintColor = textColor
                             let title = b.titleLabel?.text ?? ""
-                            let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
+                            let isSpecialKey = b.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
                             b.backgroundColor = isSpecialKey ? specialBg : letterBg
                         }
                     }
@@ -826,6 +832,17 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
         guard let before = textDocumentProxy.documentContextBeforeInput,
               let lastChar = before.last else { return }
+        
+        if keyboard.currentPage == .alphabet {
+            if lastChar.isLowercase {
+                textDocumentProxy.deleteBackward()
+                textDocumentProxy.insertText(lastChar.uppercased())
+            } else if lastChar.isUppercase {
+                textDocumentProxy.deleteBackward()
+                textDocumentProxy.insertText(lastChar.lowercased())
+            }
+            return
+        }
         
         let charString = String(lastChar)
         let map: [String: String] = [

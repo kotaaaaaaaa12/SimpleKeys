@@ -266,7 +266,7 @@ class FlickKeyboardView: UIView {
         }
         
         // 3. Right Sidebar
-        deleteButton = createSpecialKey(title: "⌫")
+        deleteButton = createSpecialImageKey(systemName: "delete.left")
         deleteButton.accessibilityIdentifier = "delete"
         place(view: deleteButton, row: 0, col: 4)
         
@@ -529,12 +529,7 @@ class FlickKeyboardView: UIView {
         if !cancelled || (cancelled && btn.accessibilityIdentifier != "delete" && btn.accessibilityIdentifier != "return" && btn.accessibilityIdentifier != "globe" && btn.accessibilityIdentifier != "abc_switch" && btn.accessibilityIdentifier != "num_switch" && btn.accessibilityIdentifier != "face_mark" && btn.accessibilityIdentifier != "space") {
             if btn.accessibilityIdentifier == "dakuten" {
                 if !cancelled {
-                    if currentPage == .alphabet {
-                        isShifted.toggle()
-                        updatePageUI()
-                    } else if currentPage == .kana {
-                        delegate?.flickKeyboardDidPressDakuten(self)
-                    }
+                    delegate?.flickKeyboardDidPressDakuten(self)
                 }
             } else if let keyData = keysMap[btn] {
                 let point = touch.location(in: containerView)
@@ -766,10 +761,9 @@ class FlickKeyboardView: UIView {
         let isDark = self.isDarkMode
         let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        let activeColor = isDark ? UIColor.systemBlue : UIColor.systemBlue.withAlphaComponent(0.2)
         
-        abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : specialBg
-        numButton.backgroundColor = (currentPage == .number) ? activeColor : specialBg
+        abcButton.backgroundColor = specialBg
+        numButton.backgroundColor = specialBg
         
         if let abcLbl = abcButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
             abcLbl.text = (currentPage == .alphabet) ? "あいう" : "ABC"
@@ -790,7 +784,7 @@ class FlickKeyboardView: UIView {
                     // The dakuten / shift button
                     if currentPage == .alphabet {
                         if let label = btn.viewWithTag(100) as? UILabel {
-                            label.text = isShifted ? "⬆︎" : "⇧"
+                            label.text = "a/A"
                         }
                         btn.accessibilityIdentifier = "dakuten" // Reuse for shift
                     } else if currentPage == .kana {

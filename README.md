@@ -153,7 +153,9 @@ Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleK
 | ✅ | Flick input (Kana, ABC, 123) |
 | ✅ | Multi-touch & fast typing |
 | ✅ | Keyboard Mode Toggles/Customization |
-| ✅ | QWERTY Long-press special characters |
+| ✅ | QWERTY Long-press special characters (Slide selection) |
+| ✅ | Numbers & Symbols keyboard |
+| ✅ | Native iOS UI & SF Symbols |
 | ✅ | Dark Mode |
 | ✅ | Automatic CI builds (GitHub Actions) |
 | 🔲 | Kanji conversion (predictive) |
