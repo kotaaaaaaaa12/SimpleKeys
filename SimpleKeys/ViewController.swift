@@ -34,6 +34,44 @@ class AppGroupHelper {
         }
         return nil
     }
+    
+    func containerURL() -> URL? {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+    }
+    
+    func saveImage(_ image: UIImage, fileName: String) -> Bool {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return false }
+        guard let url = containerURL()?.appendingPathComponent(fileName) else { return false }
+        do {
+            try data.write(to: url)
+            return true
+        } catch {
+            print("Failed to save image: \(error)")
+            return false
+        }
+    }
+    
+    func loadImage(fileName: String) -> UIImage? {
+        guard let url = containerURL()?.appendingPathComponent(fileName) else { return nil }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
+    }
+    
+    func removeImage(fileName: String) {
+        guard let url = containerURL()?.appendingPathComponent(fileName) else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+}
+
+// MARK: - Theme Models
+struct ThemeSettings: Codable {
+    var backgroundImageFileName: String?
+    var backgroundColorHex: String?
+    var keyStyle: Int // 0: standard, 1: glass, 2: flat
+    var keyColorHex: String?
+    var textColorHex: String?
+    
+    static let sharedKey = "customThemeSettings"
 }
 
 // MARK: - Models
@@ -403,14 +441,17 @@ class SettingsViewController: UITableViewController {
             cell.imageView?.image = UIImage(systemName: "book.fill")
             cell.accessoryType = .disclosureIndicator
         } else if indexPath.section == 6 {
-            cell.textLabel?.textColor = .secondaryLabel
-            cell.detailTextLabel?.textColor = .tertiaryLabel
-            cell.imageView?.tintColor = .systemGray
+            if indexPath.row != 0 {
+                cell.textLabel?.textColor = .secondaryLabel
+                cell.detailTextLabel?.textColor = .tertiaryLabel
+                cell.imageView?.tintColor = .systemGray
+            }
             
             if indexPath.row == 0 {
                 cell.textLabel?.text = isEn ? "Custom Themes" : "カスタムテーマ"
                 cell.detailTextLabel?.text = isEn ? "Customize background color and images" : "背景色や画像を自由に設定できます"
                 cell.imageView?.image = UIImage(systemName: "paintpalette.fill")
+                cell.accessoryType = .disclosureIndicator
             } else if indexPath.row == 1 {
                 cell.textLabel?.text = isEn ? "Real-time AI Translation" : "AIリアルタイム翻訳＆トーン変換"
                 cell.detailTextLabel?.text = isEn ? "Translate or change text tone instantly" : "入力中のテキストを自動翻訳したり、敬語などに変換します"
@@ -442,6 +483,10 @@ class SettingsViewController: UITableViewController {
         } else if indexPath.section == 5 {
             tableView.deselectRow(at: indexPath, animated: true)
             let vc = UserDictionaryViewController()
+            navigationController?.pushViewController(vc, animated: true)
+        } else if indexPath.section == 6 && indexPath.row == 0 {
+            tableView.deselectRow(at: indexPath, animated: true)
+            let vc = ThemeSettingsViewController(style: .insetGrouped)
             navigationController?.pushViewController(vc, animated: true)
         }
     }
