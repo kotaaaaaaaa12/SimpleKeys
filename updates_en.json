@@ -1,23 +1,29 @@
 {
-  "latest_version": "1.2.0",
+  "latest_version": "1.3.0",
   "updates": [
+    {
+      "version": "1.3.0",
+      "date": "2026-08-13",
+      "title": "v1.3.0 - App Redesign & Settings Sync Fix",
+      "body": "・Completely redesigned the companion app with a modern tab-based UI (Settings + Updates).\n・Fixed settings not syncing on SideStore/AltStore by dynamically resolving App Group IDs at runtime.\n・Added in-app language switcher (English / Japanese).\n・Update notifications now fetched from GitHub — a badge appears when a new version is available.\n・App now detects if the keyboard hasn't been added yet and shows a setup alert with a direct link to iOS keyboard settings.\n・Fixed the app appearing letterboxed (shrunk to the center) on modern iPhones."
+    },
     {
       "version": "1.2.0",
       "date": "2026-08-13",
-      "title": "v1.2.0 - New UI & Extended Hepburn!",
-      "body": "・Modernized the main app UI and added an Updates tab.\n・Improved App Group fetching logic so settings sync properly even on free SideStore/AltStore environments!\n・Massively expanded Romaji conversion patterns (qa→くぁ, va→ゔぁ, etc.)\n・Redesigned keyboard UI using SF Symbols for a native iOS feel.\n・Added uppercase toggle (a/A) functionality for flick alphabet input."
+      "title": "v1.2.0 - Romaji Engine Expansion",
+      "body": "・Massively expanded the Romaji conversion table — now supports Hepburn, Kunrei-shiki, Nihon-shiki, and more (qa→くぁ, va→ゔぁ, kwa→くぁ, etc.).\n・Added zya, fya, vya, gwa, wha, ca/ci/cu/ce/co input patterns.\n・Added small kana mappings (xwa→ゎ, xka→ヵ, xke→ヶ).\n・Updated wi/we to modern readings (うぃ/うぇ), with wyi/wye for classical ゐ/ゑ."
     },
     {
       "version": "1.1.0",
-      "date": "2026-08-11",
-      "title": "v1.1.0 - QWERTY Long-Press Support",
-      "body": "・Added support for special character input by long-pressing keys on the QWERTY keyboard.\n・Added toggles in the settings app to show/hide specific keyboard modes."
+      "date": "2026-08-12",
+      "title": "v1.1.0 - UI Overhaul & New Features",
+      "body": "・Replaced text-based Shift/Delete/Globe keys with SF Symbols for a native iOS look.\n・Added slide-to-select for QWERTY long-press special characters.\n・Added a/A uppercase toggle for flick alphabet mode.\n・Removed unwanted shadow and blue highlight effects from keys.\n・Settings app now lets you enable/disable individual keyboard modes."
     },
     {
       "version": "1.0.0",
       "date": "2026-08-01",
       "title": "v1.0.0 - Initial Release",
-      "body": "・Flick Input (Japanese/Alphabet/Numbers)\n・QWERTY Input (English/Romaji)\n・Dark Mode support"
+      "body": "・Flick input for Japanese (Kana, Alphabet, Numbers).\n・QWERTY keyboard for English and Romaji.\n・Dark mode support.\n・Automatic CI builds via GitHub Actions."
     }
   ]
 }
