@@ -1045,9 +1045,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
             present(picker, animated: true)
         } else if indexPath.section == 5 {
-            let fontNames = [nil, "HiraginoSans-W3", "HiraMinProN-W3", "Courier", "Menlo-Regular", "AvenirNext-Regular", "GillSans", "Georgia", "Futura-Medium"]
+            var fontNames: [String?] = [nil, "HiraginoSans-W3", "HiraMinProN-W3", "Courier", "Menlo-Regular", "AvenirNext-Regular", "GillSans", "Georgia", "Futura-Medium"]
             let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
-            let fontLabels = [
+            var fontLabels = [
                 isEn ? "System Default" : "システムデフォルト",
                 isEn ? "Hiragino Sans" : "ヒラギノ角ゴ",
                 isEn ? "Hiragino Mincho" : "ヒラギノ明朝",
@@ -1058,6 +1058,13 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 "Georgia",
                 "Futura"
             ]
+            
+            let customFonts = CustomFontManager.shared.getCustomFonts()
+            for cf in customFonts {
+                fontNames.append(cf)
+                fontLabels.append(cf)
+            }
+            
             let alert = UIAlertController(title: isEn ? "Select Font" : "フォントを選択", message: nil, preferredStyle: .actionSheet)
             for (i, name) in fontLabels.enumerated() {
                 let action = UIAlertAction(title: name, style: .default) { [weak self] _ in
@@ -1068,6 +1075,15 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 if fontNames[i] == currentTheme.fontName { action.setValue(true, forKey: "checked") }
                 alert.addAction(action)
             }
+            
+            let importAction = UIAlertAction(title: isEn ? "Import Font..." : "フォントをインポート...", style: .default) { [weak self] _ in
+                let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.font, .data])
+                documentPicker.delegate = self
+                documentPicker.allowsMultipleSelection = false
+                self?.present(documentPicker, animated: true)
+            }
+            alert.addAction(importAction)
+            
             alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
             if let popover = alert.popoverPresentationController {
                 popover.sourceView = tableView.cellForRow(at: indexPath)
