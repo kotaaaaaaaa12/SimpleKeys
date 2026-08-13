@@ -46,10 +46,11 @@ jobs:
           name: SimpleKeys-IPA
           path: SimpleKeys.ipa
 
-      - name: Delete existing nightly tag
+      - name: Delete existing nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag -d nightly 2>/dev/null || true
-          git push origin :refs/tags/nightly 2>/dev/null || true
+          gh release delete nightly --cleanup-tag -y || true
 
       - name: Get build info
         id: info
