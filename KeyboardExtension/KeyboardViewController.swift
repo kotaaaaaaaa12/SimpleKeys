@@ -909,7 +909,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     private func updateAppearance() {
         // Only set background colors if theme has no image
         var hasImage = false
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+        if let preview = previewTheme {
+            hasImage = preview.backgroundImageFileName != nil
+        } else if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
            let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data),
            theme.backgroundImageFileName != nil {
             hasImage = true
@@ -999,7 +1001,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         let customBg = theme.keyColorHex != nil ? UIColor(hex: theme.keyColorHex!) : nil
         let letterBg = customBg ?? (isDark ? UIColor(white: 0.35, alpha: 1.0) : .white)
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        let defaultTextColor = UIColor.black
+        let defaultTextColor = isDark ? UIColor.white : UIColor.black
         let textColor = theme.textColorHex != nil ? (UIColor(hex: theme.textColorHex!) ?? defaultTextColor) : defaultTextColor
         
         qwertyStack.subviews.forEach { row in
