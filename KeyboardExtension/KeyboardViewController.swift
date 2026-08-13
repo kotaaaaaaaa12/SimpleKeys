@@ -315,6 +315,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 currentCandidates.insert("Grp: \(AppGroupHelper.shared.appGroupID) Key:\(apiKey.isEmpty ? "無" : "有") On:\(enableGemini)", at: 0)
             }
             
+            // User Dictionary
+            if let data = defaults?.data(forKey: "userDictionary"),
+               let dictItems = try? JSONSerialization.jsonObject(with: data) as? [[String: String]] {
+                let userMatches = dictItems.filter { $0["yomi"] == display }.compactMap { $0["kaki"] }
+                if !userMatches.isEmpty {
+                    currentCandidates.insert(contentsOf: userMatches, at: 0)
+                }
+            }
+            
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
@@ -368,6 +377,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                         
                         // Prepended Gemini candidates
                         var newCandidates = geminiCandidates
+                        
+                        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: "userDictionary"),
+                           let dictItems = try? JSONSerialization.jsonObject(with: data) as? [[String: String]] {
+                            let userMatches = dictItems.filter { $0["yomi"] == currentText }.compactMap { $0["kaki"] }
+                            if !userMatches.isEmpty {
+                                newCandidates.insert(contentsOf: userMatches, at: 0)
+                            }
+                        }
+                        
                         newCandidates.append(contentsOf: self.currentCandidates)
                         
                         // Deduplicate keeping order

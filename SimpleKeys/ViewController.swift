@@ -264,7 +264,7 @@ class SettingsViewController: UITableViewController {
         }
     }
     
-    override func numberOfSections(in tableView: UITableView) -> Int { return 6 }
+    override func numberOfSections(in tableView: UITableView) -> Int { return 7 }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
@@ -273,7 +273,8 @@ class SettingsViewController: UITableViewController {
         case 2: return 3
         case 3: return 2
         case 4: return 3
-        case 5: return 3
+        case 5: return 1
+        case 6: return 2
         default: return 0
         }
     }
@@ -286,7 +287,8 @@ class SettingsViewController: UITableViewController {
         case 2: return isEn ? "Keyboard Modes" : "有効にする入力モード"
         case 3: return isEn ? "Flick Settings" : "フリック入力の詳細設定"
         case 4: return isEn ? "AI Conversion (Gemini)" : "AI変換設定 (Gemini)"
-        case 5: return isEn ? "Coming Soon" : "開発中・実装予定の機能 (Coming Soon)"
+        case 5: return isEn ? "User Dictionary" : "ユーザー辞書"
+        case 6: return isEn ? "Coming Soon" : "開発中・実装予定の機能 (Coming Soon)"
         default: return nil
         }
     }
@@ -296,7 +298,8 @@ class SettingsViewController: UITableViewController {
         switch section {
         case 1: return isEn ? "Go to Settings > General > Keyboard, add SimpleKeys, and Allow Full Access." : "設定アプリからキーボードを追加し、「フルアクセスを許可」をオンにしてください。"
         case 4: return isEn ? "Enter your Gemini API key to use cloud AI conversion. This requires Full Access." : "AI変換を利用するには、Gemini APIキーを入力してください（フルアクセス許可が必要です）。"
-        case 5: return isEn ? "These features will be available in future updates." : "これらの機能は今後のアップデートで追加される予定です。"
+        case 5: return isEn ? "Register custom words for faster conversion." : "よく使う単語や特殊な変換を登録できます。"
+        case 6: return isEn ? "These features will be available in future updates." : "これらの機能は今後のアップデートで追加される予定です。"
         default: return nil
         }
     }
@@ -375,6 +378,11 @@ class SettingsViewController: UITableViewController {
                 geminiModelField.placeholder = isEn ? "Model Name (e.g. gemini-3.5-flash)" : "モデル名 (例: gemini-3.5-flash)"
             }
         } else if indexPath.section == 5 {
+            cell.textLabel?.text = isEn ? "User Dictionary" : "ユーザー辞書"
+            cell.detailTextLabel?.text = isEn ? "Register frequently used words" : "よく使う単語を登録できます"
+            cell.imageView?.image = UIImage(systemName: "book.fill")
+            cell.accessoryType = .disclosureIndicator
+        } else if indexPath.section == 6 {
             cell.textLabel?.textColor = .secondaryLabel
             cell.detailTextLabel?.textColor = .tertiaryLabel
             cell.imageView?.tintColor = .systemGray
@@ -384,10 +392,6 @@ class SettingsViewController: UITableViewController {
                 cell.detailTextLabel?.text = isEn ? "Customize background color and images" : "背景色や画像を自由に設定できます"
                 cell.imageView?.image = UIImage(systemName: "paintpalette.fill")
             } else if indexPath.row == 1 {
-                cell.textLabel?.text = isEn ? "User Dictionary" : "ユーザー辞書"
-                cell.detailTextLabel?.text = isEn ? "Register frequently used words" : "よく使う単語を登録できます"
-                cell.imageView?.image = UIImage(systemName: "book.fill")
-            } else if indexPath.row == 2 {
                 cell.textLabel?.text = isEn ? "One-Handed Mode" : "片手モード"
                 cell.detailTextLabel?.text = isEn ? "Shift keyboard left/right for easy typing" : "キーボードを左右に寄せて片手で入力しやすくします"
                 cell.imageView?.image = UIImage(systemName: "hand.point.up.left")
@@ -403,6 +407,10 @@ class SettingsViewController: UITableViewController {
             if let url = URL(string: "App-prefs:General&path=Keyboard/KEYBOARDS") {
                 UIApplication.shared.open(url)
             }
+        } else if indexPath.section == 5 {
+            tableView.deselectRow(at: indexPath, animated: true)
+            let vc = UserDictionaryViewController()
+            navigationController?.pushViewController(vc, animated: true)
         }
     }
 }
@@ -492,3 +500,97 @@ class UpdatesViewController: UITableViewController {
     }
 }
 
+
+// MARK: - User Dictionary
+struct UserDictItem: Codable {
+    var yomi: String
+    var kaki: String
+}
+
+class UserDictionaryViewController: UITableViewController {
+    private var dictionary: [UserDictItem] = []
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "ユーザー辞書"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonTapped))
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        loadDictionary()
+    }
+    
+    private func loadDictionary() {
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: "userDictionary"),
+           let items = try? JSONDecoder().decode([UserDictItem].self, from: data) {
+            dictionary = items
+        }
+        tableView.reloadData()
+    }
+    
+    private func saveDictionary() {
+        if let data = try? JSONEncoder().encode(dictionary) {
+            AppGroupHelper.shared.userDefaults?.set(data, forKey: "userDictionary")
+            AppGroupHelper.shared.userDefaults?.synchronize()
+        }
+    }
+    
+    @objc private func addButtonTapped() {
+        showEditAlert(for: nil, at: nil)
+    }
+    
+    private func showEditAlert(for item: UserDictItem?, at index: Int?) {
+        let alert = UIAlertController(title: item == nil ? "単語の登録" : "単語の編集", message: nil, preferredStyle: .alert)
+        alert.addTextField { tf in
+            tf.placeholder = "よみ (例: おつ)"
+            tf.text = item?.yomi
+        }
+        alert.addTextField { tf in
+            tf.placeholder = "単語 (例: お疲れ様です！)"
+            tf.text = item?.kaki
+        }
+        
+        let saveAction = UIAlertAction(title: "保存", style: .default) { [weak self] _ in
+            guard let self = self,
+                  let yomi = alert.textFields?[0].text, !yomi.isEmpty,
+                  let kaki = alert.textFields?[1].text, !kaki.isEmpty else { return }
+            
+            let newItem = UserDictItem(yomi: yomi, kaki: kaki)
+            if let index = index {
+                self.dictionary[index] = newItem
+            } else {
+                self.dictionary.append(newItem)
+            }
+            self.saveDictionary()
+            self.tableView.reloadData()
+        }
+        
+        alert.addAction(UIAlertAction(title: "キャンセル", style: .cancel))
+        alert.addAction(saveAction)
+        present(alert, animated: true)
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return dictionary.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "Cell")
+        let item = dictionary[indexPath.row]
+        cell.textLabel?.text = item.kaki
+        cell.detailTextLabel?.text = item.yomi
+        cell.detailTextLabel?.textColor = .secondaryLabel
+        return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        showEditAlert(for: dictionary[indexPath.row], at: indexPath.row)
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            dictionary.remove(at: indexPath.row)
+            saveDictionary()
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+        }
+    }
+}
