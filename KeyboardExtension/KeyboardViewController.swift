@@ -1261,6 +1261,66 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         deletePressed()
     }
     
+    func flickKeyboardDidFlickDeleteRight(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
+        UIDevice.current.playInputClick()
+        
+        if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
+            _ = romajiConverter.commit()
+            englishBuffer = ""
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            updateConversionBar()
+            return
+        }
+        
+        if let context = textDocumentProxy.documentContextBeforeInput {
+            let punctuations: Set<Character> = ["、", "。", "！", "？", ".", ",", "!", "?", " ", "\n"]
+            var charsToDelete = 0
+            var foundNonPunctuation = false
+            for char in context.reversed() {
+                if foundNonPunctuation && punctuations.contains(char) { break }
+                if !punctuations.contains(char) { foundNonPunctuation = true }
+                charsToDelete += 1
+            }
+            for _ in 0..<charsToDelete {
+                textDocumentProxy.deleteBackward()
+            }
+        }
+    }
+    
+    func flickKeyboardDidFlickDeleteUp(_ keyboard: FlickKeyboardView) {
+        lastFlickTapBaseChar = nil
+        UIDevice.current.playInputClick()
+        
+        if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
+            _ = romajiConverter.commit()
+            englishBuffer = ""
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            updateConversionBar()
+            return
+        }
+        
+        if let context = textDocumentProxy.documentContextBeforeInput {
+            var charsToDelete = 0
+            for char in context.reversed() {
+                if char == "\n" && charsToDelete > 0 { break }
+                charsToDelete += 1
+            }
+            for _ in 0..<charsToDelete {
+                textDocumentProxy.deleteBackward()
+            }
+        }
+    }
+    
+    func flickKeyboardDidSwipeSpace(_ keyboard: FlickKeyboardView, direction: FlickKeyboardView.FlickDirection) {
+        lastFlickTapBaseChar = nil
+        if direction == .right {
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
+        } else if direction == .left {
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
+        }
+    }
+    
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
         returnPressed()

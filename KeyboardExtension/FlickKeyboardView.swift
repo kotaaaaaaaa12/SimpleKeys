@@ -92,6 +92,9 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidFlickDeleteRight(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidFlickDeleteUp(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidSwipeSpace(_ keyboard: FlickKeyboardView, direction: FlickKeyboardView.FlickDirection)
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView)
 }
 
@@ -271,6 +274,7 @@ class FlickKeyboardView: UIView {
         place(view: deleteButton, row: 0, col: 4)
         
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
+        spaceButton.accessibilityIdentifier = "space"
         if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 16) }
         place(view: spaceButton, row: 1, col: 4)
         
@@ -469,6 +473,18 @@ class FlickKeyboardView: UIView {
             guard let btn = activeTouches[touch], let start = startPoints[touch] else { continue }
             let currentPoint = touch.location(in: containerView)
             
+            if btn.accessibilityIdentifier == "space" {
+                let dx = currentPoint.x - start.x
+                if dx > 25 {
+                    delegate?.flickKeyboardDidSwipeSpace(self, direction: .right)
+                    startPoints[touch] = CGPoint(x: start.x + 25, y: start.y)
+                } else if dx < -25 {
+                    delegate?.flickKeyboardDidSwipeSpace(self, direction: .left)
+                    startPoints[touch] = CGPoint(x: start.x - 25, y: start.y)
+                }
+                continue
+            }
+            
             if keysMap[btn] != nil {
                 let dx = currentPoint.x - start.x
                 let dy = currentPoint.y - start.y
@@ -552,7 +568,18 @@ class FlickKeyboardView: UIView {
             } else {
                 if !cancelled {
                     if btn.accessibilityIdentifier == "delete" {
-                        delegate?.flickKeyboardDidPressDelete(self)
+                        let point = touch.location(in: containerView)
+                        let startPoint = startPoints[touch] ?? point
+                        let dx = point.x - startPoint.x
+                        let dy = point.y - startPoint.y
+                        let direction = detectDirection(dx: dx, dy: dy)
+                        if direction == .right {
+                            delegate?.flickKeyboardDidFlickDeleteRight(self)
+                        } else if direction == .up {
+                            delegate?.flickKeyboardDidFlickDeleteUp(self)
+                        } else {
+                            delegate?.flickKeyboardDidPressDelete(self)
+                        }
                     } else if btn.accessibilityIdentifier == "return" {
                         delegate?.flickKeyboardDidPressReturn(self)
                     } else if btn.accessibilityIdentifier == "globe" {
