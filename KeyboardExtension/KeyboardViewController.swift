@@ -292,9 +292,6 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     #if !APP
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-    #else
-    func textDidChange(_ textInput: UITextInput?) {
-    #endif
         updateAppearance()
         
         // If text was externally cleared (e.g., sent in LINE), clear our buffers
@@ -306,6 +303,20 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             }
         }
     }
+    #else
+    func textDidChange(_ textInput: UITextInput?) {
+        updateAppearance()
+        
+        // If text was externally cleared (e.g., sent in LINE), clear our buffers
+        if !textDocumentProxy.hasText {
+            if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
+                _ = romajiConverter.commit()
+                englishBuffer = ""
+                updateConversionBar()
+            }
+        }
+    }
+    #endif
     
     // MARK: - Conversion Bar
     
