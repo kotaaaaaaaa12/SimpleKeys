@@ -15,21 +15,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var currentMode: KeyboardMode = .qwertyEnglish
     private var isShifted = false
     private var shiftButton: UIButton?
+    private var modeButton: UIButton?
+    private var nextKeyboardButton: UIButton?
     
     private let romajiConverter = RomajiConverter()
     
-    /// QWERTYキーボードのコンテナ
     private var qwertyContainer: UIView!
-    
-    /// フリックキーボード
     private var flickKeyboard: FlickKeyboardView!
-    
-    /// ローマ字変換バッファ表示バー
     private var conversionBar: UIView!
     private var conversionLabel: UILabel!
-    
-    /// メインスタック（全体を格納）
-    private var mainStack: UIStackView!
     
     private let letterRows: [[String]] = [
         ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -41,10 +35,20 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        guard let inputView = self.inputView else { return }
+        inputView.allowsSelfSizing = true
+        
         setupConversionBar()
         setupQWERTYKeyboard()
         setupFlickKeyboard()
         applyMode()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateNextKeyboardButtonVisibility()
+        updateAppearance()
     }
     
     override func viewWillLayoutSubviews() {
@@ -70,9 +74,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         conversionLabel.translatesAutoresizingMaskIntoConstraints = false
         conversionBar.addSubview(conversionLabel)
         
-        // 確定ボタン
         let commitButton = UIButton(type: .system)
-        commitButton.setTitle("確定", for: .normal)
+        commitButton.setTitle("OK", for: .normal)
         commitButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
         commitButton.backgroundColor = UIColor.systemBlue
         commitButton.setTitleColor(.white, for: .normal)
@@ -167,9 +170,19 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             flickKeyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
         
-        // Set up globe button on flick keyboard
         if let globeBtn = flickKeyboard.getGlobeButton() {
             globeBtn.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+        }
+    }
+    
+    // MARK: - Next Keyboard Button Visibility
+    
+    private func updateNextKeyboardButtonVisibility() {
+        let showGlobe = needsInputModeSwitchKey
+        nextKeyboardButton?.isHidden = !showGlobe
+        
+        if let flickGlobe = flickKeyboard?.getGlobeButton() {
+            flickGlobe.isHidden = !showGlobe
         }
     }
     
@@ -196,42 +209,31 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             romajiConverter.clear()
         }
         
+        updateModeButtonLabel()
         updateAppearance()
     }
     
     @objc private func cycleModePressed() {
-        // 確定前のバッファがあれば確定
         if currentMode == .qwertyJapanese && !romajiConverter.displayText.isEmpty {
             let text = romajiConverter.commit()
             textDocumentProxy.insertText(text)
         }
         
         switch currentMode {
-        case .qwertyEnglish:
-            currentMode = .qwertyJapanese
-        case .qwertyJapanese:
-            currentMode = .flick
-        case .flick:
-            currentMode = .qwertyEnglish
+        case .qwertyEnglish: currentMode = .qwertyJapanese
+        case .qwertyJapanese: currentMode = .flick
+        case .flick: currentMode = .qwertyEnglish
         }
         
         applyMode()
-        updateModeLabel()
     }
     
-    private func updateModeLabel() {
-        // Update the mode button label in QWERTY keyboard
-        func findModeButton(in v: UIView) {
-            if let button = v as? UIButton, button.tag == 7777 {
-                switch currentMode {
-                case .qwertyEnglish: button.setTitle("EN", for: .normal)
-                case .qwertyJapanese: button.setTitle("あ", for: .normal)
-                case .flick: button.setTitle("flick", for: .normal)
-                }
-            }
-            for sub in v.subviews { findModeButton(in: sub) }
+    private func updateModeButtonLabel() {
+        switch currentMode {
+        case .qwertyEnglish: modeButton?.setTitle("EN", for: .normal)
+        case .qwertyJapanese: modeButton?.setTitle("JA", for: .normal)
+        case .flick: modeButton?.setTitle("FL", for: .normal)
         }
-        findModeButton(in: view)
     }
     
     // MARK: - Conversion Bar
@@ -239,7 +241,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func updateConversionBar() {
         let display = romajiConverter.displayText
         if display.isEmpty {
-            conversionLabel.text = "ローマ字入力中..."
+            conversionLabel.text = " "
             conversionLabel.textColor = .placeholderText
         } else {
             conversionLabel.text = display
@@ -318,19 +320,30 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         stack.axis = .horizontal
         stack.spacing = 4
         
-        // 🌐 Next Keyboard
-        let globe = createSpecialKeyButton(title: "🌐")
+        // Next Keyboard (globe) - only if needed
+        let globe = UIButton(type: .system)
+        if #available(iOS 16.0, *) {
+            globe.setImage(UIImage(systemName: "globe"), for: .normal)
+        } else {
+            globe.setTitle("🌐", for: .normal)
+        }
         globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+        globe.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        globe.layer.cornerRadius = 5
+        globe.layer.shadowOffset = CGSize(width: 0, height: 1)
+        globe.layer.shadowRadius = 0
+        globe.layer.shadowOpacity = 0.3
         globe.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        self.nextKeyboardButton = globe
         stack.addArrangedSubview(globe)
         
-        // Mode toggle: EN → あ → flick
-        let modeButton = createSpecialKeyButton(title: "EN")
-        modeButton.tag = 7777
-        modeButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        modeButton.addTarget(self, action: #selector(cycleModePressed), for: .touchUpInside)
-        modeButton.widthAnchor.constraint(equalToConstant: 40).isActive = true
-        stack.addArrangedSubview(modeButton)
+        // Mode toggle
+        let mode = createSpecialKeyButton(title: "EN")
+        mode.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        mode.addTarget(self, action: #selector(cycleModePressed), for: .touchUpInside)
+        mode.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        self.modeButton = mode
+        stack.addArrangedSubview(mode)
         
         // Space
         let space = createKeyButton(title: "space")
@@ -404,20 +417,21 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             )
         }
         
-        flickKeyboard.updateAppearance(isDark: isDark)
+        flickKeyboard?.updateAppearance(isDark: isDark)
     }
     
     private func updateButtonColors(letterBg: UIColor, specialBg: UIColor, textColor: UIColor, shadowColor: CGColor) {
         func applyStyle(to v: UIView) {
-            // Skip flick keyboard – it manages its own colors
             if v === flickKeyboard { return }
             
             if let button = v as? UIButton {
                 button.setTitleColor(textColor, for: .normal)
+                button.tintColor = textColor
                 button.layer.shadowColor = shadowColor
                 let title = button.titleLabel?.text ?? ""
-                let isSpecialKey = ["⇧", "⌫", "🌐", "return", "EN", "あ", "flick"].contains(title)
-                button.backgroundColor = isSpecialKey ? specialBg : letterBg
+                let isSpecialKey = ["⇧", "⌫", "return", "EN", "JA", "FL"].contains(title)
+                let isGlobe = button === nextKeyboardButton
+                button.backgroundColor = (isSpecialKey || isGlobe) ? specialBg : letterBg
             }
             for sub in v.subviews {
                 applyStyle(to: sub)
@@ -443,15 +457,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         case .qwertyJapanese:
             let char = Character(title.lowercased())
             let result = romajiConverter.input(char)
-            
-            // 変換されたかなを直接入力
             if let converted = result.justConverted {
                 textDocumentProxy.insertText(converted)
             }
             updateConversionBar()
             
         case .flick:
-            break // Flick mode uses FlickKeyboardDelegate
+            break
         }
     }
     
@@ -461,11 +473,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func deletePressed() {
-        if currentMode == .qwertyJapanese {
-            let result = romajiConverter.deleteBackward()
-            if result.converted.isEmpty && result.pending.isEmpty {
-                textDocumentProxy.deleteBackward()
-            }
+        if currentMode == .qwertyJapanese && !romajiConverter.buffer.isEmpty {
+            let _ = romajiConverter.deleteBackward()
             updateConversionBar()
         } else {
             textDocumentProxy.deleteBackward()
@@ -474,7 +483,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     @objc private func spacePressed() {
         if currentMode == .qwertyJapanese && !romajiConverter.displayText.isEmpty {
-            // スペースで確定
             commitConversion()
         } else {
             textDocumentProxy.insertText(" ")
@@ -537,11 +545,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
-        // 直前の文字を取得して濁点/半濁点/小文字変換を適用
         guard let before = textDocumentProxy.documentContextBeforeInput,
               let lastChar = before.last else { return }
         
-        // 濁点 → 半濁点 → 小文字 → 元に戻す のサイクル
         let dakutenMap: [Character: Character] = [
             "か": "が", "き": "ぎ", "く": "ぐ", "け": "げ", "こ": "ご",
             "さ": "ざ", "し": "じ", "す": "ず", "せ": "ぜ", "そ": "ぞ",
@@ -560,9 +566,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             "つ": "っ", "や": "ゃ", "ゆ": "ゅ", "よ": "ょ", "わ": "ゎ",
         ]
         
-        // 逆引き用
         let reverseDakuten: [Character: Character] = Dictionary(uniqueKeysWithValues: dakutenMap.map { ($0.value, $0.key) })
-        let reverseHandakuten: [Character: Character] = Dictionary(uniqueKeysWithValues: handakutenMap.filter { ["は","ひ","ふ","へ","ほ"].contains(String($0.key)) }.map { ($0.value, $0.key) })
+        let reverseHandakuten: [Character: Character] = Dictionary(uniqueKeysWithValues:
+            [("ぱ","は"),("ぴ","ひ"),("ぷ","ふ"),("ぺ","へ"),("ぽ","ほ")].map { (Character($0.0), Character($0.1)) }
+        )
         let reverseSmall: [Character: Character] = Dictionary(uniqueKeysWithValues: smallMap.map { ($0.value, $0.key) })
         
         var newChar: Character? = nil
@@ -574,7 +581,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         } else if let small = smallMap[lastChar] {
             newChar = small
         } else if let original = reverseDakuten[lastChar] {
-            // 濁音 → 半濁音（可能なら）or 元に戻す
             if let handakuten = handakutenMap[lastChar] {
                 newChar = handakuten
             } else {
