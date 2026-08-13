@@ -467,6 +467,130 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         }
     }
     
+    // MARK: - Long Press Alternates
+    
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard let button = gesture.view as? UIButton, let title = button.titleLabel?.text else { return }
+        
+        let alternatesMap: [String: [String]] = [
+            "e": ["e", "è", "é", "ê", "ë", "ē", "ė", "ę"],
+            "y": ["y", "ÿ", "ý"],
+            "u": ["u", "û", "ü", "ù", "ú", "ū"],
+            "i": ["i", "î", "ï", "í", "ī", "į", "ì"],
+            "o": ["o", "ô", "ö", "ò", "ó", "œ", "ø", "ō", "õ"],
+            "a": ["a", "à", "á", "â", "ä", "æ", "ã", "å", "ā"],
+            "s": ["s", "ß", "ś", "š"],
+            "l": ["l", "ł"],
+            "z": ["z", "ž", "ź", "ż"],
+            "c": ["c", "ç", "ć", "č"],
+            "n": ["n", "ñ", "ń"]
+        ]
+        
+        let lower = title.lowercased()
+        guard let alternates = alternatesMap[lower] else { return }
+        let isUpper = title != lower
+        let displayAlts = isUpper ? alternates.map { $0.uppercased() } : alternates
+        
+        let point = gesture.location(in: view)
+        
+        switch gesture.state {
+        case .began:
+            currentLongPressButton = button
+            showAlternatePopup(for: button, alternates: displayAlts)
+            updateAlternateHighlight(at: point)
+        case .changed:
+            updateAlternateHighlight(at: point)
+        case .ended, .cancelled:
+            if let popup = alternateKeysPopup {
+                var selected: String? = nil
+                for lbl in alternateLabels {
+                    if lbl.backgroundColor == .systemBlue {
+                        selected = lbl.text
+                        break
+                    }
+                }
+                if let sel = selected, gesture.state == .ended {
+                    textDocumentProxy.insertText(sel)
+                    UIDevice.current.playInputClick()
+                }
+                popup.removeFromSuperview()
+                alternateKeysPopup = nil
+                alternateLabels.removeAll()
+            }
+            currentLongPressButton = nil
+        default:
+            break
+        }
+    }
+    
+    private func showAlternatePopup(for button: UIButton, alternates: [String]) {
+        let popup = UIView()
+        popup.backgroundColor = (textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark) ? UIColor(white: 0.25, alpha: 1.0) : .white
+        popup.layer.cornerRadius = 8
+        popup.layer.shadowColor = UIColor.black.cgColor
+        popup.layer.shadowOpacity = 0.3
+        popup.layer.shadowOffset = CGSize(width: 0, height: 2)
+        popup.layer.shadowRadius = 4
+        
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.spacing = 0
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        popup.addSubview(stack)
+        
+        for alt in alternates {
+            let lbl = UILabel()
+            lbl.text = alt
+            lbl.textAlignment = .center
+            lbl.font = .systemFont(ofSize: 22, weight: .regular)
+            lbl.textColor = (textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark) ? .white : .black
+            lbl.layer.cornerRadius = 6
+            lbl.layer.masksToBounds = true
+            stack.addArrangedSubview(lbl)
+            alternateLabels.append(lbl)
+            lbl.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        }
+        
+        view.addSubview(popup)
+        popup.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: popup.topAnchor, constant: 4),
+            stack.bottomAnchor.constraint(equalTo: popup.bottomAnchor, constant: -4),
+            stack.leadingAnchor.constraint(equalTo: popup.leadingAnchor, constant: 4),
+            stack.trailingAnchor.constraint(equalTo: popup.trailingAnchor, constant: -4),
+            
+            popup.bottomAnchor.constraint(equalTo: button.topAnchor, constant: -8),
+            popup.centerXAnchor.constraint(equalTo: button.centerXAnchor)
+        ])
+        
+        alternateKeysPopup = popup
+    }
+    
+    private func updateAlternateHighlight(at point: CGPoint) {
+        guard let popup = alternateKeysPopup else { return }
+        let localPoint = view.convert(point, to: popup)
+        
+        var found = false
+        for lbl in alternateLabels {
+            if lbl.frame.contains(localPoint) {
+                lbl.backgroundColor = .systemBlue
+                lbl.textColor = .white
+                found = true
+            } else {
+                lbl.backgroundColor = .clear
+                lbl.textColor = (textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark) ? .white : .black
+            }
+        }
+        
+        if !found && !alternateLabels.isEmpty {
+            let first = alternateLabels[0]
+            first.backgroundColor = .systemBlue
+            first.textColor = .white
+        }
+    }
+    
     // MARK: - Actions
     
     @objc private func letterKeyPressed(_ sender: UIButton) {
