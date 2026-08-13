@@ -2,9 +2,9 @@
 
 # ⌨️ SimpleKeys
 
-### A lightweight, privacy-first custom keyboard for iOS
+**A lightweight, open-source keyboard for iOS — built for people who value privacy.**
 
-**No ads. No tracking. No bloat. Just typing.**
+No ads. No tracking. No network access. Just a keyboard that works.
 
 [![iOS 15.0+](https://img.shields.io/badge/iOS-15.0%2B-007AFF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
 [![Swift 5](https://img.shields.io/badge/Swift-5-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org/)
@@ -15,105 +15,34 @@
 
 🌐 **[日本語](README.ja.md)** · English
 
-<br>
-
-<img src="https://img.shields.io/badge/QWERTY-English-4A90D9?style=flat-square" alt="QWERTY">
-<img src="https://img.shields.io/badge/ローマ字-Japanese-E84855?style=flat-square" alt="Romaji">
-<img src="https://img.shields.io/badge/フリック-Flick-34C759?style=flat-square" alt="Flick">
-
 </div>
 
 ---
 
-## ✨ Why SimpleKeys?
+## 🔥 Featured
 
-Tired of bloated keyboard apps with invasive permissions, annoying ads, and features you never asked for? **SimpleKeys** is a clean, open-source keyboard built from scratch — designed to do one thing well: **let you type.**
+What makes SimpleKeys stand out from other keyboards:
 
-<table>
-<tr>
-<td width="50%">
+### 🧠 Full Romaji Engine
+Type `qa` and get `くぁ`. Type `kya` and get `きゃ`. Our built-in Romaji-to-Hiragana engine covers **every major input style** — Hepburn, Kunrei-shiki, Nihon-shiki, and more. No cloud lookups, no lag. Everything converts instantly, right on your device.
 
-### 🎯 What SimpleKeys does
-- ✅ Fast, responsive typing
-- ✅ Multiple input modes
-- ✅ Dark mode support
-- ✅ Zero network access
-- ✅ Open source & transparent
+### 👆 Slide-to-Select Special Characters
+Long-press any key on the QWERTY keyboard to reveal accented and special characters — then **slide your finger** to pick the one you want without lifting. Fast, fluid, no popups.
 
-</td>
-<td width="50%">
+### 🔒 Truly Offline & Private
+This isn't marketing talk. SimpleKeys contains **zero networking code**. There is literally no way for your keystrokes to leave your device. The source code is right here — verify it yourself.
 
-### 🚫 What SimpleKeys doesn't do
-- ❌ Collect your data
-- ❌ Show ads
-- ❌ Require internet access
-- ❌ Slow down your phone
-- ❌ Sell your typing habits
+### 🔄 SideStore / AltStore Ready
+Designed with sideloading in mind. SimpleKeys **dynamically resolves App Group IDs** at runtime, so your settings sync correctly even on free developer accounts. No paid Apple Developer membership required.
 
-</td>
-</tr>
-</table>
-
----
-
-## 🎹 Input Modes
-
-Switch between modes seamlessly using the built-in mode buttons.
-
-| Mode | Button | Description |
-|:-----|:------:|:------------|
-| **English QWERTY** | `🌐` | Standard English keyboard with Shift support |
-| **Romaji QWERTY** | `🌐` | Romaji input → Real-time auto-conversion to Hiragana |
-| **Flick Kana** | `🌐` / `あ` | Japanese flick-style input |
-| **Flick Alphabet** | `あいう` | Alphabet flick-style input with sub-labels |
-| **Flick Numbers** | `☆123` | Numbers and symbols flick-style input |
-
-### 🔄 Mode Cycling
-
-- Tap the Globe icon (🌐) to instantly toggle between your active modes (e.g. QWERTY English, QWERTY Romaji, Flick Kana).
-- You can fully customize which input modes are enabled/disabled via the main SimpleKeys app settings!
-- Tap the `あいう` or `☆123` keys within Flick mode to switch to Alphabet or Number layouts.
-
----
-
-## 🧩 Features
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-#### ⌨️ QWERTY Keyboard
-- Full QWERTY Layout
-- Shift key functionality (Caps/Lower)
-- Long-press for special/accented characters
-- Backspace & Return capabilities
-- 🌐 Native Next Keyboard integration
-- Mode toggle button (Globe)
-- Press animation feedback
-
-</td>
-<td width="50%" valign="top">
-
-#### 📱 Flick Keyboard
-- Directional swipe input (Kana, ABC, 123)
-- Multi-touch support for fast typing
-- Clean and native-like hint labels
-- Auto-capitalization for Alphabet
-- Dakuten / Handakuten / Small character toggles
-
-</td>
-</tr>
-</table>
-
-### 🌙 Appearance
-
-Automatically adapts to **Light** and **Dark** mode with iOS-accurate key styling — rounded corners, subtle shadows, and proper spacing.
+### 🛠️ In-App Update Notifications
+The app fetches a lightweight JSON from GitHub to check for new versions. If an update is available, you'll see a badge on the Updates tab — no App Store needed.
 
 ---
 
 ## 📦 Installation
 
-### Option 1: Build from Source (Xcode)
+### Build from Source
 
 ```bash
 git clone https://github.com/kotaaaaaaaa12/SimpleKeys.git
@@ -125,74 +54,46 @@ open SimpleKeys.xcodeproj
 2. Build & run on your device
 3. Enable the keyboard (see below)
 
-### Option 2: SideStore / AltStore
+### SideStore / AltStore
 
-The GitHub Action (`build-unsigned-ipa.yml`) runs automatically on every push!
+GitHub Actions automatically builds an unsigned IPA on every push.
 
-1. Go to the **Actions** tab on GitHub.
-2. Click the latest workflow run.
-3. Download the compiled IPA from the **Artifacts** section at the bottom (or from Releases if published).
-4. Install via SideStore / AltStore.
+1. Go to the **Actions** tab → latest workflow run
+2. Download the IPA from **Artifacts** (or from [Releases](https://github.com/kotaaaaaaaa12/SimpleKeys/releases))
+3. Install via SideStore / AltStore
 
-### ⚙️ Enable the Keyboard
+### Enable the Keyboard
 
 ```
 Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleKeys
 ```
 
-**Important**: Turn on **"Allow Full Access"**! This is required to sync your settings (like QWERTY vs Flick preference) between the main app and the keyboard extension via App Groups.
-
----
-
-## 🗺️ Roadmap
-
-| Status | Feature |
-|:------:|:--------|
-| ✅ | English QWERTY keyboard |
-| ✅ | Japanese Romaji QWERTY (auto-conversion) |
-| ✅ | Flick input (Kana, ABC, 123) |
-| ✅ | Multi-touch & fast typing |
-| ✅ | Keyboard Mode Toggles/Customization |
-| ✅ | QWERTY Long-press special characters (Slide selection) |
-| ✅ | Numbers & Symbols keyboard |
-| ✅ | Native iOS UI & SF Symbols |
-| ✅ | Dark Mode |
-| ✅ | Automatic CI builds (GitHub Actions) |
-| 🔲 | Kanji conversion (predictive) |
-| 🔲 | Custom themes |
-| 🔲 | User dictionary |
-| 🔲 | Emoji panel |
-| 🔲 | Haptic feedback |
+> **Note:** Turn on **"Allow Full Access"** to sync your preferences between the app and the keyboard extension via App Groups.
 
 ---
 
 ## 🔒 Privacy
 
-SimpleKeys requires **"Allow Full Access"** (`RequestsOpenAccess = true`), but we respect your privacy!
+SimpleKeys requests Full Access solely to read your preferences via a shared App Group. Here's what that means in practice:
 
-Why we need Full Access:
-- Apple strictly isolates keyboards from their container apps. Full Access allows the keyboard to read your settings (e.g., Default Mode) using a shared App Group.
-
-What we **DON'T** do:
-- 🚫 **No network access** — the keyboard has zero code to connect to the internet.
-- 🚫 **No data collection** — nothing leaves your device.
-- 🚫 **No clipboard tracking** — your copied data stays private.
-- ✅ **Fully offline** — everything runs locally on your device.
+- **No network access** — there is no networking code in this project.
+- **No data collection** — nothing leaves your device. Ever.
+- **No clipboard monitoring** — your copied data stays yours.
+- **Fully open source** — audit the code yourself.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
-- 🐛 Report bugs via [Issues](https://github.com/kotaaaaaaaa12/SimpleKeys/issues)
-- 💡 Suggest features
-- 🔧 Submit pull requests
+- 🐛 Found a bug? [Open an issue](https://github.com/kotaaaaaaaa12/SimpleKeys/issues)
+- 💡 Have an idea? Suggest a feature
+- 🔧 Want to help? Pull requests are welcome
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
