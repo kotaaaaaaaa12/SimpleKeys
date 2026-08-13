@@ -2,8 +2,9 @@ import UIKit
 
 class ViewController: UIViewController {
 
-    private let styleSegmentedControl = UISegmentedControl(items: ["フリック", "QWERTY"])
-    private let defaultModeSegmentedControl = UISegmentedControl(items: ["フリック", "QWERTY"])
+    private let flickSwitch = UISwitch()
+    private let qwertyEnglishSwitch = UISwitch()
+    private let qwertyRomajiSwitch = UISwitch()
     
     // Shared UserDefaults using the App Group
     private let sharedDefaults = UserDefaults(suiteName: "group.com.simplekeys.app")
@@ -65,42 +66,25 @@ class ViewController: UIViewController {
         stackView.addArrangedSubview(guideSection)
         
         // Keyboard Mode Section
-        let modeHeader = createSectionHeader(title: "初期キーボード")
-        let modeCard = createCardView()
+        let modeHeader = createSectionHeader(title: "有効にする入力モード")
         
-        defaultModeSegmentedControl.selectedSegmentIndex = 0
-        defaultModeSegmentedControl.addTarget(self, action: #selector(defaultModeChanged(_:)), for: .valueChanged)
+        flickSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
+        qwertyEnglishSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
+        qwertyRomajiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         
-        let modeSection = buildSettingsRow(
-            card: modeCard,
-            title: "初期レイアウト",
-            description: "キーボードを開いたときに最初に表示されるレイアウトを選択します。",
-            control: defaultModeSegmentedControl
-        )
+        let flickCard = createCardView()
+        let flickSection = buildSettingsRow(card: flickCard, title: "フリック入力 (Kana/ABC/123)", description: "日本語のフリック入力を使用します。", control: flickSwitch)
         
-        let modeStack = UIStackView(arrangedSubviews: [modeHeader, modeSection])
+        let qwertyEnCard = createCardView()
+        let qwertyEnSection = buildSettingsRow(card: qwertyEnCard, title: "QWERTY (英語)", description: "標準的な英語キーボードを使用します。", control: qwertyEnglishSwitch)
+        
+        let qwertyJaCard = createCardView()
+        let qwertyJaSection = buildSettingsRow(card: qwertyJaCard, title: "QWERTY (ローマ字)", description: "ローマ字入力で日本語を入力します。", control: qwertyRomajiSwitch)
+        
+        let modeStack = UIStackView(arrangedSubviews: [modeHeader, flickSection, qwertyEnSection, qwertyJaSection])
         modeStack.axis = .vertical
-        modeStack.spacing = 8
+        modeStack.spacing = 12
         stackView.addArrangedSubview(modeStack)
-        
-        // English Style Section
-        let styleHeader = createSectionHeader(title: "英語入力のスタイル")
-        let styleCard = createCardView()
-        
-        styleSegmentedControl.selectedSegmentIndex = 0
-        styleSegmentedControl.addTarget(self, action: #selector(styleChanged(_:)), for: .valueChanged)
-        
-        let styleSection = buildSettingsRow(
-            card: styleCard,
-            title: "ABCボタンの動作",
-            description: "「日本語キーボード」から「ABCボタン」を押して英語入力に切り替えた際のキーボードレイアウトを選択します。",
-            control: styleSegmentedControl
-        )
-        
-        let styleStack = UIStackView(arrangedSubviews: [styleHeader, styleSection])
-        styleStack.axis = .vertical
-        styleStack.spacing = 8
-        stackView.addArrangedSubview(styleStack)
     }
     
     private func createSectionHeader(title: String) -> UILabel {
@@ -141,13 +125,12 @@ class ViewController: UIViewController {
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             
-            control.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
-            control.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            control.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
             control.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            control.leadingAnchor.constraint(greaterThanOrEqualTo: titleLabel.trailingAnchor, constant: 8),
             
-            descLabel.topAnchor.constraint(equalTo: control.bottomAnchor, constant: 12),
+            descLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             descLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             descLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
             descLabel.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16)
@@ -157,20 +140,21 @@ class ViewController: UIViewController {
     }
     
     private func loadSettings() {
-        let defaultMode = sharedDefaults?.integer(forKey: "defaultKeyboardMode") ?? 0
-        defaultModeSegmentedControl.selectedSegmentIndex = defaultMode
+        let defaults = sharedDefaults
+        flickSwitch.isOn = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
+        qwertyEnglishSwitch.isOn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
+        qwertyRomajiSwitch.isOn = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
+    }
+    
+    @objc private func settingsChanged() {
+        // Prevent turning off all modes
+        if !flickSwitch.isOn && !qwertyEnglishSwitch.isOn && !qwertyRomajiSwitch.isOn {
+            flickSwitch.isOn = true
+        }
         
-        let style = sharedDefaults?.integer(forKey: "englishInputStyle") ?? 0
-        styleSegmentedControl.selectedSegmentIndex = style
-    }
-    
-    @objc private func defaultModeChanged(_ sender: UISegmentedControl) {
-        sharedDefaults?.set(sender.selectedSegmentIndex, forKey: "defaultKeyboardMode")
-        sharedDefaults?.synchronize()
-    }
-    
-    @objc private func styleChanged(_ sender: UISegmentedControl) {
-        sharedDefaults?.set(sender.selectedSegmentIndex, forKey: "englishInputStyle")
+        sharedDefaults?.set(flickSwitch.isOn, forKey: "enableFlick")
+        sharedDefaults?.set(qwertyEnglishSwitch.isOn, forKey: "enableQwertyEnglish")
+        sharedDefaults?.set(qwertyRomajiSwitch.isOn, forKey: "enableQwertyRomaji")
         sharedDefaults?.synchronize()
     }
 }

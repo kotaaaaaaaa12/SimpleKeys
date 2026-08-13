@@ -80,7 +80,7 @@ struct FlickKeyboardData {
         [
             FlickKey(center: "+-*/", left: "+", up: "-", right: "*", down: "/"),
             FlickKey(center: "0", left: "…", up: "‥", right: "_", down: "￣"),
-            FlickKey(center: "、", left: "。", up: "？", right: "！", down: "…")
+            FlickKey(center: ".", left: ",", up: "-", right: "/", down: nil)
         ]
     ]
 }
@@ -335,16 +335,21 @@ class FlickKeyboardView: UIView {
             if currentPage == .kana {
                 sub.text = ""
             } else {
-                var hints = [String]()
-                if let left = keyData.left { hints.append(left) }
-                if let up = keyData.up { hints.append(up) }
-                if let right = keyData.right { hints.append(right) }
-                
-                var hintStr = hints.joined(separator: " ")
-                if currentPage == .alphabet && !isShifted {
-                    hintStr = hintStr.lowercased()
+                // If it's alphabet mode and it's a letter key (ABC, DEF, etc), hide the hint
+                if currentPage == .alphabet && (keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
+                    sub.text = ""
+                } else {
+                    var hints = [String]()
+                    if let left = keyData.left { hints.append(left) }
+                    if let up = keyData.up { hints.append(up) }
+                    if let right = keyData.right { hints.append(right) }
+                    
+                    var hintStr = hints.joined(separator: " ")
+                    if currentPage == .alphabet && !isShifted {
+                        hintStr = hintStr.lowercased()
+                    }
+                    sub.text = hintStr
                 }
-                sub.text = hintStr
             }
         }
     }
@@ -407,7 +412,7 @@ class FlickKeyboardView: UIView {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
-            let point = touch.location(in: self)
+            let point = touch.location(in: containerView)
             for btn in allButtons {
                 if btn.frame.contains(point) {
                     activeTouches[touch] = btn
@@ -431,7 +436,7 @@ class FlickKeyboardView: UIView {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             guard let btn = activeTouches[touch], let start = startPoints[touch] else { continue }
-            let currentPoint = touch.location(in: self)
+            let currentPoint = touch.location(in: containerView)
             
             if keysMap[btn] != nil {
                 let dx = currentPoint.x - start.x
@@ -481,7 +486,7 @@ class FlickKeyboardView: UIView {
     }
     
     private func finishTouch(touch: UITouch, cancelled: Bool = false) {
-        guard let btn = activeTouches[touch] else { return }
+        guard let btn = activeTouches[touch], let start = startPoints[touch] else { return }
         
         animateKeyUp(btn)
         hidePopup(for: touch)
@@ -495,7 +500,7 @@ class FlickKeyboardView: UIView {
                     delegate?.flickKeyboardDidPressDakuten(self)
                 }
             } else if let keyData = keysMap[btn] {
-                let point = touch.location(in: self)
+                let point = touch.location(in: containerView)
                 let startPoint = startPoints[touch] ?? point
                 let dx = point.x - startPoint.x
                 let dy = point.y - startPoint.y
@@ -707,7 +712,11 @@ class FlickKeyboardView: UIView {
         numButton.backgroundColor = (currentPage == .number) ? activeColor : normalColor
         
         if let abcLbl = abcButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
-            abcLbl.text = (currentPage == .alphabet) ? "a/A" : "ABC"
+            abcLbl.text = (currentPage == .alphabet) ? "あいう" : "ABC"
+        }
+        
+        if let numLbl = numButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
+            numLbl.text = (currentPage == .number) ? "あいう" : "☆123"
         }
         
         // Update grid keys

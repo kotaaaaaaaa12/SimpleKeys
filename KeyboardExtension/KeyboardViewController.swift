@@ -12,6 +12,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         case qwertyEnglish
         case qwertyNumbers
         case qwertySymbols
+        case qwertyRomaji
     }
     
     // MARK: - Properties
@@ -43,8 +44,19 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         // Read default keyboard mode
         let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
         defaults?.synchronize()
-        let defaultMode = defaults?.integer(forKey: "defaultKeyboardMode") ?? 0
-        currentMode = defaultMode == 0 ? .flickKana : .qwertyEnglish
+        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
+        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
+        let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
+        
+        if enableFlick {
+            currentMode = .flickKana
+        } else if enableQwertyEn {
+            currentMode = .qwertyEnglish
+        } else if enableQwertyJa {
+            currentMode = .qwertyRomaji
+        } else {
+            currentMode = .flickKana
+        }
         
         setupConversionBar()
         setupQWERTYKeyboard()
@@ -174,7 +186,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 [".", ",", "?", "!", "'"]
             ]
             thirdRowSpecials = ("#+=", "⌫")
-            bottomRow = ["ABC", "globe", "space", "return"]
+            bottomRow = ["123", "globe", "space", "return"]
         case .qwertySymbols:
             rows = [
                 ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
@@ -182,14 +194,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 [".", ",", "?", "!", "'"]
             ]
             thirdRowSpecials = ("123", "⌫")
-            bottomRow = ["ABC", "globe", "space", "return"]
+            bottomRow = ["123", "globe", "space", "return"]
+        case .qwertyEnglish, .qwertyRomaji:
+            rows = qwertyShifted ? letterRows.map { $0.map { $0.uppercased() } } : letterRows.map { $0.map { $0.lowercased() } }
+            thirdRowSpecials = ("⇧", "⌫")
+            bottomRow = ["123", "globe", "space", "return"]
         default:
-            let letters = qwertyShifted ? [
-                ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-                ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-                ["Z", "X", "C", "V", "B", "N", "M"]
-            ] : [
-                ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
                 ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
                 ["z", "x", "c", "v", "b", "n", "m"]
             ]
@@ -248,16 +258,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         
         for key in bottomRow {
             if key == "globe" {
-                if needsInputModeSwitchKey {
-                    let globe = createSpecialImageKeyButton(systemName: "globe")
-                    globe.addTarget(self, action: #selector(toggleMainMode), for: .touchUpInside)
-                    globe.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
-                    globe.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-                    globe.widthAnchor.constraint(equalToConstant: 42).isActive = true
-                    bottomStack.addArrangedSubview(globe)
-                }
+                let globe = createSpecialImageKeyButton(systemName: "globe")
+                globe.addTarget(self, action: #selector(toggleMainMode), for: .touchUpInside)
+                globe.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+                globe.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                globe.widthAnchor.constraint(equalToConstant: 42).isActive = true
+                bottomStack.addArrangedSubview(globe)
             } else if key == "space" {
-                let spaceBtn = createKeyButton(title: "space")
+                let spaceBtn = createKeyButton(title: currentMode == .qwertyRomaji ? "空白" : "space")
                 spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
                 spaceBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
                 spaceBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
@@ -452,7 +460,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     @objc private func letterKeyPressed(_ sender: UIButton) {
         guard let title = sender.titleLabel?.text else { return }
-        textDocumentProxy.insertText(title)
+        if currentMode == .qwertyRomaji {
+            romajiConverter.insert(title.lowercased())
+            let display = romajiConverter.displayText
+            textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+            updateConversionBar()
+        } else {
+            textDocumentProxy.insertText(title)
+        }
         UIDevice.current.playInputClick()
     }
     
@@ -482,11 +497,29 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func spacePressed() {
+        if currentMode == .qwertyRomaji && !romajiConverter.displayText.isEmpty {
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            textDocumentProxy.unmarkText()
+            let text = romajiConverter.commit()
+            if !text.isEmpty { textDocumentProxy.insertText(text) }
+            updateConversionBar()
+            UIDevice.current.playInputClick()
+            return
+        }
         textDocumentProxy.insertText(" ")
         UIDevice.current.playInputClick()
     }
     
     @objc private func returnPressed() {
+        if currentMode == .qwertyRomaji && !romajiConverter.displayText.isEmpty {
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+            textDocumentProxy.unmarkText()
+            let text = romajiConverter.commit()
+            if !text.isEmpty { textDocumentProxy.insertText(text) }
+            updateConversionBar()
+            UIDevice.current.playInputClick()
+            return
+        }
         textDocumentProxy.insertText("\n")
         UIDevice.current.playInputClick()
     }
@@ -506,7 +539,19 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func deletePressed() {
-        textDocumentProxy.deleteBackward()
+        if currentMode == .qwertyRomaji && !romajiConverter.displayText.isEmpty {
+            romajiConverter.deleteBackward()
+            let display = romajiConverter.displayText
+            if display.isEmpty {
+                textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+                textDocumentProxy.unmarkText()
+            } else {
+                textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+            }
+            updateConversionBar()
+        } else {
+            textDocumentProxy.deleteBackward()
+        }
         UIDevice.current.playInputClick()
     }
     
@@ -543,11 +588,26 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func toggleMainMode() {
-        if currentMode == .flickKana || currentMode == .flickAlphabet || currentMode == .flickNumber {
-            currentMode = .qwertyEnglish
-        } else {
-            currentMode = .flickKana
+        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
+        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
+        let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
+        
+        var sequence: [InputMode] = []
+        if enableFlick { sequence.append(.flickKana) }
+        if enableQwertyEn { sequence.append(.qwertyEnglish) }
+        if enableQwertyJa { sequence.append(.qwertyRomaji) }
+        if sequence.isEmpty { sequence = [.flickKana] }
+        
+        var nextMode = sequence[0]
+        if let index = sequence.firstIndex(where: {
+            if currentMode == .flickKana || currentMode == .flickAlphabet || currentMode == .flickNumber { return $0 == .flickKana }
+            return $0 == currentMode
+        }) {
+            nextMode = sequence[(index + 1) % sequence.count]
         }
+        
+        currentMode = nextMode
         applyMode()
         UIDevice.current.playInputClick()
     }
