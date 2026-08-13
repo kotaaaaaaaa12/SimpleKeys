@@ -834,7 +834,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             b.layer.shadowOpacity = 0
             b.layer.borderWidth = 0
             if existingBlur == nil {
-                let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+                let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                blur.alpha = 0.7
                 blur.tag = 8888
                 blur.layer.cornerRadius = 5
                 blur.clipsToBounds = true

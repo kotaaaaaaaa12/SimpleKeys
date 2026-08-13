@@ -685,12 +685,15 @@ class ThemeSettingsViewController: UITableViewController, UIImagePickerControlle
     
     private var theme = ThemeSettings(keyStyle: 0)
     
-    private let keyStyleSegment = UISegmentedControl(items: ["標準", "ガラス", "フラット"])
+    private var keyStyleSegment: UISegmentedControl!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         title = isEn ? "Custom Theme" : "カスタムテーマ"
+        
+        let items = isEn ? ["Standard", "Glass", "Flat"] : ["標準", "ガラス", "フラット"]
+        keyStyleSegment = UISegmentedControl(items: items)
         
         loadTheme()
         
