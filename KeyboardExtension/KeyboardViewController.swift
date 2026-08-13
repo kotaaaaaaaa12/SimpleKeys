@@ -56,10 +56,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             currentMode = .flickKana
         } else if enableQwertyEn {
             currentMode = .qwertyEnglish
-        } else if enableQwertyJa {
-            currentMode = .qwertyRomaji
         } else {
-            currentMode = .flickKana
+            currentMode = .qwertyRomaji
         }
         
         setupConversionBar()
@@ -77,8 +75,16 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         
         let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
         defaults?.synchronize()
-        let defaultMode = defaults?.integer(forKey: "defaultKeyboardMode") ?? 0
-        currentMode = defaultMode == 0 ? .flickKana : .qwertyEnglish
+        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
+        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
+        
+        if enableFlick {
+            currentMode = .flickKana
+        } else if enableQwertyEn {
+            currentMode = .qwertyEnglish
+        } else {
+            currentMode = .qwertyRomaji
+        }
         applyMode()
         
         updateNextKeyboardButtonVisibility()
@@ -303,8 +309,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func setupFlickKeyboard() {
         flickKeyboard = FlickKeyboardView()
         flickKeyboard.delegate = self
+        flickKeyboard.clipsToBounds = false
         flickKeyboard.translatesAutoresizingMaskIntoConstraints = false
         flickKeyboard.isHidden = true
+        view.clipsToBounds = false
         view.addSubview(flickKeyboard)
         
         let flickBottom = flickKeyboard.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
@@ -700,14 +708,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func keyTouchDown(_ sender: UIButton) {
-        UIView.animate(withDuration: 0.05) {
+        UIView.animate(withDuration: 0.05, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
             sender.alpha = 0.8
         }
     }
     
     @objc private func keyTouchUp(_ sender: UIButton) {
-        UIView.animate(withDuration: 0.1) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = .identity
             sender.alpha = 1.0
         }

@@ -156,7 +156,9 @@ class FlickKeyboardView: UIView {
     private var allButtons: [UIView] = []
     
     private func setupView() {
+        self.clipsToBounds = false
         containerView = UIView()
+        containerView.clipsToBounds = false
         containerView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(containerView)
         
@@ -506,18 +508,20 @@ class FlickKeyboardView: UIView {
     }
     
     private func finishTouch(touch: UITouch, cancelled: Bool = false) {
-        guard let btn = activeTouches[touch], let start = startPoints[touch] else { return }
+        guard let btn = activeTouches[touch] else { return }
         
         animateKeyUp(btn)
         hidePopup(for: touch)
         
-        if !cancelled {
+        if !cancelled || (cancelled && btn.accessibilityIdentifier != "delete" && btn.accessibilityIdentifier != "return" && btn.accessibilityIdentifier != "globe" && btn.accessibilityIdentifier != "abc_switch" && btn.accessibilityIdentifier != "num_switch" && btn.accessibilityIdentifier != "face_mark" && btn.accessibilityIdentifier != "space") {
             if btn.accessibilityIdentifier == "dakuten" {
-                if currentPage == .alphabet {
-                    isShifted.toggle()
-                    updatePageUI()
-                } else if currentPage == .kana {
-                    delegate?.flickKeyboardDidPressDakuten(self)
+                if !cancelled {
+                    if currentPage == .alphabet {
+                        isShifted.toggle()
+                        updatePageUI()
+                    } else if currentPage == .kana {
+                        delegate?.flickKeyboardDidPressDakuten(self)
+                    }
                 }
             } else if let keyData = keysMap[btn] {
                 let point = touch.location(in: containerView)
@@ -525,31 +529,37 @@ class FlickKeyboardView: UIView {
                 let dx = point.x - startPoint.x
                 let dy = point.y - startPoint.y
                 let direction = detectDirection(dx: dx, dy: dy)
-                if let text = textForDirection(direction, key: keyData) {
-                    if text == "空白" {
-                        delegate?.flickKeyboardDidPressSpace(self)
-                    } else {
-                        delegate?.flickKeyboard(self, didInputText: text)
+                if !cancelled || direction != .center {
+                    if let text = textForDirection(direction, key: keyData) {
+                        if text == "空白" {
+                            delegate?.flickKeyboardDidPressSpace(self)
+                        } else {
+                            delegate?.flickKeyboard(self, didInputText: text)
+                        }
                     }
                 }
             } else {
-                if btn.accessibilityIdentifier == "delete" {
-                    delegate?.flickKeyboardDidPressDelete(self)
-                } else if btn.accessibilityIdentifier == "return" {
-                    delegate?.flickKeyboardDidPressReturn(self)
-                } else if btn.accessibilityIdentifier == "globe" {
-                    delegate?.flickKeyboardDidPressGlobe(self)
-                } else if btn.accessibilityIdentifier == "abc_switch" {
-                    delegate?.flickKeyboardDidPressABC(self)
-                } else if btn.accessibilityIdentifier == "num_switch" {
-                    if currentPage == .number {
-                        currentPage = .kana
-                    } else {
-                        currentPage = .number
+                if !cancelled {
+                    if btn.accessibilityIdentifier == "delete" {
+                        delegate?.flickKeyboardDidPressDelete(self)
+                    } else if btn.accessibilityIdentifier == "return" {
+                        delegate?.flickKeyboardDidPressReturn(self)
+                    } else if btn.accessibilityIdentifier == "globe" {
+                        delegate?.flickKeyboardDidPressGlobe(self)
+                    } else if btn.accessibilityIdentifier == "abc_switch" {
+                        delegate?.flickKeyboardDidPressABC(self)
+                    } else if btn.accessibilityIdentifier == "num_switch" {
+                        if currentPage == .number {
+                            currentPage = .kana
+                        } else {
+                            currentPage = .number
+                        }
+                        updatePageUI()
+                    } else if btn.accessibilityIdentifier == "face_mark" {
+                        delegate?.flickKeyboard(self, didInputText: "^_^")
+                    } else if btn.accessibilityIdentifier == "space" {
+                        delegate?.flickKeyboardDidPressSpace(self)
                     }
-                    updatePageUI()
-                } else if btn.accessibilityIdentifier == "face_mark" {
-                    delegate?.flickKeyboard(self, didInputText: "^_^")
                 }
             }
         }
@@ -694,14 +704,14 @@ class FlickKeyboardView: UIView {
     // MARK: - Animations
     
     private func animateKeyDown(_ view: UIView) {
-        UIView.animate(withDuration: 0.05) {
+        UIView.animate(withDuration: 0.05, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             view.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
             view.alpha = 0.8
         }
     }
     
     private func animateKeyUp(_ view: UIView) {
-        UIView.animate(withDuration: 0.1) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             view.transform = .identity
             view.alpha = 1.0
         }
