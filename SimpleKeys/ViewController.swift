@@ -255,7 +255,7 @@ class SettingsViewController: UITableViewController {
         case 3: return 3
         case 4: return 3
         case 5: return 1
-        case 6: return 5
+        case 6: return 6
         default: return 0
         }
     }
@@ -269,7 +269,7 @@ class SettingsViewController: UITableViewController {
         case 3: return isEn ? "Flick Settings" : "フリック入力の詳細設定"
         case 4: return isEn ? "AI Conversion (Gemini)" : "AI変換設定 (Gemini)"
         case 5: return isEn ? "User Dictionary" : "ユーザー辞書"
-        case 6: return isEn ? "Coming Soon" : "開発中・実装予定の機能 (Coming Soon)"
+        case 6: return isEn ? "Customization & Coming Soon" : "カスタマイズ・実装予定の機能 (Coming Soon)"
         default: return nil
         }
     }
@@ -368,7 +368,7 @@ class SettingsViewController: UITableViewController {
             cell.imageView?.image = UIImage(systemName: "book.fill")
             cell.accessoryType = .disclosureIndicator
         } else if indexPath.section == 6 {
-            if indexPath.row != 0 {
+            if indexPath.row > 1 {
                 cell.textLabel?.textColor = .secondaryLabel
                 cell.detailTextLabel?.textColor = .tertiaryLabel
                 cell.imageView?.tintColor = .systemGray
@@ -380,18 +380,23 @@ class SettingsViewController: UITableViewController {
                 cell.imageView?.image = UIImage(systemName: "paintpalette.fill")
                 cell.accessoryType = .disclosureIndicator
             } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Manage Fonts" : "フォント管理"
+                cell.detailTextLabel?.text = isEn ? "Install and manage custom fonts" : "カスタムフォントの追加や管理ができます"
+                cell.imageView?.image = UIImage(systemName: "textformat")
+                cell.accessoryType = .disclosureIndicator
+            } else if indexPath.row == 2 {
                 cell.textLabel?.text = isEn ? "Real-time AI Translation" : "AIリアルタイム翻訳＆トーン変換"
                 cell.detailTextLabel?.text = isEn ? "Translate or change text tone instantly" : "入力中のテキストを自動翻訳したり、敬語などに変換します"
                 cell.imageView?.image = UIImage(systemName: "character.bubble.fill")
-            } else if indexPath.row == 2 {
+            } else if indexPath.row == 3 {
                 cell.textLabel?.text = isEn ? "Clipboard & Snippets" : "クリップボード履歴＆定型文ボード"
                 cell.detailTextLabel?.text = isEn ? "Access copy history and quick phrases" : "過去のコピー履歴やよく使う定型文をワンタップで入力"
                 cell.imageView?.image = UIImage(systemName: "doc.on.clipboard.fill")
-            } else if indexPath.row == 3 {
+            } else if indexPath.row == 4 {
                 cell.textLabel?.text = isEn ? "AI Emoji Suggestion" : "AI文脈絵文字・顔文字サジェスト"
                 cell.detailTextLabel?.text = isEn ? "Smart emoji suggestions based on context" : "文章の感情に合わせて最適な絵文字・顔文字をAIが提案"
                 cell.imageView?.image = UIImage(systemName: "face.smiling.fill")
-            } else if indexPath.row == 4 {
+            } else if indexPath.row == 5 {
                 cell.textLabel?.text = isEn ? "Haptics & Sensitivity Settings" : "振動・カーソル感度の詳細カスタマイズ"
                 cell.detailTextLabel?.text = isEn ? "Fine-tune vibration and cursor speed" : "キーを弾いた時の振動やカーソル移動のスピードを調整"
                 cell.imageView?.image = UIImage(systemName: "slider.horizontal.3")
@@ -411,10 +416,16 @@ class SettingsViewController: UITableViewController {
             tableView.deselectRow(at: indexPath, animated: true)
             let vc = UserDictionaryViewController()
             navigationController?.pushViewController(vc, animated: true)
-        } else if indexPath.section == 6 && indexPath.row == 0 {
-            tableView.deselectRow(at: indexPath, animated: true)
-            let vc = MyThemesViewController(style: .insetGrouped)
-            navigationController?.pushViewController(vc, animated: true)
+        } else if indexPath.section == 6 {
+            if indexPath.row == 0 {
+                tableView.deselectRow(at: indexPath, animated: true)
+                let vc = MyThemesViewController(style: .insetGrouped)
+                navigationController?.pushViewController(vc, animated: true)
+            } else if indexPath.row == 1 {
+                tableView.deselectRow(at: indexPath, animated: true)
+                let vc = FontManagerViewController()
+                navigationController?.pushViewController(vc, animated: true)
+            }
         }
     }
 }
