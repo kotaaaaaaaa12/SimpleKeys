@@ -26,12 +26,6 @@ class MockDocumentProxy: NSObject, UITextDocumentProxy {
     var smartInsertDeleteType: UITextSmartInsertDeleteType = .no
 }
 
-#if APP
-typealias BaseKeyboardViewController = UIViewController
-#else
-typealias BaseKeyboardViewController = UIInputViewController
-#endif
-
 @objc(KeyboardViewController)
 class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate {
     private var alternateKeysPopup: UIView?

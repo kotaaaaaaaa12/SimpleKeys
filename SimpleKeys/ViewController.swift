@@ -1,3 +1,7 @@
+#if !APP
+#error("APP macro is not defined in SimpleKeys target!")
+#endif
+
 import UIKit
 
 // MARK: - Models
@@ -178,15 +182,15 @@ class SettingsViewController: UITableViewController {
     
     private func loadSettings() {
         let defaults = sharedDefaults
-        flickSwitch.isOn = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
+        flickSwitch.isOn = defaults?.object(forKey: "enableFlick") == nil ? true : defaults?.bool(forKey: "enableFlick") ?? true
         flickAlphabetQwertySwitch.isOn = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         flickOnlySwitch.isOn = defaults?.bool(forKey: "flickOnly") ?? false
         
         let ohMode = defaults?.string(forKey: "oneHandedMode") ?? "off"
         oneHandedSegment.selectedSegmentIndex = ohMode == "left" ? 0 : (ohMode == "right" ? 2 : 1)
         
-        qwertyEnglishSwitch.isOn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
-        qwertyRomajiSwitch.isOn = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
+        qwertyEnglishSwitch.isOn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults?.bool(forKey: "enableQwertyEnglish") ?? true
+        qwertyRomajiSwitch.isOn = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults?.bool(forKey: "enableQwertyRomaji") ?? true
         
         let lang = defaults?.string(forKey: "appLanguage") ?? "ja"
         languageSegment.selectedSegmentIndex = lang == "en" ? 1 : 0
