@@ -829,21 +829,28 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func applyThemeToQwertyButton(_ b: UIButton, isSpecialKey: Bool, theme: ThemeSettings, letterBg: UIColor, specialBg: UIColor) {
         let existingBlur = b.viewWithTag(8888) as? UIVisualEffectView
         
+        let opacity = theme.keyOpacity ?? 1.0
+        let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
+        let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
+        
+        let clearBgAlpha = 0.15 * opacity
+        
         if theme.keyStyle == 1 || theme.keyStyle == 3 { // Frosted or Clear Glass
-            b.backgroundColor = theme.keyStyle == 3 ? UIColor.white.withAlphaComponent(0.15) : .clear
+            b.backgroundColor = theme.keyStyle == 3 ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
             b.layer.shadowOpacity = 0
             b.layer.borderWidth = 0.5
-            b.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+            b.layer.borderColor = borderCol
             if theme.keyStyle == 1 {
                 if existingBlur == nil {
                     let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                     blur.tag = 8888
                     blur.layer.cornerRadius = 5
                     blur.layer.borderWidth = 0.5
-                    blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+                    blur.layer.borderColor = borderCol
                     blur.clipsToBounds = true
                     blur.isUserInteractionEnabled = false
                     blur.translatesAutoresizingMaskIntoConstraints = false
+                    blur.alpha = opacity
                     b.insertSubview(blur, at: 0)
                     NSLayoutConstraint.activate([
                         blur.leadingAnchor.constraint(equalTo: b.leadingAnchor),
@@ -851,6 +858,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                         blur.topAnchor.constraint(equalTo: b.topAnchor),
                         blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
                     ])
+                } else {
+                    existingBlur?.alpha = opacity
+                    existingBlur?.layer.borderColor = borderCol
                 }
             } else {
                 existingBlur?.removeFromSuperview()
@@ -1658,6 +1668,8 @@ struct ThemeSettings: Codable, Equatable {
     var fontName: String?
     var keyColorHex: String?
     var textColorHex: String?
+    var keyBorderColorHex: String?
+    var keyOpacity: CGFloat?
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"
@@ -1707,5 +1719,28 @@ class CandidateCell: UICollectionViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+}
+
+extension UIColor {
+    convenience init?(hex: String) {
+        var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if hexString.hasPrefix("#") {
+            hexString.remove(at: hexString.startIndex)
+        }
+        if hexString.count != 6 && hexString.count != 8 { return nil }
+        var rgbValue: UInt64 = 0
+        Scanner(string: hexString).scanHexInt64(&rgbValue)
+        if hexString.count == 6 {
+            self.init(red: CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0,
+                      green: CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0,
+                      blue: CGFloat(rgbValue & 0x0000FF) / 255.0,
+                      alpha: 1.0)
+        } else {
+            self.init(red: CGFloat((rgbValue & 0xFF000000) >> 24) / 255.0,
+                      green: CGFloat((rgbValue & 0x00FF0000) >> 16) / 255.0,
+                      blue: CGFloat((rgbValue & 0x0000FF00) >> 8) / 255.0,
+                      alpha: CGFloat(rgbValue & 0x000000FF) / 255.0)
+        }
     }
 }

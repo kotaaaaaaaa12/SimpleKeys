@@ -435,6 +435,11 @@ class FlickKeyboardView: UIView {
         
         let allKeys = Array(keysMap.keys) + [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].compactMap { $0 }
         
+        let opacity = theme.keyOpacity ?? 1.0
+        let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
+        let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
+        let clearBgAlpha = 0.15 * opacity
+        
         for keyView in allKeys {
             let existingBlur = keyView.viewWithTag(8888) as? UIVisualEffectView
             let isSpecial = [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].contains(keyView)
@@ -446,10 +451,10 @@ class FlickKeyboardView: UIView {
                 keyView.layer.borderWidth = 1
                 keyView.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
             } else if isFrosted || isClear {
-                keyView.backgroundColor = isClear ? UIColor.white.withAlphaComponent(0.15) : .clear
+                keyView.backgroundColor = isClear ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
                 keyView.layer.shadowOpacity = 0
                 keyView.layer.borderWidth = 0.5
-                keyView.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+                keyView.layer.borderColor = borderCol
                 
                 if isFrosted {
                     if existingBlur == nil {
@@ -457,10 +462,11 @@ class FlickKeyboardView: UIView {
                         blur.tag = 8888
                         blur.layer.cornerRadius = 6
                         blur.layer.borderWidth = 0.5
-                        blur.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+                        blur.layer.borderColor = borderCol
                         blur.clipsToBounds = true
                         blur.isUserInteractionEnabled = false
                         blur.translatesAutoresizingMaskIntoConstraints = false
+                        blur.alpha = opacity
                         keyView.insertSubview(blur, at: 0)
                         NSLayoutConstraint.activate([
                             blur.leadingAnchor.constraint(equalTo: keyView.leadingAnchor),
@@ -468,6 +474,9 @@ class FlickKeyboardView: UIView {
                             blur.topAnchor.constraint(equalTo: keyView.topAnchor),
                             blur.bottomAnchor.constraint(equalTo: keyView.bottomAnchor)
                         ])
+                    } else {
+                        existingBlur?.alpha = opacity
+                        existingBlur?.layer.borderColor = borderCol
                     }
                 } else {
                     existingBlur?.removeFromSuperview()

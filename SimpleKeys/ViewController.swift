@@ -74,6 +74,8 @@ struct ThemeSettings: Codable, Equatable {
     var fontName: String?
     var keyColorHex: String?
     var textColorHex: String?
+    var keyBorderColorHex: String?
+    var keyOpacity: CGFloat?
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"
@@ -805,13 +807,17 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let previewContainer = UIView()
     private let previewBgImageView = UIImageView()
-    private let previewKeyStack = UIStackView()
+    private let previewGrid = UIStackView()
     
     private var currentTheme = ThemeSettings(keyStyle: 0)
     
     private let keyStyleSegment = UISegmentedControl(items: [])
     private let buttonShapeSegment = UISegmentedControl(items: [])
     private let nameField = UITextField()
+    private let opacitySlider = UISlider()
+    private let borderSegment = UISegmentedControl(items: ["White", "Black", "Blue", "Pink", "Gold"])
+    
+    private let borderColors = ["#FFFFFF", "#000000", "#0A84FF", "#FF2D55", "#FFD700"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -824,6 +830,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         } else {
             currentTheme.id = UUID().uuidString
             currentTheme.name = "Custom Theme"
+            currentTheme.keyOpacity = 1.0
+        }
+        
+        if currentTheme.keyOpacity == nil {
+            currentTheme.keyOpacity = 1.0
         }
         
         let styleItems = isEn ? ["Standard", "Frosted", "Flat", "Clear"] : ["標準", "磨りガラス", "フラット", "クリア"]
@@ -853,28 +864,38 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         previewBgImageView.contentMode = .scaleAspectFill
         previewContainer.addSubview(previewBgImageView)
         
-        previewKeyStack.translatesAutoresizingMaskIntoConstraints = false
-        previewKeyStack.axis = .horizontal
-        previewKeyStack.distribution = .fillEqually
-        previewKeyStack.spacing = 8
-        previewContainer.addSubview(previewKeyStack)
+        previewGrid.translatesAutoresizingMaskIntoConstraints = false
+        previewGrid.axis = .vertical
+        previewGrid.distribution = .fillEqually
+        previewGrid.spacing = 8
+        previewContainer.addSubview(previewGrid)
         
-        for i in 0..<3 {
-            let key = UIView()
-            
-            let label = UILabel()
-            label.text = ["A", "B", "C"][i]
-            label.textAlignment = .center
-            label.font = .systemFont(ofSize: 20)
-            label.translatesAutoresizingMaskIntoConstraints = false
-            
-            key.addSubview(label)
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: key.centerYAnchor)
-            ])
-            
-            previewKeyStack.addArrangedSubview(key)
+        // Build a fake QWERTY grid
+        let rows = [
+            ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+            ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+            ["Z", "X", "C", "V", "B", "N", "M"]
+        ]
+        for row in rows {
+            let rowStack = UIStackView()
+            rowStack.axis = .horizontal
+            rowStack.distribution = .fillEqually
+            rowStack.spacing = 6
+            for letter in row {
+                let key = UIView()
+                let label = UILabel()
+                label.text = letter
+                label.textAlignment = .center
+                label.font = .systemFont(ofSize: 18)
+                label.translatesAutoresizingMaskIntoConstraints = false
+                key.addSubview(label)
+                NSLayoutConstraint.activate([
+                    label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
+                    label.centerYAnchor.constraint(equalTo: key.centerYAnchor)
+                ])
+                rowStack.addArrangedSubview(key)
+            }
+            previewGrid.addArrangedSubview(rowStack)
         }
         
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -894,10 +915,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             previewBgImageView.trailingAnchor.constraint(equalTo: previewContainer.trailingAnchor),
             previewBgImageView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
             
-            previewKeyStack.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
-            previewKeyStack.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
-            previewKeyStack.widthAnchor.constraint(equalToConstant: 200),
-            previewKeyStack.heightAnchor.constraint(equalToConstant: 45),
+            previewGrid.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
+            previewGrid.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
+            previewGrid.widthAnchor.constraint(equalTo: previewContainer.widthAnchor, constant: -16),
+            previewGrid.heightAnchor.constraint(equalToConstant: 160),
             
             tableView.topAnchor.constraint(equalTo: previewContainer.bottomAnchor, constant: 16),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -911,6 +932,18 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         buttonShapeSegment.selectedSegmentIndex = currentTheme.buttonShape ?? 0
         buttonShapeSegment.addTarget(self, action: #selector(settingChanged), for: .valueChanged)
         
+        opacitySlider.minimumValue = 0.0
+        opacitySlider.maximumValue = 1.0
+        opacitySlider.value = Float(currentTheme.keyOpacity ?? 1.0)
+        opacitySlider.addTarget(self, action: #selector(opacityChanged), for: .valueChanged)
+        
+        if let hex = currentTheme.keyBorderColorHex, let idx = borderColors.firstIndex(of: hex) {
+            borderSegment.selectedSegmentIndex = idx
+        } else {
+            borderSegment.selectedSegmentIndex = 0
+        }
+        borderSegment.addTarget(self, action: #selector(settingChanged), for: .valueChanged)
+        
         nameField.text = currentTheme.name
         nameField.placeholder = "Theme Name"
         nameField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
@@ -920,9 +953,15 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         currentTheme.name = nameField.text
     }
     
+    @objc private func opacityChanged() {
+        currentTheme.keyOpacity = CGFloat(opacitySlider.value)
+        updatePreview()
+    }
+    
     @objc private func settingChanged() {
         currentTheme.keyStyle = keyStyleSegment.selectedSegmentIndex
         currentTheme.buttonShape = buttonShapeSegment.selectedSegmentIndex
+        currentTheme.keyBorderColorHex = borderColors[borderSegment.selectedSegmentIndex]
         updatePreview()
     }
     
@@ -936,41 +975,52 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         }
         
         let shape = currentTheme.buttonShape ?? 0
-        let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? 22.5 : 0)
+        let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? 22 : 0)
+        let opacity = currentTheme.keyOpacity ?? 1.0
+        let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
+        let borderCol = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
+        let clearBgAlpha = 0.15 * opacity
         
-        for v in previewKeyStack.arrangedSubviews {
-            v.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
-            
-            v.layer.cornerRadius = radius
-            
-            if currentTheme.keyStyle == 1 || currentTheme.keyStyle == 3 {
-                v.backgroundColor = currentTheme.keyStyle == 3 ? UIColor.white.withAlphaComponent(0.15) : .clear
-                v.layer.shadowOpacity = 0
-                v.layer.borderWidth = 0.5
-                v.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
-                
-                if currentTheme.keyStyle == 1 {
-                    let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                    blur.layer.cornerRadius = radius
-                    blur.clipsToBounds = true
-                    blur.translatesAutoresizingMaskIntoConstraints = false
-                    v.insertSubview(blur, at: 0)
-                    NSLayoutConstraint.activate([
-                        blur.leadingAnchor.constraint(equalTo: v.leadingAnchor),
-                        blur.trailingAnchor.constraint(equalTo: v.trailingAnchor),
-                        blur.topAnchor.constraint(equalTo: v.topAnchor),
-                        blur.bottomAnchor.constraint(equalTo: v.bottomAnchor)
-                    ])
+        for row in previewGrid.arrangedSubviews {
+            if let stack = row as? UIStackView {
+                for v in stack.arrangedSubviews {
+                    v.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+                    
+                    v.layer.cornerRadius = radius
+                    
+                    if currentTheme.keyStyle == 1 || currentTheme.keyStyle == 3 {
+                        v.backgroundColor = currentTheme.keyStyle == 3 ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
+                        v.layer.shadowOpacity = 0
+                        v.layer.borderWidth = 0.5
+                        v.layer.borderColor = borderCol
+                        
+                        if currentTheme.keyStyle == 1 {
+                            let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+                            blur.layer.cornerRadius = radius
+                            blur.layer.borderWidth = 0.5
+                            blur.layer.borderColor = borderCol
+                            blur.clipsToBounds = true
+                            blur.translatesAutoresizingMaskIntoConstraints = false
+                            blur.alpha = opacity
+                            v.insertSubview(blur, at: 0)
+                            NSLayoutConstraint.activate([
+                                blur.leadingAnchor.constraint(equalTo: v.leadingAnchor),
+                                blur.trailingAnchor.constraint(equalTo: v.trailingAnchor),
+                                blur.topAnchor.constraint(equalTo: v.topAnchor),
+                                blur.bottomAnchor.constraint(equalTo: v.bottomAnchor)
+                            ])
+                        }
+                    } else if currentTheme.keyStyle == 2 {
+                        v.backgroundColor = .clear
+                        v.layer.shadowOpacity = 0
+                        v.layer.borderWidth = 1
+                        v.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+                    } else {
+                        v.backgroundColor = .white
+                        v.layer.shadowOpacity = 0.3
+                        v.layer.borderWidth = 0
+                    }
                 }
-            } else if currentTheme.keyStyle == 2 {
-                v.backgroundColor = .clear
-                v.layer.shadowOpacity = 0
-                v.layer.borderWidth = 1
-                v.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
-            } else {
-                v.backgroundColor = .white
-                v.layer.shadowOpacity = 0.3
-                v.layer.borderWidth = 0
             }
         }
     }
@@ -983,15 +1033,18 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationController?.popViewController(animated: true)
     }
     
-    func numberOfSections(in tableView: UITableView) -> Int { return 3 }
+    func numberOfSections(in tableView: UITableView) -> Int { return 4 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return section == 1 ? 2 : 1
+        if section == 1 { return 2 }
+        if section == 3 { return 2 }
+        return 1
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         if section == 0 { return isEn ? "Name" : "テーマ名" }
         if section == 1 { return isEn ? "Background" : "背景画像" }
-        return isEn ? "Key Style & Shape" : "キースタイル & 形状"
+        if section == 2 { return isEn ? "Key Style & Shape" : "キースタイル & 形状" }
+        return isEn ? "Transparency & Border Color" : "透過度 & フチの色"
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell()
@@ -1015,7 +1068,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.textLabel?.text = isEn ? "Remove Image" : "画像を削除"
                 cell.textLabel?.textColor = .systemRed
             }
-        } else {
+        } else if indexPath.section == 2 {
             let stack = UIStackView(arrangedSubviews: [keyStyleSegment, buttonShapeSegment])
             stack.axis = .vertical
             stack.spacing = 16
@@ -1027,6 +1080,28 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
                 stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
             ])
+        } else {
+            if indexPath.row == 0 {
+                let stack = UIStackView(arrangedSubviews: [opacitySlider])
+                stack.axis = .vertical
+                stack.spacing = 8
+                stack.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(stack)
+                NSLayoutConstraint.activate([
+                    stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                    stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+                ])
+            } else {
+                borderSegment.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(borderSegment)
+                NSLayoutConstraint.activate([
+                    borderSegment.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    borderSegment.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    borderSegment.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
+                ])
+            }
         }
         return cell
     }
@@ -1054,6 +1129,29 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 currentTheme.backgroundImageFileName = fileName
                 updatePreview()
             }
+        }
+    }
+}
+
+extension UIColor {
+    convenience init?(hex: String) {
+        var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if hexString.hasPrefix("#") {
+            hexString.remove(at: hexString.startIndex)
+        }
+        if hexString.count != 6 && hexString.count != 8 { return nil }
+        var rgbValue: UInt64 = 0
+        Scanner(string: hexString).scanHexInt64(&rgbValue)
+        if hexString.count == 6 {
+            self.init(red: CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0,
+                      green: CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0,
+                      blue: CGFloat(rgbValue & 0x0000FF) / 255.0,
+                      alpha: 1.0)
+        } else {
+            self.init(red: CGFloat((rgbValue & 0xFF000000) >> 24) / 255.0,
+                      green: CGFloat((rgbValue & 0x00FF0000) >> 16) / 255.0,
+                      blue: CGFloat((rgbValue & 0x0000FF00) >> 8) / 255.0,
+                      alpha: CGFloat(rgbValue & 0x000000FF) / 255.0)
         }
     }
 }
