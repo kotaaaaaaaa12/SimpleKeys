@@ -1102,18 +1102,42 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
             present(picker, animated: true)
         } else if indexPath.section == 5 {
-            var fontNames: [String?] = [nil, "HiraginoSans-W3", "HiraMinProN-W3", "Courier", "Menlo-Regular", "AvenirNext-Regular", "GillSans", "Georgia", "Futura-Medium"]
+            var fontNames: [String?] = [
+                nil,
+                "HiraginoSans-W3", "HiraginoSans-W6", "HiraginoSans-W8",
+                "HiraMinProN-W3", "HiraMinProN-W6",
+                "HiraMaruProN-W4",
+                "ToppanBunkyuGothicPr6N-Regular",
+                "ToppanBunkyuMidashiGothicStdN-ExtraBold",
+                "ToppanBunkyuMinchoPr6N-Regular",
+                "TsukuARdGothic-Regular", "TsukuBRdGothic-Regular",
+                "Courier", "Menlo-Regular", "AvenirNext-Regular", "AvenirNext-Bold",
+                "GillSans", "GillSans-Bold", "Georgia", "Georgia-Bold",
+                "Futura-Medium", "Futura-Bold",
+                "HelveticaNeue", "HelveticaNeue-Bold", "HelveticaNeue-Light",
+                "ChalkboardSE-Regular", "MarkerFelt-Thin", "PartyLetPlain",
+                "BradleyHandITCTT-Bold", "SnellRoundhand"
+            ]
             let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
             var fontLabels = [
                 isEn ? "System Default" : "システムデフォルト",
                 isEn ? "Hiragino Sans" : "ヒラギノ角ゴ",
+                isEn ? "Hiragino Sans Bold" : "ヒラギノ角ゴ (太字)",
+                isEn ? "Hiragino Sans Extra Bold" : "ヒラギノ角ゴ (極太)",
                 isEn ? "Hiragino Mincho" : "ヒラギノ明朝",
-                "Courier",
-                "Menlo",
-                "Avenir Next",
-                "Gill Sans",
-                "Georgia",
-                "Futura"
+                isEn ? "Hiragino Mincho Bold" : "ヒラギノ明朝 (太字)",
+                isEn ? "Hiragino Maru Gothic" : "ヒラギノ丸ゴ",
+                isEn ? "Toppan Bunkyu Gothic" : "凸版文久ゴシック",
+                isEn ? "Toppan Bunkyu Midashi Go" : "凸版文久見出しゴシック",
+                isEn ? "Toppan Bunkyu Mincho" : "凸版文久明朝",
+                isEn ? "Tsukushi A Maru Gothic" : "筑紫A丸ゴシック",
+                isEn ? "Tsukushi B Maru Gothic" : "筑紫B丸ゴシック",
+                "Courier", "Menlo", "Avenir Next", "Avenir Next Bold",
+                "Gill Sans", "Gill Sans Bold", "Georgia", "Georgia Bold",
+                "Futura", "Futura Bold",
+                "Helvetica Neue", "Helvetica Neue Bold", "Helvetica Neue Light",
+                "Chalkboard SE", "Marker Felt", "Party LET",
+                "Bradley Hand", "Snell Roundhand"
             ]
             
             let customFonts = CustomFontManager.shared.getCustomFonts()
