@@ -3,6 +3,7 @@ import UIKit
 class ViewController: UIViewController {
 
     private let styleSegmentedControl = UISegmentedControl(items: ["フリック", "QWERTY"])
+    private let defaultModeSegmentedControl = UISegmentedControl(items: ["フリック", "QWERTY"])
     
     // Shared UserDefaults using the App Group
     private let sharedDefaults = UserDefaults(suiteName: "group.com.simplekeys.app")
@@ -30,6 +31,27 @@ class ViewController: UIViewController {
         instructionsLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(instructionsLabel)
         
+        // Default Mode Setting
+        let defaultModeLabel = UILabel()
+        defaultModeLabel.text = "初期キーボード"
+        defaultModeLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        defaultModeLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(defaultModeLabel)
+        
+        defaultModeSegmentedControl.selectedSegmentIndex = 0
+        defaultModeSegmentedControl.addTarget(self, action: #selector(defaultModeChanged(_:)), for: .valueChanged)
+        defaultModeSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(defaultModeSegmentedControl)
+        
+        let defaultModeDesc = UILabel()
+        defaultModeDesc.text = "キーボードを開いたときに最初に表示されるレイアウトを選択します。"
+        defaultModeDesc.font = .systemFont(ofSize: 13, weight: .regular)
+        defaultModeDesc.textColor = .secondaryLabel
+        defaultModeDesc.numberOfLines = 0
+        defaultModeDesc.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(defaultModeDesc)
+        
+        // English Style Setting
         let styleLabel = UILabel()
         styleLabel.text = "英語入力のスタイル (ABCボタン)"
         styleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
@@ -57,7 +79,18 @@ class ViewController: UIViewController {
             instructionsLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             instructionsLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
-            styleLabel.topAnchor.constraint(equalTo: instructionsLabel.bottomAnchor, constant: 40),
+            defaultModeLabel.topAnchor.constraint(equalTo: instructionsLabel.bottomAnchor, constant: 40),
+            defaultModeLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            
+            defaultModeSegmentedControl.topAnchor.constraint(equalTo: defaultModeLabel.bottomAnchor, constant: 12),
+            defaultModeSegmentedControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            defaultModeSegmentedControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            
+            defaultModeDesc.topAnchor.constraint(equalTo: defaultModeSegmentedControl.bottomAnchor, constant: 12),
+            defaultModeDesc.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            defaultModeDesc.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            
+            styleLabel.topAnchor.constraint(equalTo: defaultModeDesc.bottomAnchor, constant: 40),
             styleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             
             styleSegmentedControl.topAnchor.constraint(equalTo: styleLabel.bottomAnchor, constant: 12),
@@ -71,9 +104,16 @@ class ViewController: UIViewController {
     }
     
     private func loadSettings() {
-        // 0: Flick, 1: QWERTY
+        let defaultMode = sharedDefaults?.integer(forKey: "defaultKeyboardMode") ?? 0
+        defaultModeSegmentedControl.selectedSegmentIndex = defaultMode
+        
         let style = sharedDefaults?.integer(forKey: "englishInputStyle") ?? 0
         styleSegmentedControl.selectedSegmentIndex = style
+    }
+    
+    @objc private func defaultModeChanged(_ sender: UISegmentedControl) {
+        sharedDefaults?.set(sender.selectedSegmentIndex, forKey: "defaultKeyboardMode")
+        sharedDefaults?.synchronize()
     }
     
     @objc private func styleChanged(_ sender: UISegmentedControl) {

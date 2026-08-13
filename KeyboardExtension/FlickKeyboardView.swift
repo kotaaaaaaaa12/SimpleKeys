@@ -113,7 +113,7 @@ class FlickKeyboardView: UIView {
     private var activeButton: UIView?
     private var startPoint: CGPoint = .zero
     private var popupView: UIView?
-    private var popupLabel: UILabel?
+    private var popupLabels: [FlickDirection: UILabel] = [:]
     
     // State
     private var isDarkMode = false
@@ -129,7 +129,8 @@ class FlickKeyboardView: UIView {
     private var spaceButton: UIView!
     private var abcButton: UIView!
     private var numButton: UIView!
-    private var kaomojiButton: UIView!
+    
+    private var deleteTimer: Timer?
     
     // Center grid buttons to update text
     private var gridButtons: [[UIView]] = []
@@ -164,43 +165,52 @@ class FlickKeyboardView: UIView {
             containerView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
         ])
         
-        // Define a 5x5 grid using layout guides
+        // Define a 4x5 grid using layout guides
         var rowGuides: [UILayoutGuide] = []
         var colGuides: [UILayoutGuide] = []
         
-        for _ in 0..<5 {
+        for i in 0..<4 {
             let rg = UILayoutGuide()
             containerView.addLayoutGuide(rg)
             rowGuides.append(rg)
-            
+        }
+        
+        for i in 0..<5 {
             let cg = UILayoutGuide()
             containerView.addLayoutGuide(cg)
             colGuides.append(cg)
         }
         
         // Setup Equal Heights/Widths for guides
-        for i in 0..<5 {
+        for i in 0..<4 {
             NSLayoutConstraint.activate([
                 rowGuides[i].leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                rowGuides[i].trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                colGuides[i].topAnchor.constraint(equalTo: containerView.topAnchor),
-                colGuides[i].bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+                rowGuides[i].trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
             ])
-            
             if i > 0 {
                 NSLayoutConstraint.activate([
                     rowGuides[i].heightAnchor.constraint(equalTo: rowGuides[0].heightAnchor),
-                    rowGuides[i].topAnchor.constraint(equalTo: rowGuides[i-1].bottomAnchor, constant: 6),
+                    rowGuides[i].topAnchor.constraint(equalTo: rowGuides[i-1].bottomAnchor, constant: 6)
+                ])
+            }
+        }
+        
+        for i in 0..<5 {
+            NSLayoutConstraint.activate([
+                colGuides[i].topAnchor.constraint(equalTo: containerView.topAnchor),
+                colGuides[i].bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+            ])
+            if i > 0 {
+                NSLayoutConstraint.activate([
                     colGuides[i].widthAnchor.constraint(equalTo: colGuides[0].widthAnchor),
                     colGuides[i].leadingAnchor.constraint(equalTo: colGuides[i-1].trailingAnchor, constant: 6)
                 ])
             }
         }
         
-        // Pin outer guides
         NSLayoutConstraint.activate([
             rowGuides[0].topAnchor.constraint(equalTo: containerView.topAnchor),
-            rowGuides[4].bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            rowGuides[3].bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
             colGuides[0].leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             colGuides[4].trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
         ])
@@ -228,12 +238,8 @@ class FlickKeyboardView: UIView {
         abcButton.accessibilityIdentifier = "abc_switch"
         place(view: abcButton, row: 1, col: 0)
         
-        kaomojiButton = createSpecialKey(title: "^_^")
-        kaomojiButton.accessibilityIdentifier = "kaomoji_switch"
-        place(view: kaomojiButton, row: 2, col: 0)
-        
         globeButton = createSpecialKey(title: "🌐")
-        place(view: globeButton, row: 4, col: 0) // Globe in bottom left
+        place(view: globeButton, row: 2, col: 0, rowSpan: 2) // Spans row 2 and 3
         
         // 2. Center Grid
         gridButtons = Array(repeating: Array(repeating: UIView(), count: 3), count: 4)
@@ -251,16 +257,17 @@ class FlickKeyboardView: UIView {
         
         // 3. Right Sidebar
         deleteButton = createSpecialKey(title: "⌫")
+        deleteButton.accessibilityIdentifier = "delete"
         place(view: deleteButton, row: 0, col: 4)
         
-        returnButton = createSpecialKey(title: "改行")
-        if let lbl = returnButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
-        place(view: returnButton, row: 1, col: 4, rowSpan: 3) // Spans rows 1,2,3
-        
-        // 4. Bottom Row
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
         if let lbl = spaceButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
-        place(view: spaceButton, row: 4, col: 1, colSpan: 4) // Spans from col 1 to 4
+        place(view: spaceButton, row: 1, col: 4)
+        
+        returnButton = createSpecialKey(title: "改行")
+        returnButton.accessibilityIdentifier = "return"
+        if let lbl = returnButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        place(view: returnButton, row: 2, col: 4, rowSpan: 2) // Spans row 2 and 3
     }
     
     // MARK: - Key Builders
@@ -334,6 +341,8 @@ class FlickKeyboardView: UIView {
         
         if keysMap[btn] != nil {
             showPopup(for: btn)
+        } else if btn.accessibilityIdentifier == "delete" {
+            startDeleteTimer()
         }
     }
     
@@ -350,13 +359,32 @@ class FlickKeyboardView: UIView {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        stopDeleteTimer()
         guard let touch = touches.first, touch == activeTouch else { return }
         finishTouch(at: touch.location(in: self))
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, touch == activeTouch else { return }
-        finishTouch(at: touch.location(in: self), cancelled: true)
+        stopDeleteTimer()
+        hidePopup()
+        if let btn = activeButton { animateKeyUp(btn) }
+        activeButton = nil
+    }
+    
+    private func startDeleteTimer() {
+        deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
+            self?.deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+                guard let self = self else { return }
+                self.delegate?.flickKeyboardDidPressDelete(self)
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+            }
+        }
+    }
+    
+    private func stopDeleteTimer() {
+        deleteTimer?.invalidate()
+        deleteTimer = nil
     }
     
     private func finishTouch(at point: CGPoint, cancelled: Bool = false) {
@@ -369,7 +397,14 @@ class FlickKeyboardView: UIView {
         hidePopup()
         
         if !cancelled {
-            if let keyData = keysMap[btn] {
+            if btn.accessibilityIdentifier == "dakuten" {
+                if currentPage == .alphabet {
+                    isShifted.toggle()
+                    updatePageUI()
+                } else if currentPage == .kana {
+                    delegate?.flickKeyboardDidPressDakuten(self)
+                }
+            } else if let keyData = keysMap[btn] {
                 // Kana key
                 let dx = point.x - startPoint.x
                 let dy = point.y - startPoint.y
@@ -383,22 +418,12 @@ class FlickKeyboardView: UIView {
                 }
             } else {
                 // Special key
-                if btn == deleteButton {
+                if btn.accessibilityIdentifier == "delete" {
                     delegate?.flickKeyboardDidPressDelete(self)
-                } else if btn == returnButton {
+                } else if btn.accessibilityIdentifier == "return" {
                     delegate?.flickKeyboardDidPressReturn(self)
                 } else if btn == globeButton {
-                    // Handled by KeyboardViewController UIControl target if we converted to UIButton,
-                    // but since it's UIView now, we must trigger it manually or let VC attach a recognizer.
-                    // Actually, let's leave globe to standard target-action in VC if possible,
-                    // but we changed it to UIView. We will fix this by providing a UIButton for globe.
-                } else if btn.accessibilityIdentifier == "dakuten" {
-                    if currentPage == .alphabet {
-                        isShifted.toggle()
-                        updatePageUI()
-                    } else if currentPage == .kana {
-                        delegate?.flickKeyboardDidPressDakuten(self)
-                    }
+                    // Handled by KeyboardViewController
                 } else if btn.accessibilityIdentifier == "abc_switch" {
                     delegate?.flickKeyboardDidPressABC(self)
                 } else if btn.accessibilityIdentifier == "num_switch" {
@@ -408,8 +433,6 @@ class FlickKeyboardView: UIView {
                         currentPage = .number
                     }
                     updatePageUI()
-                } else if btn.accessibilityIdentifier == "kaomoji_switch" {
-                    // TODO: Kaomoji
                 }
             }
         }
@@ -463,68 +486,91 @@ class FlickKeyboardView: UIView {
     // MARK: - Popup
     
     private func showPopup(for button: UIView) {
-        guard keysMap[button] != nil else { return }
+        guard let keyData = keysMap[button] else { return }
         
         let popup = UIView()
-        popup.backgroundColor = UIColor.systemBlue
-        popup.layer.cornerRadius = 8
-        popup.layer.shadowColor = UIColor.black.cgColor
-        popup.layer.shadowOpacity = 0.3
-        popup.layer.shadowOffset = CGSize(width: 0, height: 2)
         popup.translatesAutoresizingMaskIntoConstraints = false
         
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 32, weight: .bold)
-        label.textColor = .white
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        popup.addSubview(label)
-        popupLabel = label
+        // Base sizes
+        let keyWidth: CGFloat = 50
+        let keyHeight: CGFloat = 50
+        let spacing: CGFloat = 2
         
-        updatePopup(direction: .center, for: button)
+        let directions: [FlickDirection] = [.center, .left, .up, .right, .down]
         
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: popup.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: popup.centerYAnchor)
-        ])
-        
-        if let window = button.window {
-            window.addSubview(popup)
-            let frame = button.convert(button.bounds, to: window)
+        for dir in directions {
+            if dir != .center && textForDirection(dir, key: keyData) == nil { continue }
+            
+            let label = UILabel()
+            label.font = .systemFont(ofSize: 24, weight: .semibold)
+            label.textColor = .black
+            label.textAlignment = .center
+            label.backgroundColor = .white
+            label.layer.cornerRadius = 6
+            label.layer.masksToBounds = true
+            label.layer.shadowColor = UIColor.black.cgColor
+            label.layer.shadowOpacity = 0.2
+            label.layer.shadowOffset = CGSize(width: 0, height: 1)
+            label.layer.shadowRadius = 2
+            label.text = textForDirection(dir, key: keyData) ?? ""
+            label.translatesAutoresizingMaskIntoConstraints = false
+            popup.addSubview(label)
+            popupLabels[dir] = label
             
             NSLayoutConstraint.activate([
-                popup.widthAnchor.constraint(equalToConstant: 60),
-                popup.heightAnchor.constraint(equalToConstant: 60),
-                popup.centerXAnchor.constraint(equalTo: window.leadingAnchor, constant: frame.midX),
-                popup.bottomAnchor.constraint(equalTo: window.topAnchor, constant: frame.minY - 10)
+                label.widthAnchor.constraint(equalToConstant: keyWidth),
+                label.heightAnchor.constraint(equalToConstant: keyHeight)
+            ])
+            
+            var centerXOffset: CGFloat = 0
+            var centerYOffset: CGFloat = 0
+            
+            switch dir {
+            case .center: break
+            case .left: centerXOffset = -(keyWidth + spacing)
+            case .right: centerXOffset = keyWidth + spacing
+            case .up: centerYOffset = -(keyHeight + spacing)
+            case .down: centerYOffset = keyHeight + spacing
+            }
+            
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: popup.centerXAnchor, constant: centerXOffset),
+                label.centerYAnchor.constraint(equalTo: popup.centerYAnchor, constant: centerYOffset)
             ])
         }
+        
+        addSubview(popup)
         popupView = popup
+        
+        NSLayoutConstraint.activate([
+            popup.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+            popup.centerYAnchor.constraint(equalTo: button.centerYAnchor, constant: -10)
+        ])
+        
+        updatePopup(direction: .center, for: button)
     }
     
     private func updatePopup(direction: FlickDirection, for button: UIView) {
-        guard let key = keysMap[button], let text = textForDirection(direction, key: key) else { return }
-        popupLabel?.text = text
+        guard popupView != nil else { return }
         
-        // Optional: animate popup position slightly based on direction
-        guard let popup = popupView else { return }
-        let offset: CGFloat = 15
-        var dx: CGFloat = 0, dy: CGFloat = 0
-        switch direction {
-        case .left: dx = -offset
-        case .right: dx = offset
-        case .up: dy = -offset
-        case .down: dy = offset
-        case .center: break
+        for (dir, label) in popupLabels {
+            if dir == direction {
+                label.backgroundColor = UIColor.systemBlue
+                label.textColor = .white
+                label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+                popupView?.bringSubviewToFront(label)
+            } else {
+                label.backgroundColor = .white
+                label.textColor = .black
+                label.transform = .identity
+            }
         }
-        
-        popup.transform = CGAffineTransform(translationX: dx, y: dy)
     }
     
     private func hidePopup() {
         popupView?.removeFromSuperview()
         popupView = nil
-        popupLabel = nil
+        popupLabels.removeAll()
     }
     
     // MARK: - Animations
@@ -565,10 +611,9 @@ class FlickKeyboardView: UIView {
         
         abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : normalColor
         numButton.backgroundColor = (currentPage == .number) ? activeColor : normalColor
-        kaomojiButton.backgroundColor = normalColor
         
-        if let kaomojiLbl = kaomojiButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
-            kaomojiLbl.text = (currentPage == .alphabet) ? "a/A" : "^_^"
+        if let abcLbl = abcButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
+            abcLbl.text = (currentPage == .alphabet) ? "a/A" : "ABC"
         }
         
         // Update grid keys
@@ -618,7 +663,7 @@ class FlickKeyboardView: UIView {
         backgroundColor = bg
         
         func apply(to view: UIView) {
-            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view.accessibilityIdentifier == "dakuten" || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "^_^" }) != nil)
+            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view.accessibilityIdentifier == "dakuten" || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "a/A" }) != nil)
             
             if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
                 view.backgroundColor = isSpecial ? specialBg : keyBg

@@ -5,23 +5,26 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     // MARK: - Types
     
-    enum KeyboardMode {
+    enum InputMode {
+        case flickKana
+        case flickAlphabet
+        case flickNumber
         case qwertyEnglish
-        case qwertyJapanese
-        case flick
+        case qwertyNumbers
+        case qwertySymbols
     }
     
     // MARK: - Properties
     
-    private var currentMode: KeyboardMode = .qwertyEnglish
-    private var isShifted = false
-    private var shiftButton: UIButton?
-    private var modeButton: UIButton?
+    private var currentMode: InputMode = .qwertyEnglish
+    private var qwertyShifted = false
+    private var qwertyContainer: UIView!
+    private var qwertyStack: UIStackView!
+    private var qwertyDeleteTimer: Timer?
     private var nextKeyboardButton: UIButton?
     
     private let romajiConverter = RomajiConverter()
     
-    private var qwertyContainer: UIView!
     private var flickKeyboard: FlickKeyboardView!
     private var conversionBar: UIView!
     private var conversionLabel: UILabel!
@@ -37,12 +40,16 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Read default keyboard mode
+        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let defaultMode = defaults?.integer(forKey: "defaultKeyboardMode") ?? 0
+        currentMode = defaultMode == 0 ? .flickKana : .qwertyEnglish
+        
         setupConversionBar()
         setupQWERTYKeyboard()
         setupFlickKeyboard()
         applyMode()
         
-        // Add a default height constraint with low priority to prevent 0-height crashes
         let heightConstraint = view.heightAnchor.constraint(equalToConstant: 216)
         heightConstraint.priority = UILayoutPriority(250)
         heightConstraint.isActive = true
@@ -114,50 +121,160 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         qwertyContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(qwertyContainer)
         
-        let qwertyBottom = qwertyContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
+        let qwertyBottom = qwertyContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         qwertyBottom.priority = .defaultHigh
         
         NSLayoutConstraint.activate([
             qwertyContainer.topAnchor.constraint(equalTo: conversionBar.bottomAnchor, constant: 2),
             qwertyBottom,
-            qwertyContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 3),
-            qwertyContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -3),
+            qwertyContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            qwertyContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
         
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.spacing = 8
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        qwertyContainer.addSubview(stack)
+        qwertyStack = UIStackView()
+        qwertyStack.axis = .vertical
+        qwertyStack.distribution = .fillEqually
+        qwertyStack.spacing = 10
+        qwertyStack.translatesAutoresizingMaskIntoConstraints = false
+        qwertyContainer.addSubview(qwertyStack)
         
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: qwertyContainer.topAnchor, constant: 4),
-            stack.bottomAnchor.constraint(equalTo: qwertyContainer.bottomAnchor),
-            stack.leadingAnchor.constraint(equalTo: qwertyContainer.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: qwertyContainer.trailingAnchor),
+            qwertyStack.topAnchor.constraint(equalTo: qwertyContainer.topAnchor, constant: 10),
+            qwertyStack.bottomAnchor.constraint(equalTo: qwertyContainer.bottomAnchor, constant: -10),
+            qwertyStack.leadingAnchor.constraint(equalTo: qwertyContainer.leadingAnchor, constant: 3),
+            qwertyStack.trailingAnchor.constraint(equalTo: qwertyContainer.trailingAnchor, constant: -3)
         ])
         
-        // Row 1
-        stack.addArrangedSubview(createLetterRow(letters: letterRows[0]))
+        rebuildQWERTYLayout()
+    }
+    
+    private func rebuildQWERTYLayout() {
+        for subview in qwertyStack.arrangedSubviews {
+            qwertyStack.removeArrangedSubview(subview)
+            subview.removeFromSuperview()
+        }
         
-        // Row 2 (with padding)
-        let row2Container = UIView()
-        let row2 = createLetterRow(letters: letterRows[1])
-        row2.translatesAutoresizingMaskIntoConstraints = false
-        row2Container.addSubview(row2)
-        NSLayoutConstraint.activate([
-            row2.topAnchor.constraint(equalTo: row2Container.topAnchor),
-            row2.bottomAnchor.constraint(equalTo: row2Container.bottomAnchor),
-            row2.leadingAnchor.constraint(equalTo: row2Container.leadingAnchor, constant: 16),
-            row2.trailingAnchor.constraint(equalTo: row2Container.trailingAnchor, constant: -16),
-        ])
-        stack.addArrangedSubview(row2Container)
+        let rows: [[String]]
+        var thirdRowSpecials: (left: String, right: String) = ("⇧", "⌫")
+        var bottomRow: [String] = ["123", "globe", "space", "return"]
         
-        // Row 3 (with shift + delete)
-        stack.addArrangedSubview(createThirdRow())
+        switch currentMode {
+        case .qwertyNumbers:
+            rows = [
+                ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+                ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
+                [".", ",", "?", "!", "'"]
+            ]
+            thirdRowSpecials = ("#+=", "⌫")
+            bottomRow = ["ABC", "globe", "space", "return"]
+        case .qwertySymbols:
+            rows = [
+                ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="],
+                ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"],
+                [".", ",", "?", "!", "'"]
+            ]
+            thirdRowSpecials = ("123", "⌫")
+            bottomRow = ["ABC", "globe", "space", "return"]
+        default:
+            let letters = qwertyShifted ? [
+                ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+                ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+                ["Z", "X", "C", "V", "B", "N", "M"]
+            ] : [
+                ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+                ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+                ["z", "x", "c", "v", "b", "n", "m"]
+            ]
+            rows = letters
+        }
         
-        // Row 4 (bottom)
-        stack.addArrangedSubview(createBottomRow())
+        qwertyStack.addArrangedSubview(createLetterRow(letters: rows[0]))
+        
+        let row2 = createLetterRow(letters: rows[1])
+        let padding2 = UIView()
+        let padding2R = UIView()
+        padding2.translatesAutoresizingMaskIntoConstraints = false
+        padding2R.translatesAutoresizingMaskIntoConstraints = false
+        padding2.widthAnchor.constraint(equalTo: padding2R.widthAnchor).isActive = true
+        let paddedRow2 = UIStackView(arrangedSubviews: [padding2, row2, padding2R])
+        paddedRow2.axis = .horizontal
+        paddedRow2.spacing = 0
+        qwertyStack.addArrangedSubview(paddedRow2)
+        
+        let row3 = createLetterRow(letters: rows[2])
+        let leftSpecial = createSpecialKeyButton(title: thirdRowSpecials.left)
+        if thirdRowSpecials.left == "⇧" {
+            leftSpecial.setTitle(qwertyShifted ? "⬆︎" : "⇧", for: .normal)
+            leftSpecial.addTarget(self, action: #selector(shiftPressed), for: .touchUpInside)
+        } else if thirdRowSpecials.left == "#+=" {
+            leftSpecial.addTarget(self, action: #selector(switchToSymbols), for: .touchUpInside)
+        } else if thirdRowSpecials.left == "123" {
+            leftSpecial.addTarget(self, action: #selector(switchToNumbers), for: .touchUpInside)
+        }
+        
+        let rightSpecial = createSpecialKeyButton(title: thirdRowSpecials.right)
+        if thirdRowSpecials.right == "⌫" {
+            rightSpecial.addTarget(self, action: #selector(deleteTouchDown), for: .touchDown)
+            rightSpecial.addTarget(self, action: #selector(deleteTouchUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        }
+        
+        leftSpecial.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+        leftSpecial.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        rightSpecial.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+        rightSpecial.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        
+        let thirdRowStack = UIStackView(arrangedSubviews: [leftSpecial, row3, rightSpecial])
+        thirdRowStack.axis = .horizontal
+        thirdRowStack.spacing = 10
+        leftSpecial.widthAnchor.constraint(equalTo: rightSpecial.widthAnchor).isActive = true
+        leftSpecial.widthAnchor.constraint(equalToConstant: 42).isActive = true
+        qwertyStack.addArrangedSubview(thirdRowStack)
+        
+        let bottomStack = UIStackView()
+        bottomStack.axis = .horizontal
+        bottomStack.distribution = .fillProportionally
+        bottomStack.spacing = 6
+        
+        for key in bottomRow {
+            if key == "globe" {
+                if needsInputModeSwitchKey {
+                    let globe = createSpecialKeyButton(title: "🌐")
+                    globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+                    globe.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+                    globe.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                    globe.widthAnchor.constraint(equalToConstant: 42).isActive = true
+                    bottomStack.addArrangedSubview(globe)
+                }
+            } else if key == "space" {
+                let spaceBtn = createKeyButton(title: "space")
+                spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
+                spaceBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+                spaceBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                bottomStack.addArrangedSubview(spaceBtn)
+            } else if key == "return" {
+                let retBtn = createSpecialKeyButton(title: "return")
+                retBtn.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
+                retBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+                retBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                retBtn.widthAnchor.constraint(equalToConstant: 80).isActive = true
+                bottomStack.addArrangedSubview(retBtn)
+            } else if key == "ABC" {
+                let abcBtn = createSpecialKeyButton(title: "ABC")
+                abcBtn.addTarget(self, action: #selector(switchToEnglish), for: .touchUpInside)
+                abcBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+                abcBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                abcBtn.widthAnchor.constraint(equalToConstant: 42).isActive = true
+                bottomStack.addArrangedSubview(abcBtn)
+            } else if key == "123" {
+                let numBtn = createSpecialKeyButton(title: "123")
+                numBtn.addTarget(self, action: #selector(switchToNumbers), for: .touchUpInside)
+                numBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+                numBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+                numBtn.widthAnchor.constraint(equalToConstant: 42).isActive = true
+                bottomStack.addArrangedSubview(numBtn)
+            }
+        }
+        qwertyStack.addArrangedSubview(bottomStack)
     }
     
     // MARK: - Flick Setup
@@ -178,11 +295,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             flickKeyboard.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             flickKeyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-        
-        let globeBtn = flickKeyboard.getGlobeButton()
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleFlickGlobeTap(_:)))
-        globeBtn.addGestureRecognizer(tap)
-        globeBtn.isUserInteractionEnabled = true
     }
     
     // MARK: - Next Keyboard Button Visibility
@@ -190,49 +302,26 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func updateNextKeyboardButtonVisibility() {
         let showGlobe = needsInputModeSwitchKey
         nextKeyboardButton?.isHidden = !showGlobe
-        flickKeyboard?.getGlobeButton().isHidden = !showGlobe
     }
     
     // MARK: - Mode Switching
     
     private func applyMode() {
-        switch currentMode {
-        case .qwertyEnglish:
-            qwertyContainer.isHidden = false
-            flickKeyboard.isHidden = true
-            conversionBar.isHidden = true
-            romajiConverter.clear()
-            
-        case .qwertyJapanese:
-            qwertyContainer.isHidden = false
-            flickKeyboard.isHidden = true
-            conversionBar.isHidden = false
-            updateConversionBar()
-            
-        case .flick:
+        if currentMode == .flickKana || currentMode == .flickAlphabet || currentMode == .flickNumber {
             qwertyContainer.isHidden = true
             flickKeyboard.isHidden = false
-            conversionBar.isHidden = true
-            romajiConverter.clear()
+            switch currentMode {
+            case .flickKana: flickKeyboard.switchToPage(.kana)
+            case .flickAlphabet: flickKeyboard.switchToPage(.alphabet)
+            case .flickNumber: flickKeyboard.switchToPage(.number)
+            default: break
+            }
+        } else {
+            flickKeyboard.isHidden = true
+            qwertyContainer.isHidden = false
+            rebuildQWERTYLayout()
+            updateButtonColors()
         }
-        
-        updateModeButtonLabel()
-        updateAppearance()
-    }
-    
-    @objc private func switchToKanaPressed() {
-        if currentMode == .qwertyJapanese && !romajiConverter.displayText.isEmpty {
-            let text = romajiConverter.commit()
-            textDocumentProxy.insertText(text)
-        }
-        
-        currentMode = .flick
-        flickKeyboard?.switchToPage(.kana)
-        applyMode()
-    }
-    
-    private func updateModeButtonLabel() {
-        // Now it's just 'あいう', so no dynamic updates needed
     }
     
     // MARK: - Conversion Bar
@@ -262,7 +351,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let stack = UIStackView()
         stack.axis = .horizontal
         stack.distribution = .fillEqually
-        stack.spacing = 4
+        stack.spacing = 6
         
         for letter in letters {
             let button = createKeyButton(title: letter)
@@ -271,97 +360,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
             stack.addArrangedSubview(button)
         }
-        
-        stack.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        return stack
-    }
-    
-    private func createThirdRow() -> UIStackView {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.spacing = 4
-        
-        let shift = createSpecialKeyButton(title: "⇧")
-        shift.addTarget(self, action: #selector(shiftPressed), for: .touchUpInside)
-        shift.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
-        shift.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        shift.widthAnchor.constraint(equalToConstant: 42).isActive = true
-        self.shiftButton = shift
-        stack.addArrangedSubview(shift)
-        
-        let lettersStack = UIStackView()
-        lettersStack.axis = .horizontal
-        lettersStack.distribution = .fillEqually
-        lettersStack.spacing = 4
-        
-        for letter in letterRows[2] {
-            let button = createKeyButton(title: letter)
-            button.addTarget(self, action: #selector(letterKeyPressed(_:)), for: .touchUpInside)
-            button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
-            button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-            lettersStack.addArrangedSubview(button)
-        }
-        stack.addArrangedSubview(lettersStack)
-        
-        let delete = createSpecialKeyButton(title: "⌫")
-        delete.addTarget(self, action: #selector(deletePressed), for: .touchDown)
-        delete.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
-        delete.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        delete.widthAnchor.constraint(equalToConstant: 42).isActive = true
-        stack.addArrangedSubview(delete)
-        
-        stack.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        return stack
-    }
-    
-    private func createBottomRow() -> UIStackView {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.spacing = 4
-        
-        // Next Keyboard (globe) - only if needed
-        let globe = UIButton(type: .system)
-        if #available(iOS 16.0, *) {
-            globe.setImage(UIImage(systemName: "globe"), for: .normal)
-        } else {
-            globe.setTitle("🌐", for: .normal)
-        }
-        globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
-        globe.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        globe.layer.cornerRadius = 5
-        globe.layer.shadowOffset = CGSize(width: 0, height: 1)
-        globe.layer.shadowRadius = 0
-        globe.layer.shadowOpacity = 0.3
-        globe.widthAnchor.constraint(equalToConstant: 40).isActive = true
-        self.nextKeyboardButton = globe
-        stack.addArrangedSubview(globe)
-        
-        // Return to Flick (あいう)
-        let mode = createSpecialKeyButton(title: "あいう")
-        mode.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        mode.addTarget(self, action: #selector(switchToKanaPressed), for: .touchDown)
-        mode.widthAnchor.constraint(equalToConstant: 50).isActive = true
-        self.modeButton = mode
-        stack.addArrangedSubview(mode)
-        
-        // Space
-        let space = createKeyButton(title: "space")
-        space.titleLabel?.font = .systemFont(ofSize: 15)
-        space.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
-        space.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
-        space.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        stack.addArrangedSubview(space)
-        
-        // Return
-        let returnKey = createSpecialKeyButton(title: "return")
-        returnKey.titleLabel?.font = .systemFont(ofSize: 15)
-        returnKey.addTarget(self, action: #selector(returnPressed), for: .touchDown)
-        returnKey.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
-        returnKey.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        returnKey.widthAnchor.constraint(equalToConstant: 84).isActive = true
-        stack.addArrangedSubview(returnKey)
-        
-        stack.heightAnchor.constraint(equalToConstant: 42).isActive = true
         return stack
     }
     
@@ -370,132 +368,123 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func createKeyButton(title: String) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 22, weight: .regular)
+        button.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
         button.layer.cornerRadius = 5
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
-        button.clipsToBounds = false
         return button
     }
     
     private func createSpecialKeyButton(title: String) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .regular)
+        button.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
         button.layer.cornerRadius = 5
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
-        button.clipsToBounds = false
         return button
     }
     
     // MARK: - Appearance
     
     private func updateAppearance() {
+        updateButtonColors()
         let isDark = textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
-        
-        if isDark {
-            view.backgroundColor = UIColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0)
-            conversionBar.backgroundColor = UIColor(white: 0.22, alpha: 1.0)
-            updateButtonColors(
-                letterBg: UIColor(white: 0.35, alpha: 1.0),
-                specialBg: UIColor(white: 0.25, alpha: 1.0),
-                textColor: .white,
-                shadowColor: UIColor.black.cgColor
-            )
-        } else {
-            view.backgroundColor = UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1.0)
-            conversionBar.backgroundColor = UIColor(white: 0.95, alpha: 1.0)
-            updateButtonColors(
-                letterBg: .white,
-                specialBg: UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0),
-                textColor: .black,
-                shadowColor: UIColor(white: 0.5, alpha: 1.0).cgColor
-            )
-        }
-        
+        view.backgroundColor = isDark ? UIColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0) : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1.0)
+        conversionBar.backgroundColor = isDark ? UIColor(white: 0.22, alpha: 1.0) : UIColor(white: 0.95, alpha: 1.0)
         flickKeyboard?.updateAppearance(isDark: isDark)
     }
     
-    private func updateButtonColors(letterBg: UIColor, specialBg: UIColor, textColor: UIColor, shadowColor: CGColor) {
-        func applyStyle(to v: UIView) {
-            if v === flickKeyboard { return }
-            
-            if let button = v as? UIButton {
-                button.setTitleColor(textColor, for: .normal)
-                button.tintColor = textColor
-                button.layer.shadowColor = shadowColor
-                let title = button.titleLabel?.text ?? ""
-                let isSpecialKey = ["⇧", "⌫", "return", "EN", "JA", "FL"].contains(title)
-                let isGlobe = button === nextKeyboardButton
-                button.backgroundColor = (isSpecialKey || isGlobe) ? specialBg : letterBg
-            }
-            for sub in v.subviews {
-                applyStyle(to: sub)
+    private func updateButtonColors() {
+        let isDark = textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
+        let letterBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+        let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        let textColor = isDark ? UIColor.white : UIColor.black
+        
+        qwertyStack.subviews.forEach { row in
+            (row as? UIStackView)?.arrangedSubviews.forEach { sub in
+                if let btn = sub as? UIButton {
+                    btn.setTitleColor(textColor, for: .normal)
+                    let title = btn.titleLabel?.text ?? ""
+                    let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
+                    btn.backgroundColor = isSpecialKey ? specialBg : letterBg
+                } else if let nestedStack = sub as? UIStackView {
+                    nestedStack.arrangedSubviews.forEach { btn in
+                        if let b = btn as? UIButton {
+                            b.setTitleColor(textColor, for: .normal)
+                            let title = b.titleLabel?.text ?? ""
+                            let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
+                            b.backgroundColor = isSpecialKey ? specialBg : letterBg
+                        }
+                    }
+                }
             }
         }
-        applyStyle(to: qwertyContainer)
     }
     
-    // MARK: - Actions (QWERTY)
+    // MARK: - Actions
     
     @objc private func letterKeyPressed(_ sender: UIButton) {
         guard let title = sender.titleLabel?.text else { return }
-        
-        switch currentMode {
-        case .qwertyEnglish:
-            let text = isShifted ? title.uppercased() : title.lowercased()
-            textDocumentProxy.insertText(text)
-            if isShifted {
-                isShifted = false
-                updateShiftState()
-            }
-            
-        case .qwertyJapanese:
-            let char = Character(title.lowercased())
-            let result = romajiConverter.input(char)
-            if let converted = result.justConverted {
-                textDocumentProxy.insertText(converted)
-            }
-            updateConversionBar()
-            
-        case .flick:
-            break
-        }
+        textDocumentProxy.insertText(title)
+        UIDevice.current.playInputClick()
     }
     
     @objc private func shiftPressed() {
-        isShifted.toggle()
-        updateShiftState()
+        qwertyShifted.toggle()
+        rebuildQWERTYLayout()
+        updateButtonColors()
+        UIDevice.current.playInputClick()
     }
     
-    @objc private func deletePressed() {
-        if currentMode == .qwertyJapanese && !romajiConverter.buffer.isEmpty {
-            let _ = romajiConverter.deleteBackward()
-            updateConversionBar()
-        } else {
-            textDocumentProxy.deleteBackward()
-        }
+    @objc private func switchToNumbers() {
+        currentMode = .qwertyNumbers
+        applyMode()
+        UIDevice.current.playInputClick()
+    }
+    
+    @objc private func switchToSymbols() {
+        currentMode = .qwertySymbols
+        applyMode()
+        UIDevice.current.playInputClick()
+    }
+    
+    @objc private func switchToEnglish() {
+        currentMode = .qwertyEnglish
+        applyMode()
+        UIDevice.current.playInputClick()
     }
     
     @objc private func spacePressed() {
-        if currentMode == .qwertyJapanese && !romajiConverter.displayText.isEmpty {
-            commitConversion()
-        } else {
-            textDocumentProxy.insertText(" ")
-        }
+        textDocumentProxy.insertText(" ")
+        UIDevice.current.playInputClick()
     }
     
     @objc private func returnPressed() {
-        if currentMode == .qwertyJapanese && !romajiConverter.displayText.isEmpty {
-            commitConversion()
-        }
         textDocumentProxy.insertText("\n")
+        UIDevice.current.playInputClick()
     }
     
-    // MARK: - Key Press Animation
+    @objc private func deleteTouchDown() {
+        deletePressed()
+        qwertyDeleteTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
+            self?.qwertyDeleteTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+                self?.deletePressed()
+            }
+        }
+    }
+    
+    @objc private func deleteTouchUp() {
+        qwertyDeleteTimer?.invalidate()
+        qwertyDeleteTimer = nil
+    }
+    
+    @objc private func deletePressed() {
+        textDocumentProxy.deleteBackward()
+        UIDevice.current.playInputClick()
+    }
     
     @objc private func keyTouchDown(_ sender: UIButton) {
         UIView.animate(withDuration: 0.05) {
@@ -509,28 +498,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             sender.transform = .identity
             sender.alpha = 1.0
         }
-    }
-    
-    // MARK: - Shift State
-    
-    private func updateShiftState() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        shiftButton?.backgroundColor = isShifted
-            ? (isDark ? UIColor(white: 0.5, alpha: 1.0) : .white)
-            : (isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0))
-        
-        func updateLetters(in v: UIView) {
-            if v === flickKeyboard { return }
-            if let button = v as? UIButton,
-               let title = button.titleLabel?.text,
-               title.count == 1,
-               title.rangeOfCharacter(from: .letters) != nil {
-                let newTitle = isShifted ? title.uppercased() : title.lowercased()
-                button.setTitle(newTitle, for: .normal)
-            }
-            for sub in v.subviews { updateLetters(in: sub) }
+        let isDark = textDocumentProxy.keyboardAppearance == .dark
+        sender.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+        let title = sender.titleLabel?.text ?? ""
+        let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
+        if isSpecialKey {
+            sender.backgroundColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         }
-        updateLetters(in: qwertyContainer)
     }
     
     // MARK: - FlickKeyboardDelegate
@@ -578,53 +552,45 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         guard let before = textDocumentProxy.documentContextBeforeInput,
               let lastChar = before.last else { return }
         
-        let dakutenMap: [Character: Character] = [
-            "か": "が", "き": "ぎ", "く": "ぐ", "け": "げ", "こ": "ご",
-            "さ": "ざ", "し": "じ", "す": "ず", "せ": "ぜ", "そ": "ぞ",
-            "た": "だ", "ち": "ぢ", "つ": "づ", "て": "で", "と": "ど",
-            "は": "ば", "ひ": "び", "ふ": "ぶ", "へ": "べ", "ほ": "ぼ",
-            "う": "ゔ",
+        let charString = String(lastChar)
+        let map: [String: String] = [
+            "あ": "ぁ", "ぁ": "あ",
+            "い": "ぃ", "ぃ": "い",
+            "う": "ぅ", "ぅ": "ゔ", "ゔ": "う",
+            "え": "ぇ", "ぇ": "え",
+            "お": "ぉ", "ぉ": "お",
+            "か": "が", "が": "ヵ", "ヵ": "か",
+            "き": "ぎ", "ぎ": "き",
+            "く": "ぐ", "ぐ": "く",
+            "け": "げ", "げ": "ヶ", "ヶ": "け",
+            "こ": "ご", "ご": "こ",
+            "さ": "ざ", "ざ": "さ",
+            "し": "じ", "じ": "し",
+            "す": "ず", "ず": "す",
+            "せ": "ぜ", "ぜ": "せ",
+            "そ": "ぞ", "ぞ": "そ",
+            "た": "だ", "だ": "た",
+            "ち": "ぢ", "ぢ": "ち",
+            "つ": "っ", "っ": "づ", "づ": "つ",
+            "て": "で", "で": "て",
+            "と": "ど", "ど": "と",
+            "は": "ば", "ば": "ぱ", "ぱ": "は",
+            "ひ": "び", "び": "ぴ", "ぴ": "ひ",
+            "ふ": "ぶ", "ぶ": "ぷ", "ぷ": "ふ",
+            "へ": "べ", "べ": "ぺ", "ぺ": "へ",
+            "ほ": "ぼ", "ぼ": "ぽ", "ぽ": "ほ",
+            "や": "ゃ", "ゃ": "や",
+            "ゆ": "ゅ", "ゅ": "ゆ",
+            "よ": "ょ", "ょ": "よ",
+            "わ": "ゎ", "ゎ": "わ"
         ]
         
-        let handakutenMap: [Character: Character] = [
-            "は": "ぱ", "ひ": "ぴ", "ふ": "ぷ", "へ": "ぺ", "ほ": "ぽ",
-            "ば": "ぱ", "び": "ぴ", "ぶ": "ぷ", "べ": "ぺ", "ぼ": "ぽ",
-        ]
-        
-        let smallMap: [Character: Character] = [
-            "あ": "ぁ", "い": "ぃ", "う": "ぅ", "え": "ぇ", "お": "ぉ",
-            "つ": "っ", "や": "ゃ", "ゆ": "ゅ", "よ": "ょ", "わ": "ゎ",
-        ]
-        
-        let reverseDakuten: [Character: Character] = Dictionary(uniqueKeysWithValues: dakutenMap.map { ($0.value, $0.key) })
-        let reverseHandakuten: [Character: Character] = Dictionary(uniqueKeysWithValues:
-            [("ぱ","は"),("ぴ","ひ"),("ぷ","ふ"),("ぺ","へ"),("ぽ","ほ")].map { (Character($0.0), Character($0.1)) }
-        )
-        let reverseSmall: [Character: Character] = Dictionary(uniqueKeysWithValues: smallMap.map { ($0.value, $0.key) })
-        
-        var newChar: Character? = nil
-        
-        if let dakuten = dakutenMap[lastChar] {
-            newChar = dakuten
-        } else if let handakuten = handakutenMap[lastChar] {
-            newChar = handakuten
-        } else if let small = smallMap[lastChar] {
-            newChar = small
-        } else if let original = reverseDakuten[lastChar] {
-            if let handakuten = handakutenMap[lastChar] {
-                newChar = handakuten
-            } else {
-                newChar = original
-            }
-        } else if let original = reverseHandakuten[lastChar] {
-            newChar = original
-        } else if let original = reverseSmall[lastChar] {
-            newChar = original
-        }
-        
-        if let newChar = newChar {
+        if let newChar = map[charString] {
             textDocumentProxy.deleteBackward()
-            textDocumentProxy.insertText(String(newChar))
+            textDocumentProxy.insertText(newChar)
+        } else {
+            textDocumentProxy.insertText("゛")
         }
+        UIDevice.current.playInputClick()
     }
 }
