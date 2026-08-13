@@ -83,11 +83,11 @@ Switch between modes seamlessly using the built-in mode buttons.
 <td width="50%" valign="top">
 
 #### ⌨️ QWERTY Keyboard
-- Full QWERTY layout
-- English & Japanese Romaji support
-- Real-time Hiragana conversion
-- Shift key (uppercase toggle)
-- Backspace & Return
+- Full QWERTY Layout
+- Shift key functionality (Caps/Lower)
+- Long-press for special/accented characters
+- Backspace & Return capabilities
+- 🌐 Native Next Keyboard integration
 - Mode toggle button (Globe)
 - Press animation feedback
 
@@ -152,8 +152,9 @@ Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleK
 | ✅ | Japanese Romaji QWERTY (auto-conversion) |
 | ✅ | Flick input (Kana, ABC, 123) |
 | ✅ | Multi-touch & fast typing |
-| ✅ | Customizable active input modes |
-| ✅ | Dark mode |
+| ✅ | Keyboard Mode Toggles/Customization |
+| ✅ | QWERTY Long-press special characters |
+| ✅ | Dark Mode |
 | ✅ | Automatic CI builds (GitHub Actions) |
 | 🔲 | Kanji conversion (predictive) |
 | 🔲 | Custom themes |

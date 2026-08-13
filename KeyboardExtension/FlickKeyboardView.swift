@@ -41,18 +41,18 @@ struct FlickKeyboardData {
     static let alphabetKeys: [[FlickKey]] = [
         [
             FlickKey(center: "@#/", left: "@", up: "#", right: "/", down: "&"),
-            FlickKey(center: "ABC", left: "A", up: "B", right: "C", down: nil),
-            FlickKey(center: "DEF", left: "D", up: "E", right: "F", down: nil)
+            FlickKey(center: "ABC", left: "B", up: "C", right: nil, down: nil),
+            FlickKey(center: "DEF", left: "E", up: "F", right: nil, down: nil)
         ],
         [
-            FlickKey(center: "GHI", left: "G", up: "H", right: "I", down: nil),
-            FlickKey(center: "JKL", left: "J", up: "K", right: "L", down: nil),
-            FlickKey(center: "MNO", left: "M", up: "N", right: "O", down: nil)
+            FlickKey(center: "GHI", left: "H", up: "I", right: nil, down: nil),
+            FlickKey(center: "JKL", left: "K", up: "L", right: nil, down: nil),
+            FlickKey(center: "MNO", left: "N", up: "O", right: nil, down: nil)
         ],
         [
-            FlickKey(center: "PQRS", left: "P", up: "Q", right: "R", down: "S"),
-            FlickKey(center: "TUV", left: "T", up: "U", right: "V", down: nil),
-            FlickKey(center: "WXYZ", left: "W", up: "X", right: "Y", down: "Z")
+            FlickKey(center: "PQRS", left: "Q", up: "R", right: "S", down: nil),
+            FlickKey(center: "TUV", left: "U", up: "V", right: nil, down: nil),
+            FlickKey(center: "WXYZ", left: "X", up: "Y", right: "Z", down: nil)
         ],
         [
             FlickKey(center: "a/A", left: nil, up: nil, right: nil, down: nil),
@@ -68,18 +68,18 @@ struct FlickKeyboardData {
             FlickKey(center: "3", left: "%", up: "°", right: "#", down: nil)
         ],
         [
-            FlickKey(center: "4", left: "＋", up: "－", right: "×", down: "÷"), // These are useful down operations
-            FlickKey(center: "5", left: "＜", up: "＝", right: "＞", down: "～"),
-            FlickKey(center: "6", left: "「", up: "」", right: "『", down: "』")
+            FlickKey(center: "4", left: "＋", up: "－", right: "×", down: nil),
+            FlickKey(center: "5", left: "＜", up: "＝", right: "＞", down: nil),
+            FlickKey(center: "6", left: "「", up: "」", right: "『", down: nil)
         ],
         [
-            FlickKey(center: "7", left: ":", up: ";", right: "&", down: "@"),
-            FlickKey(center: "8", left: "(", up: ")", right: "[", down: "]"),
-            FlickKey(center: "9", left: ".", up: ",", right: "?", down: "!")
+            FlickKey(center: "7", left: ":", up: ";", right: "&", down: nil),
+            FlickKey(center: "8", left: "(", up: ")", right: "[", down: nil),
+            FlickKey(center: "9", left: ".", up: ",", right: "?", down: nil)
         ],
         [
-            FlickKey(center: "+-*/", left: "+", up: "-", right: "*", down: "/"),
-            FlickKey(center: "0", left: "…", up: "‥", right: "_", down: "￣"),
+            FlickKey(center: "+-*/", left: "+", up: "-", right: "*", down: nil),
+            FlickKey(center: "0", left: "…", up: "‥", right: "_", down: nil),
             FlickKey(center: ".", left: ",", up: "-", right: "/", down: nil)
         ]
     ]
@@ -439,7 +439,13 @@ class FlickKeyboardView: UIView {
                 startPoints[touch] = point
                 animateKeyDown(btn)
                 if keysMap[btn] != nil {
-                    self.showPopup(for: touch, button: btn)
+                    let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
+                        guard let self = self else { return }
+                        if self.activeTouches[touch] == btn {
+                            self.showPopup(for: touch, button: btn)
+                        }
+                    }
+                    popupTimers[touch] = timer
                 } else if btn.accessibilityIdentifier == "delete" {
                     startDeleteTimer()
                 }
@@ -602,10 +608,9 @@ class FlickKeyboardView: UIView {
         let popup = UIView()
         popup.translatesAutoresizingMaskIntoConstraints = false
         
-        // Base sizes
-        let keyWidth: CGFloat = 64
-        let keyHeight: CGFloat = 64
-        let spacing: CGFloat = 3
+        let keyWidth = button.bounds.width
+        let keyHeight = button.bounds.height
+        let spacing: CGFloat = 6.0
         
         let directions: [FlickDirection] = [.center, .left, .up, .right, .down]
         var labels: [FlickDirection: UILabel] = [:]

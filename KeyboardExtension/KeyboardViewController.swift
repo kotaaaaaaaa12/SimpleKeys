@@ -2,6 +2,10 @@ import UIKit
 
 @objc(KeyboardViewController)
 class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
+    private var alternateKeysPopup: UIView?
+    private var alternateLabels: [UILabel] = []
+    private var currentLongPressButton: UIButton?
+
     
     // MARK: - Types
     
@@ -392,6 +396,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
+        
+        if title.count == 1 && title.first?.isLetter == true {
+            let lp = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+            lp.minimumPressDuration = 0.4
+            button.addGestureRecognizer(lp)
+        }
+        
         return button
     }
     
