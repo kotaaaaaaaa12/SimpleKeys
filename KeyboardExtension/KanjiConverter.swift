@@ -67,19 +67,47 @@ class KanjiConverter {
             results.append(contentsOf: fullMatch.prefix(5))
         }
         
-        // 2. 最長一致で分割変換
+        // 2. 最長一致で分割変換のバリエーションを追加
         let segments = segmentize(text)
-        if !segments.isEmpty {
-            // 各セグメントの最初の候補を結合
-            let combined = segments.map { seg -> String in
-                if let cands = dictionary[seg] {
-                    return cands[0]
-                }
-                return seg // 変換できない部分はそのまま
-            }.joined()
+        if segments.count > 1 {
+            // セグメントごとの候補リストを取得
+            let segmentCands: [[String]] = segments.map { seg in
+                if let cands = dictionary[seg], !cands.isEmpty { return cands }
+                return [seg]
+            }
             
-            if !results.contains(combined) {
-                results.append(combined)
+            // 全てトップ候補の結合
+            let topCombined = segmentCands.map { $0[0] }.joined()
+            if !results.contains(topCombined) { results.append(topCombined) }
+            
+            // 最初のセグメントだけ2〜5番目の候補を使ったバリエーション
+            let firstCands = segmentCands[0]
+            if firstCands.count > 1 {
+                let restCombined = segmentCands.dropFirst().map { $0[0] }.joined()
+                for i in 1..<min(firstCands.count, 10) {
+                    let combined = firstCands[i] + restCombined
+                    if !results.contains(combined) { results.append(combined) }
+                }
+            }
+            
+            // 2番目のセグメントだけ2〜5番目の候補を使ったバリエーション
+            if segmentCands.count > 1 {
+                let secondCands = segmentCands[1]
+                if secondCands.count > 1 {
+                    for i in 1..<min(secondCands.count, 5) {
+                        var temp = segmentCands.map { $0[0] }
+                        temp[1] = secondCands[i]
+                        let combined = temp.joined()
+                        if !results.contains(combined) { results.append(combined) }
+                    }
+                }
+            }
+        } else if segments.count == 1 {
+            let seg = segments[0]
+            if let cands = dictionary[seg] {
+                for c in cands.prefix(10) {
+                    if !results.contains(c) { results.append(c) }
+                }
             }
         }
         
