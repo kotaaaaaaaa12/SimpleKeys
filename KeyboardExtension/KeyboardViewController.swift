@@ -36,13 +36,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        guard let inputView = self.inputView else { return }
-        inputView.allowsSelfSizing = true
-        
         setupConversionBar()
         setupQWERTYKeyboard()
         setupFlickKeyboard()
         applyMode()
+        
+        // Add a default height constraint with low priority to prevent 0-height crashes
+        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 216)
+        heightConstraint.priority = UILayoutPriority(250)
+        heightConstraint.isActive = true
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -111,9 +113,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         qwertyContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(qwertyContainer)
         
+        let qwertyBottom = qwertyContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
+        qwertyBottom.priority = .defaultHigh
+        
         NSLayoutConstraint.activate([
             qwertyContainer.topAnchor.constraint(equalTo: conversionBar.bottomAnchor, constant: 2),
-            qwertyContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4),
+            qwertyBottom,
             qwertyContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 3),
             qwertyContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -3),
         ])
@@ -163,9 +168,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         flickKeyboard.isHidden = true
         view.addSubview(flickKeyboard)
         
+        let flickBottom = flickKeyboard.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
+        flickBottom.priority = .defaultHigh
+        
         NSLayoutConstraint.activate([
             flickKeyboard.topAnchor.constraint(equalTo: conversionBar.bottomAnchor, constant: 2),
-            flickKeyboard.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4),
+            flickBottom,
             flickKeyboard.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             flickKeyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
