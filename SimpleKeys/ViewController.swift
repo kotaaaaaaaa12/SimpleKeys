@@ -3,6 +3,7 @@ import UIKit
 class ViewController: UIViewController {
 
     private let flickSwitch = UISwitch()
+    private let flickAlphabetQwertySwitch = UISwitch()
     private let qwertyEnglishSwitch = UISwitch()
     private let qwertyRomajiSwitch = UISwitch()
     
@@ -69,11 +70,15 @@ class ViewController: UIViewController {
         let modeHeader = createSectionHeader(title: "有効にする入力モード")
         
         flickSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
+        flickAlphabetQwertySwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyEnglishSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyRomajiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         
         let flickCard = createCardView()
         let flickSection = buildSettingsRow(card: flickCard, title: "フリック入力 (Kana/ABC/123)", description: "日本語のフリック入力を使用します。", control: flickSwitch)
+        
+        let flickAlphaCard = createCardView()
+        let flickAlphaSection = buildSettingsRow(card: flickAlphaCard, title: "フリックの英字をQWERTY化", description: "フリック入力中の「ABC」を押した時にQWERTY英語キーボードに切り替えます。", control: flickAlphabetQwertySwitch)
         
         let qwertyEnCard = createCardView()
         let qwertyEnSection = buildSettingsRow(card: qwertyEnCard, title: "QWERTY (英語)", description: "標準的な英語キーボードを使用します。", control: qwertyEnglishSwitch)
@@ -81,7 +86,7 @@ class ViewController: UIViewController {
         let qwertyJaCard = createCardView()
         let qwertyJaSection = buildSettingsRow(card: qwertyJaCard, title: "QWERTY (ローマ字)", description: "ローマ字入力で日本語を入力します。", control: qwertyRomajiSwitch)
         
-        let modeStack = UIStackView(arrangedSubviews: [modeHeader, flickSection, qwertyEnSection, qwertyJaSection])
+        let modeStack = UIStackView(arrangedSubviews: [modeHeader, flickSection, flickAlphaSection, qwertyEnSection, qwertyJaSection])
         modeStack.axis = .vertical
         modeStack.spacing = 12
         stackView.addArrangedSubview(modeStack)
@@ -142,6 +147,7 @@ class ViewController: UIViewController {
     private func loadSettings() {
         let defaults = sharedDefaults
         flickSwitch.isOn = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
+        flickAlphabetQwertySwitch.isOn = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         qwertyEnglishSwitch.isOn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
         qwertyRomajiSwitch.isOn = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
     }
@@ -153,6 +159,7 @@ class ViewController: UIViewController {
         }
         
         sharedDefaults?.set(flickSwitch.isOn, forKey: "enableFlick")
+        sharedDefaults?.set(flickAlphabetQwertySwitch.isOn, forKey: "flickAlphabetIsQwerty")
         sharedDefaults?.set(qwertyEnglishSwitch.isOn, forKey: "enableQwertyEnglish")
         sharedDefaults?.set(qwertyRomajiSwitch.isOn, forKey: "enableQwertyRomaji")
         sharedDefaults?.synchronize()

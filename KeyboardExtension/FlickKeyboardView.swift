@@ -320,11 +320,16 @@ class FlickKeyboardView: UIView {
         if let lbl = btn.viewWithTag(100) as? UILabel {
             var text = keyData.center
             if currentPage == .alphabet && !isShifted {
-                text = text.lowercased()
+                text = text.uppercased() // User wants uppercase
             }
             lbl.text = text
+            if currentPage == .alphabet && text.count >= 3 {
+                lbl.font = .systemFont(ofSize: 17, weight: .regular)
+            } else {
+                lbl.font = .systemFont(ofSize: 22, weight: .regular)
+            }
             // Center the label if there is no subtitle
-            if currentPage == .kana {
+            if currentPage == .kana || (currentPage == .alphabet && keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
             } else {
                 lbl.transform = .identity
@@ -346,7 +351,7 @@ class FlickKeyboardView: UIView {
                     
                     var hintStr = hints.joined(separator: " ")
                     if currentPage == .alphabet && !isShifted {
-                        hintStr = hintStr.lowercased()
+                        hintStr = hintStr.uppercased()
                     }
                     sub.text = hintStr
                 }
@@ -413,21 +418,29 @@ class FlickKeyboardView: UIView {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let point = touch.location(in: containerView)
+            var bestBtn: UIView? = nil
+            var minDistance: CGFloat = 10000
             for btn in allButtons {
                 if btn.frame.contains(point) {
-                    activeTouches[touch] = btn
-                    startPoints[touch] = point
-                    animateKeyDown(btn)
-                    
-                    if keysMap[btn] != nil {
-                        let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
-                            self?.showPopup(for: touch, button: btn)
-                        }
-                        popupTimers[touch] = timer
-                    } else if btn.accessibilityIdentifier == "delete" {
-                        startDeleteTimer()
-                    }
+                    bestBtn = btn
                     break
+                }
+                let cx = btn.frame.midX
+                let cy = btn.frame.midY
+                let dist = (cx - point.x) * (cx - point.x) + (cy - point.y) * (cy - point.y)
+                if dist < minDistance {
+                    minDistance = dist
+                    bestBtn = btn
+                }
+            }
+            if let btn = bestBtn, minDistance < 4000 {
+                activeTouches[touch] = btn
+                startPoints[touch] = point
+                animateKeyDown(btn)
+                if keysMap[btn] != nil {
+                    self.showPopup(for: touch, button: btn)
+                } else if btn.accessibilityIdentifier == "delete" {
+                    startDeleteTimer()
                 }
             }
         }
@@ -600,7 +613,7 @@ class FlickKeyboardView: UIView {
             if dir != .center && textForDirection(dir, key: keyData) == nil { continue }
             
             let label = UILabel()
-            label.font = .systemFont(ofSize: 28, weight: .semibold)
+            label.font = .systemFont(ofSize: 22, weight: .semibold)
             label.textColor = .black
             label.textAlignment = .center
             label.backgroundColor = .white

@@ -63,8 +63,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         setupFlickKeyboard()
         applyMode()
         
-        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 216)
-        heightConstraint.priority = UILayoutPriority(250)
+        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 260)
+        heightConstraint.priority = .defaultHigh
         heightConstraint.isActive = true
     }
     
@@ -263,6 +263,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 bottomStack.addArrangedSubview(globe)
             } else if key == "space" {
                 let spaceBtn = createKeyButton(title: currentMode == .qwertyRomaji ? "空白" : "space")
+                spaceBtn.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
                 spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
                 spaceBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
                 spaceBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
@@ -338,6 +339,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             rebuildQWERTYLayout()
             updateButtonColors()
         }
+        
+        conversionBar.isHidden = (currentMode != .qwertyRomaji)
     }
     
     // MARK: - Conversion Bar
@@ -478,7 +481,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func switchToNumbers() {
-        currentMode = .qwertyNumbers
+        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let flickAlphabetIsQwerty = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
+        
+        if flickAlphabetIsQwerty && (currentMode == .qwertyEnglish) {
+            currentMode = .flickNumber
+        } else {
+            currentMode = .qwertyNumbers
+        }
         applyMode()
         UIDevice.current.playInputClick()
     }
@@ -573,13 +583,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         if isSpecialKey {
             sender.backgroundColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         }
+        flickKeyboard.updateAppearance(isDark: textDocumentProxy.keyboardAppearance == .dark)
     }
     
     // MARK: - FlickKeyboardDelegate
     
-    @objc private func handleFlickGlobeTap(_ gesture: UITapGestureRecognizer) {
-        // Fallback globe toggle if target-action doesn't work well on UIViews
-        advanceToNextInputMode()
+    @objc private func handleQWERTYGlobeTap(_ gesture: UITapGestureRecognizer) {
+        toggleMainMode()
     }
     
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String) {
@@ -629,20 +639,17 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
         let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
-        defaults?.synchronize()
-        let style = defaults?.integer(forKey: "englishInputStyle") ?? 0
+        let flickAlphabetIsQwerty = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         
-        if style == 0 {
-            // Flick Alphabet
+        if flickAlphabetIsQwerty {
+            currentMode = .qwertyEnglish
+            applyMode()
+        } else {
             if keyboard.currentPage == .alphabet {
                 keyboard.switchToPage(.kana)
             } else {
                 keyboard.switchToPage(.alphabet)
             }
-        } else {
-            // QWERTY English
-            currentMode = .qwertyEnglish
-            applyMode()
         }
     }
     
