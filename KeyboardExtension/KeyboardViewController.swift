@@ -54,7 +54,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         super.viewDidLoad()
         
         // Read default keyboard mode
-        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let defaults = AppGroupHelper.shared.userDefaults
         defaults?.synchronize()
         let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
         let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
@@ -81,7 +81,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let defaults = AppGroupHelper.shared.userDefaults
         defaults?.synchronize()
         let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
         let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
@@ -657,7 +657,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func switchToNumbers() {
-        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let defaults = AppGroupHelper.shared.userDefaults
         let flickAlphabetIsQwerty = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         
         if flickAlphabetIsQwerty && (currentMode == .qwertyEnglish) {
@@ -773,7 +773,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func toggleMainMode() {
-        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let defaults = AppGroupHelper.shared.userDefaults
         let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
         let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
         let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
@@ -814,7 +814,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
-        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        let defaults = AppGroupHelper.shared.userDefaults
         let flickAlphabetIsQwerty = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         
         if flickAlphabetIsQwerty {
@@ -885,5 +885,40 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         }
         
         UIDevice.current.playInputClick()
+    }
+}
+
+class AppGroupHelper {
+    static let shared = AppGroupHelper()
+    
+    private(set) var appGroupID: String = "group.com.simplekeys.app"
+    private(set) var userDefaults: UserDefaults?
+    
+    private init() {
+        if let group = resolveAppGroup() {
+            self.appGroupID = group
+        }
+        self.userDefaults = UserDefaults(suiteName: self.appGroupID)
+    }
+    
+    private func resolveAppGroup() -> String? {
+        guard let path = Bundle.main.path(forResource: "embedded", ofType: "mobileprovision"),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let string = String(data: data, encoding: .isoLatin1) else {
+            return nil
+        }
+        
+        if let startRange = string.range(of: "<?xml"),
+           let endRange = string.range(of: "</plist>") {
+            let plistString = String(string[startRange.lowerBound...endRange.upperBound])
+            if let plistData = plistString.data(using: .utf8),
+               let plist = try? PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) as? [String: Any],
+               let entitlements = plist["Entitlements"] as? [String: Any],
+               let appGroups = entitlements["com.apple.security.application-groups"] as? [String],
+               let firstGroup = appGroups.first {
+                return firstGroup
+            }
+        }
+        return nil
     }
 }
