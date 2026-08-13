@@ -28,6 +28,9 @@ class FlickKeyboardView: UIView {
     
     weak var delegate: FlickKeyboardDelegate?
     
+    private var currentPage: KeyboardPage = .kana
+    private var isShifted = false // For ABC caps
+    
     private var activeTouch: UITouch?
     private var activeButton: UIView?
     private var startPoint: CGPoint = .zero
@@ -41,37 +44,17 @@ class FlickKeyboardView: UIView {
     private var containerView: UIView!
     private var keysMap: [UIView: FlickKey] = [:]
     
-    // Basic Kana Keys
-    private let kanaKeys: [[FlickKey]] = [
-        [
-            FlickKey(center: "あ", left: "い", up: "う", right: "え", down: "お"),
-            FlickKey(center: "か", left: "き", up: "く", right: "け", down: "こ"),
-            FlickKey(center: "さ", left: "し", up: "す", right: "せ", down: "そ")
-        ],
-        [
-            FlickKey(center: "た", left: "ち", up: "つ", right: "て", down: "と"),
-            FlickKey(center: "な", left: "に", up: "ぬ", right: "ね", down: "の"),
-            FlickKey(center: "は", left: "ひ", up: "ふ", right: "へ", down: "ほ")
-        ],
-        [
-            FlickKey(center: "ま", left: "み", up: "む", right: "め", down: "も"),
-            FlickKey(center: "や", left: "「", up: "ゆ", right: "」", down: "よ"),
-            FlickKey(center: "ら", left: "り", up: "る", right: "れ", down: "ろ")
-        ],
-        [
-            // ゛゜小 is handled specially
-            FlickKey(center: "゛゜小", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "わ", left: "を", up: "ん", right: "ー", down: "〜"),
-            FlickKey(center: "、", left: "。", up: "？", right: "！", down: "…")
-        ]
-    ]
-    
     // Buttons we need references to
     private var globeButton: UIView!
     private var deleteButton: UIView!
     private var returnButton: UIView!
     private var spaceButton: UIView!
-    private var shiftButton: UIView! // ABC, ☆123 etc
+    private var abcButton: UIView!
+    private var numButton: UIView!
+    private var kaomojiButton: UIView!
+    
+    // Center grid buttons to update text
+    private var gridButtons: [[UIView]] = []
     
     // MARK: - Init
     
@@ -122,14 +105,20 @@ class FlickKeyboardView: UIView {
         leftStack.spacing = 6
         leftStack.distribution = .fillEqually
         
-        let numBtn = createSpecialKey(title: "☆123")
-        let abcBtn = createSpecialKey(title: "ABC")
-        let kaomojiBtn = createSpecialKey(title: "^_^")
+        numButton = createSpecialKey(title: "☆123")
+        numButton.accessibilityIdentifier = "num_switch"
+        
+        abcButton = createSpecialKey(title: "ABC")
+        abcButton.accessibilityIdentifier = "abc_switch"
+        
+        kaomojiButton = createSpecialKey(title: "^_^")
+        kaomojiButton.accessibilityIdentifier = "kaomoji_switch"
+        
         globeButton = createSpecialKey(title: "🌐")
         
-        leftStack.addArrangedSubview(numBtn)
-        leftStack.addArrangedSubview(abcBtn)
-        leftStack.addArrangedSubview(kaomojiBtn)
+        leftStack.addArrangedSubview(numButton)
+        leftStack.addArrangedSubview(abcButton)
+        leftStack.addArrangedSubview(kaomojiButton)
         leftStack.addArrangedSubview(globeButton)
         leftStack.widthAnchor.constraint(equalToConstant: 44).isActive = true
         mainStack.addArrangedSubview(leftStack)
@@ -146,14 +135,18 @@ class FlickKeyboardView: UIView {
             rowStack.spacing = 6
             rowStack.distribution = .fillEqually
             
+            var rowButtons: [UIView] = []
+            
             for colIndex in 0..<3 {
-                let keyData = kanaKeys[rowIndex][colIndex]
+                let keyData = FlickKeyboardData.kanaKeys[rowIndex][colIndex]
                 let isSpecial = (rowIndex == 3 && colIndex == 0)
                 let btn = isSpecial ? createSpecialKey(title: keyData.center) : createFlickKey(keyData)
                 if isSpecial { btn.accessibilityIdentifier = "dakuten" }
                 rowStack.addArrangedSubview(btn)
+                rowButtons.append(btn)
             }
             centerStack.addArrangedSubview(rowStack)
+            gridButtons.append(rowButtons)
         }
         
         // Add space bar below center grid? 
@@ -312,7 +305,28 @@ class FlickKeyboardView: UIView {
                     // Actually, let's leave globe to standard target-action in VC if possible,
                     // but we changed it to UIView. We will fix this by providing a UIButton for globe.
                 } else if btn.accessibilityIdentifier == "dakuten" {
-                    delegate?.flickKeyboardDidPressDakuten(self)
+                    if currentPage == .alphabet {
+                        isShifted.toggle()
+                        updatePageUI()
+                    } else if currentPage == .kana {
+                        delegate?.flickKeyboardDidPressDakuten(self)
+                    }
+                } else if btn.accessibilityIdentifier == "abc_switch" {
+                    if currentPage == .alphabet {
+                        currentPage = .kana
+                    } else {
+                        currentPage = .alphabet
+                    }
+                    updatePageUI()
+                } else if btn.accessibilityIdentifier == "num_switch" {
+                    if currentPage == .number {
+                        currentPage = .kana
+                    } else {
+                        currentPage = .number
+                    }
+                    updatePageUI()
+                } else if btn.accessibilityIdentifier == "kaomoji_switch" {
+                    // TODO: Kaomoji
                 }
             }
         }
@@ -353,13 +367,20 @@ class FlickKeyboardView: UIView {
     }
     
     private func textForDirection(_ direction: FlickDirection, key: FlickKey) -> String? {
+        var text: String?
         switch direction {
-        case .center: return key.center
-        case .left: return key.left ?? key.center
-        case .up: return key.up ?? key.center
-        case .right: return key.right ?? key.center
-        case .down: return key.down ?? key.center
+        case .center: text = key.center
+        case .left: text = key.left ?? key.center
+        case .up: text = key.up ?? key.center
+        case .right: text = key.right ?? key.center
+        case .down: text = key.down ?? key.center
         }
+        
+        if currentPage == .alphabet && !isShifted {
+            text = text?.lowercased()
+        }
+        
+        return text
     }
     
     // MARK: - Popup
@@ -443,6 +464,64 @@ class FlickKeyboardView: UIView {
         UIView.animate(withDuration: 0.1) {
             view.transform = .identity
             view.alpha = 1.0
+        }
+    }
+    
+    // MARK: - Page Switching
+    
+    private func updatePageUI() {
+        let keys: [[FlickKey]]
+        switch currentPage {
+        case .kana: keys = FlickKeyboardData.kanaKeys
+        case .alphabet: keys = FlickKeyboardData.alphabetKeys
+        case .number: keys = FlickKeyboardData.numberKeys
+        }
+        
+        // Update sidebar highlights
+        let isDark = self.isDarkMode
+        let normalColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        let activeColor = isDark ? UIColor.systemBlue : UIColor.systemBlue.withAlphaComponent(0.2)
+        
+        abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : normalColor
+        numButton.backgroundColor = (currentPage == .number) ? activeColor : normalColor
+        kaomojiButton.backgroundColor = normalColor
+        
+        if let kaomojiLbl = kaomojiButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
+            kaomojiLbl.text = (currentPage == .alphabet) ? "a/A" : "^_^"
+        }
+        
+        // Update grid keys
+        for rowIndex in 0..<4 {
+            for colIndex in 0..<3 {
+                let btn = gridButtons[rowIndex][colIndex]
+                let keyData = keys[rowIndex][colIndex]
+                keysMap[btn] = keyData
+                
+                if let label = btn.subviews.first(where: { $0 is UILabel }) as? UILabel {
+                    var text = keyData.center
+                    if currentPage == .alphabet && !isShifted {
+                        text = text.lowercased()
+                    }
+                    if rowIndex == 3 && colIndex == 0 {
+                        // The dakuten / shift button
+                        if currentPage == .alphabet {
+                            label.text = isShifted ? "⬆︎" : "⇧"
+                            btn.accessibilityIdentifier = "dakuten" // Reuse for shift
+                        } else if currentPage == .kana {
+                            label.text = "゛゜小"
+                            btn.accessibilityIdentifier = "dakuten"
+                        } else {
+                            label.text = text
+                            btn.accessibilityIdentifier = nil
+                        }
+                        // Change styling for the special button
+                        btn.backgroundColor = normalColor
+                    } else {
+                        label.text = text
+                        btn.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+                    }
+                }
+            }
         }
     }
     
