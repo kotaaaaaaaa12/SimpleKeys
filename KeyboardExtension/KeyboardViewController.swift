@@ -41,6 +41,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var flickKeyboard: FlickKeyboardView!
     private var conversionBar: UIView!
     private var conversionLabel: UILabel!
+    private var candidateScrollView: UIScrollView!
+    private var candidateStack: UIStackView!
+    private var currentCandidates: [String] = []
+    
+    private let kanjiConverter = KanjiConverter.shared
     
     private let letterRows: [[String]] = [
         ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -118,27 +123,130 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func setupConversionBar() {
         conversionBar = UIView()
         conversionBar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(conversionBar)
         
         conversionLabel = UILabel()
-        conversionLabel.font = .systemFont(ofSize: 16, weight: .medium)
-        conversionLabel.textAlignment = .left
+        conversionLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        conversionLabel.textColor = .placeholderText
         conversionLabel.translatesAutoresizingMaskIntoConstraints = false
         conversionBar.addSubview(conversionLabel)
         
-        NSLayoutConstraint.activate([
-            conversionLabel.leadingAnchor.constraint(equalTo: conversionBar.leadingAnchor, constant: 12),
-            conversionLabel.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
-            conversionLabel.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor, constant: -12),
-        ])
+        candidateScrollView = UIScrollView()
+        candidateScrollView.showsHorizontalScrollIndicator = false
+        candidateScrollView.translatesAutoresizingMaskIntoConstraints = false
+        conversionBar.addSubview(candidateScrollView)
         
-        view.addSubview(conversionBar)
+        candidateStack = UIStackView()
+        candidateStack.axis = .horizontal
+        candidateStack.spacing = 1
+        candidateStack.distribution = .fillProportionally
+        candidateStack.translatesAutoresizingMaskIntoConstraints = false
+        candidateScrollView.addSubview(candidateStack)
         
         NSLayoutConstraint.activate([
             conversionBar.topAnchor.constraint(equalTo: view.topAnchor),
             conversionBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             conversionBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             conversionBar.heightAnchor.constraint(equalToConstant: 36),
+            
+            conversionLabel.leadingAnchor.constraint(equalTo: conversionBar.leadingAnchor, constant: 12),
+            conversionLabel.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
+            conversionLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 80),
+            
+            candidateScrollView.leadingAnchor.constraint(equalTo: conversionLabel.trailingAnchor, constant: 8),
+            candidateScrollView.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor),
+            candidateScrollView.topAnchor.constraint(equalTo: conversionBar.topAnchor),
+            candidateScrollView.bottomAnchor.constraint(equalTo: conversionBar.bottomAnchor),
+            
+            candidateStack.leadingAnchor.constraint(equalTo: candidateScrollView.contentLayoutGuide.leadingAnchor),
+            candidateStack.trailingAnchor.constraint(equalTo: candidateScrollView.contentLayoutGuide.trailingAnchor),
+            candidateStack.topAnchor.constraint(equalTo: candidateScrollView.contentLayoutGuide.topAnchor),
+            candidateStack.bottomAnchor.constraint(equalTo: candidateScrollView.contentLayoutGuide.bottomAnchor),
+            candidateStack.heightAnchor.constraint(equalTo: candidateScrollView.frameLayoutGuide.heightAnchor)
         ])
+    }
+    
+    private func updateConversionBar() {
+        let display = romajiConverter.displayText
+        
+        // Clear previous candidates
+        for subview in candidateStack.arrangedSubviews {
+            subview.removeFromSuperview()
+        }
+        
+        if display.isEmpty {
+            conversionLabel.text = " "
+            conversionLabel.textColor = .placeholderText
+            currentCandidates = []
+        } else {
+            conversionLabel.text = display
+            conversionLabel.textColor = .label
+            
+            currentCandidates = kanjiConverter.convert(display)
+            
+            if currentCandidates.isEmpty {
+                currentCandidates = [display]
+            }
+            
+            for (index, candidate) in currentCandidates.enumerated() {
+                let button = UIButton(type: .system)
+                button.setTitle(candidate, for: .normal)
+                button.titleLabel?.font = .systemFont(ofSize: 16)
+                button.setTitleColor(.label, for: .normal)
+                button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+                button.tag = index
+                button.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)
+                
+                // Add separator except for the last item
+                let container = UIView()
+                container.addSubview(button)
+                button.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    button.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                    button.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                    button.topAnchor.constraint(equalTo: container.topAnchor),
+                    button.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+                ])
+                
+                if index < currentCandidates.count - 1 {
+                    let sep = UIView()
+                    sep.backgroundColor = .separator
+                    sep.translatesAutoresizingMaskIntoConstraints = false
+                    container.addSubview(sep)
+                    NSLayoutConstraint.activate([
+                        sep.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                        sep.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                        sep.heightAnchor.constraint(equalTo: container.heightAnchor, multiplier: 0.5),
+                        sep.widthAnchor.constraint(equalToConstant: 1)
+                    ])
+                }
+                
+                candidateStack.addArrangedSubview(container)
+            }
+        }
+    }
+    
+    @objc private func candidateTapped(_ sender: UIButton) {
+        let index = sender.tag
+        guard index >= 0 && index < currentCandidates.count else { return }
+        let text = currentCandidates[index]
+        
+        textDocumentProxy.insertText(text)
+        _ = romajiConverter.commit() // Clear internal state
+        
+        // Remove marked text
+        textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+        
+        updateConversionBar()
+    }
+    
+    @objc private func commitConversion() {
+        let text = romajiConverter.commit()
+        if !text.isEmpty {
+            textDocumentProxy.insertText(text)
+            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+        }
+        updateConversionBar()
     }
     
     // MARK: - QWERTY Setup
@@ -363,25 +471,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     // MARK: - Conversion Bar
-    
-    private func updateConversionBar() {
-        let display = romajiConverter.displayText
-        if display.isEmpty {
-            conversionLabel.text = " "
-            conversionLabel.textColor = .placeholderText
-        } else {
-            conversionLabel.text = display
-            conversionLabel.textColor = .label
-        }
-    }
-    
-    @objc private func commitConversion() {
-        let text = romajiConverter.commit()
-        if !text.isEmpty {
-            textDocumentProxy.insertText(text)
-        }
-        updateConversionBar()
-    }
     
     // MARK: - Row Builders
     
