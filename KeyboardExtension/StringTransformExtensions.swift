@@ -108,8 +108,7 @@ struct ThemeSettings: Codable, Equatable {
     var flickPopupBgHex: String?       // Flick popup background color
     var flickPopupTextHex: String?     // Flick popup text color
     var flickHighlightHex: String?     // Flick popup selected highlight color
-    var navStyle: Int?                 // 0: Characters, 1: Arrows, 2: Hidden
-    var navColorHex: String?           // Custom color for nav hints
+    var flickPopupShape: Int?          // 0: rounded, 1: oval, 2: rect
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"

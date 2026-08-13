@@ -907,7 +907,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 3 { return 1 } // Opacity
         if section == 4 { return 3 } // Colors
         if section == 5 { return 1 } // Font
-        if section == 6 { return 5 } // Flick popup & nav
+        if section == 6 { return 4 } // Flick popup bg, text, highlight, shape
         return 1
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -918,7 +918,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 3 { return isEn ? "Transparency" : "透過度" }
         if section == 4 { return isEn ? "Colors" : "色設定" }
         if section == 5 { return isEn ? "Font" : "フォント" }
-        return isEn ? "Flick Popup & Navigation" : "フリック吹き出し & ナビゲーション"
+        return isEn ? "Flick Popup" : "フリック吹き出し"
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -1028,19 +1028,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.detailTextLabel?.text = isEn ? "Default (Blue)" : "デフォルト（青）"
                 }
             } else if indexPath.row == 3 {
-                cell.textLabel?.text = isEn ? "Navigation Style" : "ナビ（ガイド）の表示スタイル"
-                let navStyle = currentTheme.navStyle ?? 0
-                let stylesEn = ["Characters", "Arrows", "Hidden"]
-                let stylesJa = ["文字 (いうえお等)", "矢印 (←↑→↓)", "非表示"]
-                cell.detailTextLabel?.text = isEn ? stylesEn[navStyle] : stylesJa[navStyle]
-            } else if indexPath.row == 4 {
-                cell.textLabel?.text = isEn ? "Navigation Color" : "ナビ（ガイド）の色"
-                if let hex = currentTheme.navColorHex {
-                    cell.detailTextLabel?.text = "■"
-                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
-                } else {
-                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
-                }
+                cell.textLabel?.text = isEn ? "Popup Shape" : "吹き出しの形"
+                let shape = currentTheme.flickPopupShape ?? 0
+                let shapesEn = ["Rounded", "Oval", "Rect"]
+                let shapesJa = ["角丸", "楕円", "四角"]
+                cell.detailTextLabel?.text = isEn ? shapesEn[shape] : shapesJa[shape]
             }
         }
         return cell
@@ -1135,18 +1127,18 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 present(picker, animated: true)
             } else if indexPath.row == 3 {
                 let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
-                let alert = UIAlertController(title: isEn ? "Navigation Style" : "ナビゲーションスタイル", message: nil, preferredStyle: .actionSheet)
+                let alert = UIAlertController(title: isEn ? "Popup Shape" : "吹き出しの形", message: nil, preferredStyle: .actionSheet)
                 
-                let stylesEn = ["Characters", "Arrows", "Hidden"]
-                let stylesJa = ["文字 (いうえお等)", "矢印 (←↑→↓)", "非表示"]
+                let shapesEn = ["Rounded", "Oval", "Rect"]
+                let shapesJa = ["角丸", "楕円", "四角"]
                 
                 for i in 0..<3 {
-                    let action = UIAlertAction(title: isEn ? stylesEn[i] : stylesJa[i], style: .default) { [weak self] _ in
-                        self?.currentTheme.navStyle = i
+                    let action = UIAlertAction(title: isEn ? shapesEn[i] : shapesJa[i], style: .default) { [weak self] _ in
+                        self?.currentTheme.flickPopupShape = i
                         self?.updatePreview()
                         self?.tableView.reloadData()
                     }
-                    if (currentTheme.navStyle ?? 0) == i {
+                    if (currentTheme.flickPopupShape ?? 0) == i {
                         action.setValue(true, forKey: "checked")
                     }
                     alert.addAction(action)
@@ -1158,10 +1150,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                     popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
                 }
                 present(alert, animated: true)
-            } else if indexPath.row == 4 {
-                pickingColorFor = "navColor"
-                picker.selectedColor = currentTheme.navColorHex != nil ? (UIColor(hex: currentTheme.navColorHex!) ?? .lightGray) : .lightGray
-                present(picker, animated: true)
             }
         }
     }
@@ -1193,8 +1181,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             currentTheme.flickPopupTextHex = hexStr
         } else if pickingColorFor == "flickHighlight" {
             currentTheme.flickHighlightHex = hexStr
-        } else if pickingColorFor == "navColor" {
-            currentTheme.navColorHex = hexStr
         }
         
         updatePreview()

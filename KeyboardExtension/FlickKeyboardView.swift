@@ -346,12 +346,8 @@ class FlickKeyboardView: UIView {
     }
     
     private func updateHints(for btn: UIView, keyData: FlickKey, isShifted: Bool = false) {
-        let navStyle = currentTheme?.navStyle ?? 0
-        let showHints = navStyle != 2
-        let useArrows = navStyle == 1
-        
         // Determine if this key should actually show a hint
-        var shouldShowHint = showHints
+        var shouldShowHint = true
         // Hide hints for non-flickable keys
         if keyData.left == nil && keyData.up == nil && keyData.right == nil && keyData.down == nil {
             shouldShowHint = false
@@ -380,30 +376,19 @@ class FlickKeyboardView: UIView {
         }
         
         if let sub = btn.viewWithTag(105) as? UILabel {
-            if let colorHex = currentTheme?.navColorHex, let customColor = UIColor(hex: colorHex) {
-                sub.textColor = customColor
-            } else {
-                sub.textColor = .lightGray
-            }
+            sub.textColor = .lightGray
             
             if !shouldShowHint {
                 sub.text = ""
             } else {
                 var hints = [String]()
-                if useArrows {
-                    if keyData.left != nil { hints.append("←") }
-                    if keyData.up != nil { hints.append("↑") }
-                    if keyData.right != nil { hints.append("→") }
-                    if keyData.down != nil { hints.append("↓") }
-                } else {
-                    if let left = keyData.left { hints.append(left) }
-                    if let up = keyData.up { hints.append(up) }
-                    if let right = keyData.right { hints.append(right) }
-                    if let down = keyData.down { hints.append(down) } // Added down for characters too
-                }
+                if let left = keyData.left { hints.append(left) }
+                if let up = keyData.up { hints.append(up) }
+                if let right = keyData.right { hints.append(right) }
+                if let down = keyData.down { hints.append(down) }
                 
                 var hintStr = hints.joined(separator: " ")
-                if currentPage == .alphabet && !isShifted && !useArrows {
+                if currentPage == .alphabet && !isShifted {
                     hintStr = hintStr.uppercased()
                 }
                 sub.text = hintStr
@@ -856,8 +841,14 @@ class FlickKeyboardView: UIView {
         // Read theme colors
         var popupBg = UIColor.white
         var popupTextCol = UIColor.black
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
-           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+        var themeToUse = self.currentTheme
+        if themeToUse == nil {
+            if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+               let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+                themeToUse = theme
+            }
+        }
+        if let theme = themeToUse {
             if let hex = theme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
             if let hex = theme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
         }
@@ -868,6 +859,8 @@ class FlickKeyboardView: UIView {
         let keyWidth = button.bounds.width
         let keyHeight = button.bounds.height
         let spacing: CGFloat = 6.0
+        let shape = themeToUse?.flickPopupShape ?? 0
+        let radius: CGFloat = shape == 0 ? 6 : (shape == 1 ? min(keyWidth, keyHeight) / 2.0 : 0)
         
         let directions: [FlickDirection] = [.center, .left, .up, .right, .down]
         var labels: [FlickDirection: UILabel] = [:]
@@ -880,7 +873,7 @@ class FlickKeyboardView: UIView {
             label.textColor = popupTextCol
             label.textAlignment = .center
             label.backgroundColor = popupBg
-            label.layer.cornerRadius = 6
+            label.layer.cornerRadius = radius
             label.layer.masksToBounds = true
             label.layer.shadowColor = UIColor.black.cgColor
             label.layer.shadowOpacity = 0.2
@@ -943,8 +936,14 @@ class FlickKeyboardView: UIView {
         var popupBg = UIColor.white
         var popupTextCol = UIColor.black
         var highlightCol = UIColor.systemBlue
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
-           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+        var themeToUse = self.currentTheme
+        if themeToUse == nil {
+            if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+               let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+                themeToUse = theme
+            }
+        }
+        if let theme = themeToUse {
             if let hex = theme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
             if let hex = theme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
             if let hex = theme.flickHighlightHex { highlightCol = UIColor(hex: hex) ?? .systemBlue }
@@ -978,7 +977,9 @@ class FlickKeyboardView: UIView {
         if !isFull && direction != .center {
             guard let label = labels[direction] else { return }
             let f = label.frame.insetBy(dx: -6, dy: -6)
-            let path = UIBezierPath(roundedRect: f, cornerRadius: 8)
+            let shape = themeToUse?.flickPopupShape ?? 0
+            let radius: CGFloat = shape == 0 ? 8 : (shape == 1 ? min(f.width, f.height) / 2.0 : 0)
+            let path = UIBezierPath(roundedRect: f, cornerRadius: radius)
             let arrow = UIBezierPath()
             let aw: CGFloat = 20 // arrow width
             let ah: CGFloat = 16 // arrow height pointing inward
@@ -1122,14 +1123,15 @@ class FlickKeyboardView: UIView {
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         let textCol = isDark ? UIColor.white : UIColor.black
         
-        var hasImage = false
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
-           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data),
-           theme.backgroundImageFileName != nil {
-            hasImage = true
+        var hasCustomBg = false
+        if let theme = currentTheme {
+            hasCustomBg = theme.backgroundImageFileName != nil || theme.backgroundColorHex != nil
+        } else if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            hasCustomBg = theme.backgroundImageFileName != nil || theme.backgroundColorHex != nil
         }
         
-        backgroundColor = hasImage ? .clear : bg
+        backgroundColor = hasCustomBg ? .clear : bg
         
         spaceButton.backgroundColor = specialBg
         abcButton.backgroundColor = specialBg
