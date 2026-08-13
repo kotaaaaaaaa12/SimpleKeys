@@ -63,24 +63,24 @@ struct FlickKeyboardData {
 
     static let numberKeys: [[FlickKey]] = [
         [
-            FlickKey(center: "1", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "2", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "3", left: nil, up: nil, right: nil, down: nil)
+            FlickKey(center: "1", left: "☆", up: "♪", right: "→", down: "1"),
+            FlickKey(center: "2", left: "¥", up: "$", right: "€", down: "2"),
+            FlickKey(center: "3", left: "%", up: "°", right: "#", down: "3")
         ],
         [
-            FlickKey(center: "4", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "5", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "6", left: nil, up: nil, right: nil, down: nil)
+            FlickKey(center: "4", left: "＋", up: "－", right: "×", down: "÷"),
+            FlickKey(center: "5", left: "＜", up: "＝", right: "＞", down: "～"),
+            FlickKey(center: "6", left: "「", up: "」", right: "『", down: "』")
         ],
         [
-            FlickKey(center: "7", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "8", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: "9", left: nil, up: nil, right: nil, down: nil)
+            FlickKey(center: "7", left: ":", up: ";", right: "&", down: "@"),
+            FlickKey(center: "8", left: "(", up: ")", right: "[", down: "]"),
+            FlickKey(center: "9", left: ".", up: ",", right: "?", down: "!")
         ],
         [
             FlickKey(center: "+-*/", left: "+", up: "-", right: "*", down: "/"),
-            FlickKey(center: "0", left: nil, up: nil, right: nil, down: nil),
-            FlickKey(center: ".,", left: ".", up: ",", right: nil, down: nil)
+            FlickKey(center: "0", left: "…", up: "‥", right: "_", down: "￣"),
+            FlickKey(center: "、", left: "。", up: "？", right: "！", down: "…")
         ]
     ]
 }
@@ -92,6 +92,7 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView)
+    @objc optional func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView)
 }
 
 class FlickKeyboardView: UIView {
@@ -114,6 +115,7 @@ class FlickKeyboardView: UIView {
     private var startPoint: CGPoint = .zero
     private var popupView: UIView?
     private var popupLabels: [FlickDirection: UILabel] = [:]
+    private var popupTimer: Timer?
     
     // State
     private var isDarkMode = false
@@ -129,6 +131,7 @@ class FlickKeyboardView: UIView {
     private var spaceButton: UIView!
     private var abcButton: UIView!
     private var numButton: UIView!
+    private var faceButton: UIView!
     
     private var deleteTimer: Timer?
     
@@ -239,7 +242,12 @@ class FlickKeyboardView: UIView {
         place(view: abcButton, row: 1, col: 0)
         
         globeButton = createSpecialKey(title: "🌐")
-        place(view: globeButton, row: 2, col: 0, rowSpan: 2) // Spans row 2 and 3
+        globeButton.accessibilityIdentifier = "globe"
+        place(view: globeButton, row: 3, col: 0)
+        
+        faceButton = createSpecialKey(title: "^_^")
+        faceButton.accessibilityIdentifier = "face_mark"
+        place(view: faceButton, row: 2, col: 0)
         
         // 2. Center Grid
         gridButtons = Array(repeating: Array(repeating: UIView(), count: 3), count: 4)
@@ -330,19 +338,29 @@ class FlickKeyboardView: UIView {
     // MARK: - Touch Handling (Responsive)
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, activeTouch == nil else { return }
-        activeTouch = touch
-        startPoint = touch.location(in: self)
+        guard activeTouch == nil, let touch = touches.first else { return }
         
-        activeButton = findButton(at: startPoint)
-        guard let btn = activeButton else { return }
+        let point = touch.location(in: self)
         
-        animateKeyDown(btn)
-        
-        if keysMap[btn] != nil {
-            showPopup(for: btn)
-        } else if btn.accessibilityIdentifier == "delete" {
-            startDeleteTimer()
+        for btn in allButtons {
+            if btn.frame.contains(point) {
+                activeTouch = touch
+                activeButton = btn
+                startPoint = touch.location(in: self)
+                animateKeyDown(btn)
+                
+                if keysMap[btn] != nil {
+                    popupTimer?.invalidate()
+                    popupTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
+                        guard let self = self, let activeBtn = self.activeButton else { return }
+                        self.showPopup(for: activeBtn)
+                    }
+                } else if btn.accessibilityIdentifier == "delete" {
+                    startDeleteTimer()
+                }
+                
+                return
+            }
         }
     }
     
@@ -359,16 +377,19 @@ class FlickKeyboardView: UIView {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        popupTimer?.invalidate()
         stopDeleteTimer()
         guard let touch = touches.first, touch == activeTouch else { return }
         finishTouch(at: touch.location(in: self))
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        popupTimer?.invalidate()
         stopDeleteTimer()
         hidePopup()
         if let btn = activeButton { animateKeyUp(btn) }
         activeButton = nil
+        activeTouch = nil
     }
     
     private func startDeleteTimer() {
@@ -422,8 +443,8 @@ class FlickKeyboardView: UIView {
                     delegate?.flickKeyboardDidPressDelete(self)
                 } else if btn.accessibilityIdentifier == "return" {
                     delegate?.flickKeyboardDidPressReturn(self)
-                } else if btn == globeButton {
-                    // Handled by KeyboardViewController
+                } else if btn.accessibilityIdentifier == "globe" {
+                    delegate?.flickKeyboardDidPressGlobe?(self)
                 } else if btn.accessibilityIdentifier == "abc_switch" {
                     delegate?.flickKeyboardDidPressABC(self)
                 } else if btn.accessibilityIdentifier == "num_switch" {
@@ -433,6 +454,8 @@ class FlickKeyboardView: UIView {
                         currentPage = .number
                     }
                     updatePageUI()
+                } else if btn.accessibilityIdentifier == "face_mark" {
+                    delegate?.flickKeyboard(self, didInputText: "^_^")
                 }
             }
         }
@@ -492,9 +515,9 @@ class FlickKeyboardView: UIView {
         popup.translatesAutoresizingMaskIntoConstraints = false
         
         // Base sizes
-        let keyWidth: CGFloat = 50
-        let keyHeight: CGFloat = 50
-        let spacing: CGFloat = 2
+        let keyWidth: CGFloat = 64
+        let keyHeight: CGFloat = 64
+        let spacing: CGFloat = 3
         
         let directions: [FlickDirection] = [.center, .left, .up, .right, .down]
         
@@ -502,7 +525,7 @@ class FlickKeyboardView: UIView {
             if dir != .center && textForDirection(dir, key: keyData) == nil { continue }
             
             let label = UILabel()
-            label.font = .systemFont(ofSize: 24, weight: .semibold)
+            label.font = .systemFont(ofSize: 28, weight: .semibold)
             label.textColor = .black
             label.textAlignment = .center
             label.backgroundColor = .white
@@ -663,7 +686,7 @@ class FlickKeyboardView: UIView {
         backgroundColor = bg
         
         func apply(to view: UIView) {
-            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view.accessibilityIdentifier == "dakuten" || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "a/A" }) != nil)
+            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view == faceButton || view.accessibilityIdentifier == "dakuten" || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "a/A" || ($0 as? UILabel)?.text == "^_^" }) != nil)
             
             if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
                 view.backgroundColor = isSpecial ? specialBg : keyBg

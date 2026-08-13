@@ -42,6 +42,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         
         // Read default keyboard mode
         let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        defaults?.synchronize()
         let defaultMode = defaults?.integer(forKey: "defaultKeyboardMode") ?? 0
         currentMode = defaultMode == 0 ? .flickKana : .qwertyEnglish
         
@@ -521,6 +522,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         textDocumentProxy.insertText(text)
     }
     
+    func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView) {
+        advanceToNextInputMode()
+    }
+    
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
         textDocumentProxy.deleteBackward()
     }
@@ -535,6 +540,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
         let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        defaults?.synchronize()
         let style = defaults?.integer(forKey: "englishInputStyle") ?? 0
         
         if style == 0 {
