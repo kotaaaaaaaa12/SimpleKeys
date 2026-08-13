@@ -802,13 +802,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Save" : "保存", style: .done, target: self, action: #selector(saveTapped))
     }
     
-    private let keyboardTypeSegment = UISegmentedControl(items: ["Kana", "QWERTY"])
+    // Removed keyboardTypeSegment
     
     private func setupUI() {
-        keyboardTypeSegment.selectedSegmentIndex = 0
-        keyboardTypeSegment.addTarget(self, action: #selector(keyboardTypeChanged), for: .valueChanged)
-        keyboardTypeSegment.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(keyboardTypeSegment)
+        
         
         previewContainer.translatesAutoresizingMaskIntoConstraints = false
         previewContainer.backgroundColor = .systemGray5
@@ -828,13 +825,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            keyboardTypeSegment.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            keyboardTypeSegment.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            previewContainer.topAnchor.constraint(equalTo: keyboardTypeSegment.bottomAnchor, constant: 12),
+            previewContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             previewContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             previewContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            previewContainer.heightAnchor.constraint(equalToConstant: 220),
+            previewContainer.heightAnchor.constraint(equalToConstant: 260),
             
             keyboardVC.view.topAnchor.constraint(equalTo: previewContainer.topAnchor),
             keyboardVC.view.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
@@ -863,11 +857,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         nameField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
     }
     
-    @objc private func keyboardTypeChanged() {
-        keyboardVC.setPreviewMode(isQwerty: keyboardTypeSegment.selectedSegmentIndex == 1)
-        updatePreview()
+    private func updatePreview() {
+        keyboardVC.previewTheme = currentTheme
+        keyboardVC.updatePreviewTheme()
     }
-    
+
     @objc private func nameChanged() {
         currentTheme.name = nameField.text
     }
