@@ -83,17 +83,15 @@ class KanjiConverter {
             }
         }
         
-        // 3. カタカナ変換を候補に追加
-        let katakana = text.map { c -> Character in
-            let scalar = c.unicodeScalars.first!
-            if scalar.value >= 0x3041 && scalar.value <= 0x3096 {
-                return Character(UnicodeScalar(scalar.value + 96)!)
-            }
-            return c
-        }
-        let katakanaStr = String(katakana)
+        // 3. カタカナ・半角カタカナを候補に追加
+        let katakanaStr = text.toKatakana()
+        let halfKatakanaStr = katakanaStr.toHalfWidth()
+        
         if !results.contains(katakanaStr) {
             results.append(katakanaStr)
+        }
+        if !results.contains(halfKatakanaStr) {
+            results.append(halfKatakanaStr)
         }
         
         // 4. ひらがなそのままも候補に

@@ -52,6 +52,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var expandedCandidateStack: UIStackView! // Better to use a wrapping layout or a collection view. A wrapping Custom Flow Layout with UICollectionView is best, but a simple UIScrollView with a wrapping logic or just a vertical stack of horizontal stacks works. For simplicity, we'll use a wrapping Custom View or a Flow Layout. Let's use a UICollectionView.
     private var candidateCollectionView: UICollectionView!
     private var isExpanded: Bool = false
+    private var expandedStartIndex: Int = 0
     
     private var englishBuffer: String = ""
     
@@ -226,6 +227,23 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func expandButtonTapped() {
+        if !isExpanded {
+            // Calculate how many items are visible in the scroll view
+            var visibleCount = 0
+            for view in candidateStack.arrangedSubviews {
+                // If the right edge of the button is within the scroll view's visible width
+                if view.frame.maxX <= candidateScrollView.bounds.width {
+                    visibleCount += 1
+                } else {
+                    break
+                }
+            }
+            // If none are fully visible (very long word), at least skip 1
+            expandedStartIndex = max(visibleCount, 1)
+            // If expandedStartIndex is >= currentCandidates.count, cap it
+            expandedStartIndex = min(expandedStartIndex, max(0, currentCandidates.count - 1))
+        }
+        
         isExpanded.toggle()
         updateExpandUI()
     }
@@ -1183,17 +1201,20 @@ class AppGroupHelper {
 // MARK: - Expanded Candidate View CollectionView
 extension KeyboardViewController: UICollectionViewDataSource, UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return currentCandidates.count
+        return max(0, currentCandidates.count - expandedStartIndex)
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CandidateCell", for: indexPath) as! CandidateCell
-        cell.titleLabel.text = currentCandidates[indexPath.item]
+        let index = indexPath.item + expandedStartIndex
+        if index < currentCandidates.count {
+            cell.titleLabel.text = currentCandidates[index]
+        }
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        commitCandidate(at: indexPath.item)
+        commitCandidate(at: indexPath.item + expandedStartIndex)
     }
 }
 

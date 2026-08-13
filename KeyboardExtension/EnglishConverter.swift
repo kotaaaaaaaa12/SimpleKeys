@@ -20,7 +20,12 @@ class EnglishConverter {
         if upper != text { results.append(upper) }
         if cap != text && cap != upper { results.append(cap) }
         
-        // 3. Full-width (Zenkaku)
+        // 3. Half-width and Full-width
+        let halfWidth = text.applyingTransform(.fullwidthToHalfwidth, reverse: false) ?? text
+        if halfWidth != text {
+            results.append(halfWidth)
+        }
+        
         let fullWidth = text.applyingTransform(.fullwidthToHalfwidth, reverse: true) ?? text
         if fullWidth != text {
             results.append(fullWidth)
