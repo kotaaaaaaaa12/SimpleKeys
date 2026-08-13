@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 
 @objcMembers
 class MockDocumentProxy: NSObject, UITextDocumentProxy {
@@ -92,6 +93,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     private var qwertySpaceDragStart: CGPoint = .zero
     
     private var themeBgImageView: UIImageView?
+    private var themeBgVideoPlayerLayer: AVPlayerLayer?
+    private var themeBgVideoLooper: AVPlayerLooper?
+    private var themeBgQueuePlayer: AVQueuePlayer?
     
     // UI Elements
     private var geminiDebounceTimer: Timer?
@@ -197,8 +201,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         applyTheme()
     }
     
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        themeBgVideoPlayerLayer?.frame = view.bounds
         updateOneHandedMode()
     }
     
@@ -257,14 +262,43 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             theme = saved
         }
         
-        if let bgFile = theme.backgroundImageFileName, let bgImage = AppGroupHelper.shared.loadImage(fileName: bgFile) {
-            themeBgImageView?.image = bgImage
-            themeBgImageView?.isHidden = false
-            view.backgroundColor = .clear
+        themeBgVideoPlayerLayer?.removeFromSuperlayer()
+        themeBgVideoPlayerLayer = nil
+        themeBgQueuePlayer?.pause()
+        themeBgQueuePlayer = nil
+        themeBgVideoLooper = nil
+        
+        if let bgFile = theme.backgroundImageFileName {
+            let ext = (bgFile as NSString).pathExtension.lowercased()
+            if ext == "mp4" || ext == "mov" || ext == "m4v", let url = AppGroupHelper.shared.fileURL(for: bgFile) {
+                let player = AVQueuePlayer()
+                themeBgQueuePlayer = player
+                let playerItem = AVPlayerItem(url: url)
+                themeBgVideoLooper = AVPlayerLooper(player: player, templateItem: playerItem)
+                
+                let playerLayer = AVPlayerLayer(player: player)
+                playerLayer.videoGravity = .resizeAspectFill
+                playerLayer.frame = view.bounds
+                view.layer.insertSublayer(playerLayer, at: 0)
+                themeBgVideoPlayerLayer = playerLayer
+                
+                player.play()
+                
+                themeBgImageView?.isHidden = true
+                view.backgroundColor = .clear
+            } else if ext == "gif", let animatedImage = AppGroupHelper.shared.loadGIF(fileName: bgFile) {
+                themeBgImageView?.image = animatedImage
+                themeBgImageView?.isHidden = false
+                view.backgroundColor = .clear
+            } else if let bgImage = AppGroupHelper.shared.loadImage(fileName: bgFile) {
+                themeBgImageView?.image = bgImage
+                themeBgImageView?.isHidden = false
+                view.backgroundColor = .clear
+            } else {
+                themeBgImageView?.isHidden = true
+            }
         } else {
             themeBgImageView?.isHidden = true
-            // if theme.backgroundColorHex != nil {} 
-            // for now just use standard appearance in updateAppearance
         }
         
         flickKeyboard?.applyTheme(theme)

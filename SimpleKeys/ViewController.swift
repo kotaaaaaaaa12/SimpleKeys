@@ -1027,6 +1027,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 let picker = UIImagePickerController()
                 picker.delegate = self
                 picker.sourceType = .photoLibrary
+                picker.mediaTypes = ["public.image", "public.movie"]
                 present(picker, animated: true)
             } else {
                 currentTheme.backgroundImageFileName = nil
@@ -1211,7 +1212,28 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
 
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        if let image = info[.originalImage] as? UIImage {
+        if let mediaType = info[.mediaType] as? String, mediaType == "public.movie", let videoURL = info[.mediaURL] as? URL {
+            picker.dismiss(animated: true) { [weak self] in
+                guard let self = self else { return }
+                let ext = videoURL.pathExtension.isEmpty ? "mp4" : videoURL.pathExtension
+                let fileName = "\(UUID().uuidString).\(ext)"
+                if AppGroupHelper.shared.saveFile(from: videoURL, fileName: fileName) {
+                    self.currentTheme.backgroundImageFileName = fileName
+                    self.updatePreview()
+                    self.tableView.reloadData()
+                }
+            }
+        } else if let imageURL = info[.imageURL] as? URL, imageURL.pathExtension.lowercased() == "gif" {
+            picker.dismiss(animated: true) { [weak self] in
+                guard let self = self else { return }
+                let fileName = "\(UUID().uuidString).gif"
+                if AppGroupHelper.shared.saveFile(from: imageURL, fileName: fileName) {
+                    self.currentTheme.backgroundImageFileName = fileName
+                    self.updatePreview()
+                    self.tableView.reloadData()
+                }
+            }
+        } else if let image = info[.originalImage] as? UIImage {
             picker.dismiss(animated: true) { [weak self] in
                 let cropVC = ImageCropViewController()
                 cropVC.originalImage = image
@@ -1221,6 +1243,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                     if AppGroupHelper.shared.saveImage(croppedImage, fileName: fileName) {
                         self.currentTheme.backgroundImageFileName = fileName
                         self.updatePreview()
+                        self.tableView.reloadData()
                     }
                 }
                 cropVC.modalPresentationStyle = .fullScreen

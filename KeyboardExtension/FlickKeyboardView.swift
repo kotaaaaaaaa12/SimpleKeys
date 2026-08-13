@@ -290,7 +290,7 @@ class FlickKeyboardView: UIView {
         returnButton.accessibilityIdentifier = "return"
         if let lbl = returnButton.subviews.first as? UILabel { 
             lbl.font = .systemFont(ofSize: 16)
-            lbl.tag = 999 // Tag to identify the label easily
+            lbl.tag = 100 // Keep as 100 so applyTheme updates it
         }
         place(view: returnButton, row: 2, col: 4, rowSpan: 2) // Spans row 2 and 3
     }

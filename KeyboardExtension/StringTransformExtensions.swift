@@ -1,5 +1,6 @@
 import UIKit
 import Foundation
+import ImageIO
 
 extension String {
     func toKatakana() -> String {
@@ -66,10 +67,61 @@ class AppGroupHelper {
         }
     }
     
+    func saveFile(from sourceURL: URL, fileName: String) -> Bool {
+        guard let dest = containerURL()?.appendingPathComponent(fileName) else { return false }
+        do {
+            if FileManager.default.fileExists(atPath: dest.path) {
+                try FileManager.default.removeItem(at: dest)
+            }
+            try FileManager.default.copyItem(at: sourceURL, to: dest)
+            return true
+        } catch {
+            print("Failed to save file: \(error)")
+            return false
+        }
+    }
+    
+    func fileURL(for fileName: String) -> URL? {
+        return containerURL()?.appendingPathComponent(fileName)
+    }
+    
     func loadImage(fileName: String) -> UIImage? {
         guard let url = containerURL()?.appendingPathComponent(fileName) else { return nil }
         guard let data = try? Data(contentsOf: url) else { return nil }
         return UIImage(data: data)
+    }
+    
+    func loadGIF(fileName: String) -> UIImage? {
+        guard let url = containerURL()?.appendingPathComponent(fileName) else { return nil }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        
+        var images = [UIImage]()
+        let count = CGImageSourceGetCount(source)
+        var totalDuration: Double = 0
+        
+        for i in 0..<count {
+            if let cgImage = CGImageSourceCreateImageAtIndex(source, i, nil) {
+                images.append(UIImage(cgImage: cgImage))
+                
+                var delay = 0.1
+                if let properties = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [String: Any],
+                   let gifInfo = properties[kCGImagePropertyGIFDictionary as String] as? [String: Any] {
+                    if let delayTime = gifInfo[kCGImagePropertyGIFUnclampedDelayTime as String] as? Double {
+                        delay = delayTime
+                    } else if let delayTime = gifInfo[kCGImagePropertyGIFDelayTime as String] as? Double {
+                        delay = delayTime
+                    }
+                }
+                totalDuration += delay
+            }
+        }
+        
+        if totalDuration == 0 {
+            totalDuration = Double(count) * 0.1
+        }
+        
+        return UIImage.animatedImage(with: images, duration: totalDuration)
     }
     
     func removeImage(fileName: String) {
