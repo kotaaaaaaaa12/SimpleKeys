@@ -123,6 +123,37 @@ class SettingsViewController: UITableViewController {
         loadSettings()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        checkKeyboardEnabled()
+    }
+    
+    private func checkKeyboardEnabled() {
+        // activeInputModes often reliably contains enabled keyboards
+        let isEnabled = UITextInputMode.activeInputModes.contains(where: {
+            if let identifier = $0.value(forKey: "identifier") as? String {
+                return identifier.contains("KeyboardExtension") || identifier.contains("SimpleKeys")
+            }
+            return false
+        })
+        
+        if !isEnabled {
+            let isEn = languageSegment.selectedSegmentIndex == 1
+            let alert = UIAlertController(
+                title: isEn ? "Setup Required" : "キーボードの設定",
+                message: isEn ? "SimpleKeys is not enabled. Please open Settings, go to Keyboards, and add SimpleKeys." : "SimpleKeysキーボードが追加されていません。設定を開き、「新しいキーボードを追加」からSimpleKeysを追加してください。",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: isEn ? "Later" : "あとで", style: .cancel, handler: nil))
+            alert.addAction(UIAlertAction(title: isEn ? "Open Settings" : "設定を開く", style: .default, handler: { _ in
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }))
+            self.present(alert, animated: true)
+        }
+    }
+    
     private func setupControls() {
         flickSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         flickAlphabetQwertySwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
@@ -218,9 +249,11 @@ class SettingsViewController: UITableViewController {
                 languageSegment.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
             ])
         } else if indexPath.section == 1 {
-            cell.textLabel?.text = isEn ? "Settings > General > Keyboard" : "設定 > 一般 > キーボード"
+            cell.textLabel?.text = isEn ? "Settings > General > Keyboard > Keyboards > Add New Keyboard" : "設定 > 一般 > キーボード > キーボード > 新しいキーボードを追加"
             cell.textLabel?.numberOfLines = 0
-            cell.imageView?.image = UIImage(systemName: "gear")
+            cell.detailTextLabel?.text = isEn ? "Tap here to open Settings app" : "ここをタップして設定アプリを開く"
+            cell.detailTextLabel?.textColor = .systemBlue
+            cell.imageView?.image = UIImage(systemName: "arrow.up.right.square")
             cell.imageView?.tintColor = .systemBlue
         } else if indexPath.section == 2 {
             if indexPath.row == 0 {
@@ -277,6 +310,17 @@ class SettingsViewController: UITableViewController {
         }
         
         return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if indexPath.section == 1 {
+            tableView.deselectRow(at: indexPath, animated: true)
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                if UIApplication.shared.canOpenURL(url) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+            }
+        }
     }
 }
 
