@@ -346,21 +346,33 @@ class FlickKeyboardView: UIView {
     }
     
     private func updateHints(for btn: UIView, keyData: FlickKey, isShifted: Bool = false) {
+        let navStyle = currentTheme?.navStyle ?? 0
+        let showHints = navStyle != 2
+        let useArrows = navStyle == 1
+        
+        // Determine if this key should actually show a hint
+        var shouldShowHint = showHints
+        // Hide hints for non-flickable keys
+        if keyData.left == nil && keyData.up == nil && keyData.right == nil && keyData.down == nil {
+            shouldShowHint = false
+        }
+        
         if let lbl = btn.viewWithTag(100) as? UILabel {
             var text = keyData.center
             if currentPage == .alphabet && !isShifted {
-                text = text.uppercased() // User wants uppercase
+                text = text.uppercased()
             }
             lbl.text = text
             if text.count >= 4 {
                 lbl.font = .systemFont(ofSize: 16, weight: .regular)
+                shouldShowHint = false // Don't show hints for wide text
             } else if currentPage == .alphabet && text.count >= 3 {
                 lbl.font = .systemFont(ofSize: 17, weight: .regular)
             } else {
                 lbl.font = .systemFont(ofSize: 22, weight: .regular)
             }
-            // Center the label if there is no subtitle
-            if currentPage == .kana || text.count >= 4 || (currentPage == .alphabet && keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
+            
+            if !shouldShowHint {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
             } else {
                 lbl.transform = .identity
@@ -368,26 +380,33 @@ class FlickKeyboardView: UIView {
         }
         
         if let sub = btn.viewWithTag(105) as? UILabel {
-            if currentPage == .kana {
+            if let colorHex = currentTheme?.navColorHex, let customColor = UIColor(hex: colorHex) {
+                sub.textColor = customColor
+            } else {
+                sub.textColor = .lightGray
+            }
+            
+            if !shouldShowHint {
                 sub.text = ""
             } else {
-                // If it's alphabet mode and it's a letter key (ABC, DEF, etc), hide the hint
-                if currentPage == .alphabet && (keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
-                    sub.text = ""
-                } else if keyData.center.count >= 4 {
-                    sub.text = ""
+                var hints = [String]()
+                if useArrows {
+                    if keyData.left != nil { hints.append("←") }
+                    if keyData.up != nil { hints.append("↑") }
+                    if keyData.right != nil { hints.append("→") }
+                    if keyData.down != nil { hints.append("↓") }
                 } else {
-                    var hints = [String]()
                     if let left = keyData.left { hints.append(left) }
                     if let up = keyData.up { hints.append(up) }
                     if let right = keyData.right { hints.append(right) }
-                    
-                    var hintStr = hints.joined(separator: " ")
-                    if currentPage == .alphabet && !isShifted {
-                        hintStr = hintStr.uppercased()
-                    }
-                    sub.text = hintStr
+                    if let down = keyData.down { hints.append(down) } // Added down for characters too
                 }
+                
+                var hintStr = hints.joined(separator: " ")
+                if currentPage == .alphabet && !isShifted && !useArrows {
+                    hintStr = hintStr.uppercased()
+                }
+                sub.text = hintStr
             }
         }
     }
@@ -522,7 +541,6 @@ class FlickKeyboardView: UIView {
                 }
             }
             if let sub = keyView.viewWithTag(105) as? UILabel {
-                sub.textColor = textCol.withAlphaComponent(0.6)
                 if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: sub.font.pointSize) {
                     sub.font = customFont
                 }
@@ -533,6 +551,9 @@ class FlickKeyboardView: UIView {
                 }
             }
         }
+        
+        // Refresh hints and shifted states according to the current navStyle
+        updatePageUI()
     }
     
     
