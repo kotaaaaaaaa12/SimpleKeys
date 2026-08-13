@@ -98,14 +98,6 @@ class FlickKeyboardView: UIView {
     
     // MARK: - Types
     
-    struct FlickKey {
-        let center: String
-        let left: String?
-        let up: String?
-        let right: String?
-        let down: String?
-    }
-    
     enum FlickDirection {
         case center, left, up, right, down
     }
@@ -515,8 +507,7 @@ class FlickKeyboardView: UIView {
         popupLabel?.text = text
         
         // Optional: animate popup position slightly based on direction
-        guard let popup = popupView, let window = button.window else { return }
-        let frame = button.convert(button.bounds, to: window)
+        guard let popup = popupView else { return }
         let offset: CGFloat = 15
         var dx: CGFloat = 0, dy: CGFloat = 0
         switch direction {
