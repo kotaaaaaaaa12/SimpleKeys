@@ -1014,12 +1014,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 for key in allNormalKeys.dropFirst() {
                     key.widthAnchor.constraint(equalTo: firstKey.widthAnchor).isActive = true
                 }
-                r1SpacerL.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 0.5).isActive = true
-                r1SpacerR.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 0.5).isActive = true
-                shiftKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.3).isActive = true
-                delKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.3).isActive = true
-                numKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.3).isActive = true
-                globeKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.0).isActive = true
+                r1SpacerL.widthAnchor.constraint(equalTo: r1SpacerR.widthAnchor).isActive = true
+                shiftKey.widthAnchor.constraint(equalTo: delKey.widthAnchor).isActive = true
+                
+                numKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.5).isActive = true
+                globeKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 1.2).isActive = true
                 returnKey.widthAnchor.constraint(equalTo: firstKey.widthAnchor, multiplier: 2.0).isActive = true
             }
             
