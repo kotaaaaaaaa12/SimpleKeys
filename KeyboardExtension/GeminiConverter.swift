@@ -15,7 +15,7 @@ class GeminiConverter {
         }
         
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(cleanApiKey)"
+        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=\(cleanApiKey)"
         guard let url = URL(string: urlString) else {
             completion(["[AI] URLエラー"])
             return
