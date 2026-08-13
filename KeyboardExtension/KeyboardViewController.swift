@@ -1138,7 +1138,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var lastFlickTapBaseChar: String?
     private var toggleIndex = 0
     
-    private func getToggleChar(baseChar: String, index: Int) -> String {
+    private func getToggleChar(baseChar: String, index: Int) -> String? {
         let groups = [
             ["あ", "い", "う", "え", "お", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ"],
             ["か", "き", "く", "け", "こ"],
@@ -1172,7 +1172,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 return group[index % group.count]
             }
         }
-        return baseChar
+        return nil
     }
     
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String, direction: FlickKeyboardView.FlickDirection) {
@@ -1183,9 +1183,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         if !flickOnly && direction == .center {
             if let baseChar = lastFlickTapBaseChar, text == baseChar, let lastTime = lastFlickTapTime, Date().timeIntervalSince(lastTime) < 1.0 {
                 toggleIndex += 1
-                newChar = getToggleChar(baseChar: baseChar, index: toggleIndex)
-                isToggle = true
-                lastFlickTapTime = Date()
+                if let toggleChar = getToggleChar(baseChar: baseChar, index: toggleIndex) {
+                    newChar = toggleChar
+                    isToggle = true
+                    lastFlickTapTime = Date()
+                } else {
+                    lastFlickTapBaseChar = text
+                    lastFlickTapTime = Date()
+                    toggleIndex = 0
+                }
             } else {
                 lastFlickTapBaseChar = text
                 lastFlickTapTime = Date()
