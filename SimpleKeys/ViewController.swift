@@ -877,11 +877,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         updatePreview()
     }
     
-    private func updatePreview() {
-        keyboardVC.previewTheme = currentTheme
-        keyboardVC.updatePreviewTheme()
-    }
-    
     @objc private func saveTapped() {
         if currentTheme.name == nil || currentTheme.name!.isEmpty {
             let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
