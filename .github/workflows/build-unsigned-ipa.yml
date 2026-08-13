@@ -1,4 +1,4 @@
-name: Build SimpleKeys for SideStore
+name: Build Unsigned IPA
 
 on:
   workflow_dispatch:
