@@ -365,37 +365,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 18)
+                button.titleLabel?.font = .systemFont(ofSize: 20)
                 button.setTitleColor(.label, for: .normal)
-                button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+                button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
                 button.tag = index
                 button.addTarget(self, action: #selector(candidateTapped(_:)), for: .touchUpInside)
-                
-                // Add separator except for the last item
-                let container = UIView()
-                container.addSubview(button)
-                button.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    button.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                    button.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-                    button.topAnchor.constraint(equalTo: container.topAnchor),
-                    button.bottomAnchor.constraint(equalTo: container.bottomAnchor)
-                ])
-                
-                if index < currentCandidates.count - 1 {
-                    let sep = UIView()
-                    sep.backgroundColor = .separator
-                    sep.translatesAutoresizingMaskIntoConstraints = false
-                    container.addSubview(sep)
-                    NSLayoutConstraint.activate([
-                        sep.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-                        sep.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-                        sep.heightAnchor.constraint(equalTo: container.heightAnchor, multiplier: 0.5),
-                        sep.widthAnchor.constraint(equalToConstant: 1)
-                    ])
-                }
-                
-                candidateStack.addArrangedSubview(container)
+                candidateStack.addArrangedSubview(button)
             }
             
             if isExpanded {
