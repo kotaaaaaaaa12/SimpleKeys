@@ -423,6 +423,7 @@ class FlickKeyboardView: UIView {
             for btn in allButtons {
                 if btn.frame.contains(point) {
                     bestBtn = btn
+                    minDistance = 0
                     break
                 }
                 let cx = btn.frame.midX
@@ -656,7 +657,7 @@ class FlickKeyboardView: UIView {
         
         NSLayoutConstraint.activate([
             popup.centerXAnchor.constraint(equalTo: button.centerXAnchor),
-            popup.centerYAnchor.constraint(equalTo: button.centerYAnchor, constant: -10)
+            popup.centerYAnchor.constraint(equalTo: button.centerYAnchor)
         ])
         
         updatePopup(direction: .center, for: touch)
