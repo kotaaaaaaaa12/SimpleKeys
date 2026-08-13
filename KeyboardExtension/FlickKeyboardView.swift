@@ -427,10 +427,23 @@ class FlickKeyboardView: UIView {
         return view
     }
     
-    // MARK: - Public Accessors
-    
     func getGlobeButton() -> UIView {
         return globeButton
+    }
+    
+    // MARK: - Label Fade (Blur)
+    
+    func setKeysAlpha(_ alpha: CGFloat) {
+        for btn in allButtons {
+            if btn.accessibilityIdentifier == "space" { continue }
+            for subview in btn.subviews {
+                if let label = subview as? UILabel {
+                    label.alpha = alpha
+                } else if let imageView = subview as? UIImageView {
+                    imageView.alpha = alpha
+                }
+            }
+        }
     }
     
     // MARK: - Touch Handling (Responsive)
