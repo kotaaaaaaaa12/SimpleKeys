@@ -14,7 +14,8 @@ class GeminiConverter {
             return
         }
         
-        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(apiKey)"
+        let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(cleanApiKey)"
         guard let url = URL(string: urlString) else {
             completion(["[AI] URLエラー"])
             return
@@ -58,8 +59,13 @@ class GeminiConverter {
             
             // Check HTTP status code
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                let _ = String(data: data, encoding: .utf8) ?? ""
-                DispatchQueue.main.async { completion(["[AI] エラー: \(httpResponse.statusCode)"]) }
+                var errMsg = "\(httpResponse.statusCode)"
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let errObj = json["error"] as? [String: Any],
+                   let msg = errObj["message"] as? String {
+                    errMsg = "\(httpResponse.statusCode) \(msg)"
+                }
+                DispatchQueue.main.async { completion(["[AI] エラー: \(errMsg)"]) }
                 return
             }
             
