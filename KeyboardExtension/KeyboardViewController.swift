@@ -1693,6 +1693,9 @@ struct ThemeSettings: Codable, Equatable {
     var textColorHex: String?
     var keyBorderColorHex: String?
     var keyOpacity: CGFloat?
+    var flickPopupBgHex: String?       // Flick popup background color
+    var flickPopupTextHex: String?     // Flick popup text color
+    var flickHighlightHex: String?     // Flick popup selected highlight color
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"
