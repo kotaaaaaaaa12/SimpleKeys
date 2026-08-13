@@ -137,6 +137,13 @@ class SettingsViewController: UITableViewController {
         return tf
     }()
     
+    private let geminiModelField: UITextField = {
+        let tf = UITextField()
+        tf.borderStyle = .roundedRect
+        tf.returnKeyType = .done
+        return tf
+    }()
+    
     private let languageSegment = UISegmentedControl(items: ["日本語", "English"])
     
     private let sharedDefaults = AppGroupHelper.shared.userDefaults
@@ -193,6 +200,9 @@ class SettingsViewController: UITableViewController {
         geminiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         geminiApiKeyField.addTarget(self, action: #selector(apiKeyChanged), for: .editingChanged)
         geminiApiKeyField.delegate = self
+        
+        geminiModelField.addTarget(self, action: #selector(modelChanged), for: .editingChanged)
+        geminiModelField.delegate = self
     }
     
     private func loadSettings() {
@@ -207,6 +217,8 @@ class SettingsViewController: UITableViewController {
         
         geminiSwitch.isOn = defaults?.bool(forKey: "enableGemini") ?? false
         geminiApiKeyField.text = defaults?.string(forKey: "geminiApiKey")
+        let savedModel = defaults?.string(forKey: "geminiModel")
+        geminiModelField.text = (savedModel != nil && !savedModel!.isEmpty) ? savedModel : "gemini-2.0-flash"
     }
     
     @objc private func settingsChanged() {
@@ -225,6 +237,11 @@ class SettingsViewController: UITableViewController {
     
     @objc private func apiKeyChanged() {
         sharedDefaults?.set(geminiApiKeyField.text, forKey: "geminiApiKey")
+        sharedDefaults?.synchronize()
+    }
+    
+    @objc private func modelChanged() {
+        sharedDefaults?.set(geminiModelField.text, forKey: "geminiModel")
         sharedDefaults?.synchronize()
     }
     
@@ -251,7 +268,7 @@ class SettingsViewController: UITableViewController {
         case 1: return 1
         case 2: return 3
         case 3: return 1
-        case 4: return 2
+        case 4: return 3
         case 5: return 4
         default: return 0
         }
@@ -337,6 +354,15 @@ class SettingsViewController: UITableViewController {
                     geminiApiKeyField.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
                 ])
                 geminiApiKeyField.placeholder = isEn ? "Enter Gemini API Key..." : "Gemini APIキーを入力..."
+            } else if indexPath.row == 2 {
+                cell.contentView.addSubview(geminiModelField)
+                geminiModelField.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    geminiModelField.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    geminiModelField.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    geminiModelField.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
+                ])
+                geminiModelField.placeholder = isEn ? "Model Name (e.g. gemini-2.0-flash)" : "モデル名 (例: gemini-2.0-flash)"
             }
         } else if indexPath.section == 5 {
             cell.textLabel?.textColor = .secondaryLabel

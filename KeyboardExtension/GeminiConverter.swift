@@ -6,7 +6,8 @@ class GeminiConverter {
     
     private var currentTask: URLSessionDataTask?
     
-    func convert(text: String, apiKey: String, completion: @escaping ([String]) -> Void) {
+    func convert(text: String, apiKey: String, model: String = "gemini-2.0-flash", completion: @escaping ([String]) -> Void) {
+        // Cancel previous request if any
         currentTask?.cancel()
         
         guard !text.isEmpty, !apiKey.isEmpty else {
@@ -15,7 +16,8 @@ class GeminiConverter {
         }
         
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=\(cleanApiKey)"
+        let cleanModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/\(cleanModel):generateContent?key=\(cleanApiKey)"
         guard let url = URL(string: urlString) else {
             completion(["[AI] URLエラー"])
             return
