@@ -826,11 +826,11 @@ class FlickKeyboardView: UIView {
         
         if !isFull && direction != .center {
             guard let label = labels[direction] else { return }
-            let f = label.frame
-            let path = UIBezierPath(roundedRect: f, cornerRadius: 6)
+            let f = label.frame.insetBy(dx: -6, dy: -6)
+            let path = UIBezierPath(roundedRect: f, cornerRadius: 8)
             let arrow = UIBezierPath()
-            let aw: CGFloat = 16 // arrow width
-            let ah: CGFloat = 12 // arrow height pointing inward
+            let aw: CGFloat = 20 // arrow width
+            let ah: CGFloat = 16 // arrow height pointing inward
             
             switch direction {
             case .left:
