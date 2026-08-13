@@ -1095,14 +1095,20 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             ["ら", "り", "る", "れ", "ろ"],
             ["わ", "を", "ん", "ー", "ゎ"],
             ["、", "。", "？", "！"],
-            ["abc", "a", "b", "c", "A", "B", "C"],
-            ["def", "d", "e", "f", "D", "E", "F"],
-            ["ghi", "g", "h", "i", "G", "H", "I"],
-            ["jkl", "j", "k", "l", "J", "K", "L"],
-            ["mno", "m", "n", "o", "M", "N", "O"],
-            ["pqrs", "p", "q", "r", "s", "P", "Q", "R", "S"],
-            ["tuv", "t", "u", "v", "T", "U", "V"],
-            ["wxyz", "w", "x", "y", "z", "W", "X", "Y", "Z"]
+            ["a", "b", "c", "A", "B", "C"],
+            ["d", "e", "f", "D", "E", "F"],
+            ["g", "h", "i", "G", "H", "I"],
+            ["j", "k", "l", "J", "K", "L"],
+            ["m", "n", "o", "M", "N", "O"],
+            ["p", "q", "r", "s", "P", "Q", "R", "S"],
+            ["t", "u", "v", "T", "U", "V"],
+            ["w", "x", "y", "z", "W", "X", "Y", "Z"],
+            ["@", "#", "/", "&", "_"],
+            ["’", "\"", "(", ")"],
+            [".", ",", "?", "!"],
+            ["(", ")", "[", "]"],
+            [",", ".", "-", "/"],
+            ["0", "～", "…"]
         ]
         
         for group in groups {
@@ -1114,36 +1120,45 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String, direction: FlickKeyboardView.FlickDirection) {
-        if keyboard.currentPage == .kana {
-            let flickOnly = AppGroupHelper.shared.userDefaults?.bool(forKey: "flickOnly") ?? false
-            
-            if !flickOnly && direction == .center {
-                if let baseChar = lastFlickTapBaseChar, text == baseChar, let lastTime = lastFlickTapTime, Date().timeIntervalSince(lastTime) < 1.0 {
-                    toggleIndex += 1
-                    let newChar = getToggleChar(baseChar: baseChar, index: toggleIndex)
-                    romajiConverter.replaceLastKana(with: newChar)
-                    lastFlickTapTime = Date()
-                    let display = romajiConverter.displayText
-                    textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
-                    updateConversionBar()
-                    return
-                } else {
-                    lastFlickTapBaseChar = text
-                    lastFlickTapTime = Date()
-                    toggleIndex = 0
-                }
+        let flickOnly = AppGroupHelper.shared.userDefaults?.bool(forKey: "flickOnly") ?? false
+        var isToggle = false
+        var newChar = text
+        
+        if !flickOnly && direction == .center {
+            if let baseChar = lastFlickTapBaseChar, text == baseChar, let lastTime = lastFlickTapTime, Date().timeIntervalSince(lastTime) < 1.0 {
+                toggleIndex += 1
+                newChar = getToggleChar(baseChar: baseChar, index: toggleIndex)
+                isToggle = true
+                lastFlickTapTime = Date()
             } else {
-                lastFlickTapBaseChar = nil
+                lastFlickTapBaseChar = text
+                lastFlickTapTime = Date()
                 toggleIndex = 0
             }
-            
-            romajiConverter.inputKana(text)
+        } else {
+            lastFlickTapBaseChar = nil
+            toggleIndex = 0
+        }
+        
+        if keyboard.currentPage == .kana {
+            if isToggle {
+                romajiConverter.replaceLastKana(with: newChar)
+            } else {
+                romajiConverter.inputKana(newChar)
+            }
             let display = romajiConverter.displayText
             textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
             updateConversionBar()
         } else {
             // English / Number
-            englishBuffer += text
+            if isToggle {
+                if !englishBuffer.isEmpty {
+                    englishBuffer.removeLast()
+                } else {
+                    textDocumentProxy.deleteBackward()
+                }
+            }
+            englishBuffer += newChar
             textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
             updateConversionBar()
         }
