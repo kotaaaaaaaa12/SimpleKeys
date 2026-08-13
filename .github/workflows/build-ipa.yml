@@ -3,6 +3,9 @@ name: Build SimpleKeys for SideStore
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-15
@@ -40,3 +43,36 @@ jobs:
         with:
           name: SimpleKeys-SideStore-IPA
           path: SimpleKeys-SideStore.ipa
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          TAG="nightly-$(date +'%Y%m%d-%H%M%S')"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "date=$(date +'%Y/%m/%d %H:%M')" >> "$GITHUB_OUTPUT"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Create Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "🌙 Nightly Build - ${{ steps.tag.outputs.date }}"
+          body: |
+            ## 🌙 SimpleKeys Nightly Build
+
+            **ビルド日時**: ${{ steps.tag.outputs.date }} UTC
+            **コミット**: `${{ steps.tag.outputs.sha }}` (${{ github.ref_name }})
+
+            ### 📦 インストール方法
+            1. 下の `SimpleKeys-SideStore.ipa` をダウンロード
+            2. SideStore / AltStore でインストール
+            3. 設定 > 一般 > キーボード > 新しいキーボードを追加 から SimpleKeys を有効化
+
+            ### ⚠️ 注意
+            これは開発版（pre-release）です。安定版ではありません。
+
+            ---
+            *Automated nightly build from `${{ github.ref_name }}` branch*
+          prerelease: true
+          files: SimpleKeys-SideStore.ipa
