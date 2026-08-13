@@ -679,3 +679,122 @@ class UserDictionaryViewController: UITableViewController {
         return lang == "en" ? "Delete" : "削除"
     }
 }
+
+// MARK: - Theme Settings
+class ThemeSettingsViewController: UITableViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    
+    private var theme = ThemeSettings(keyStyle: 0)
+    
+    private let keyStyleSegment = UISegmentedControl(items: ["標準", "ガラス", "フラット"])
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        title = isEn ? "Custom Theme" : "カスタムテーマ"
+        
+        loadTheme()
+        
+        keyStyleSegment.selectedSegmentIndex = theme.keyStyle
+        keyStyleSegment.addTarget(self, action: #selector(styleChanged), for: .valueChanged)
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Reset" : "リセット", style: .plain, target: self, action: #selector(resetTapped))
+    }
+    
+    private func loadTheme() {
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let saved = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            theme = saved
+        }
+    }
+    
+    private func saveTheme() {
+        if let data = try? JSONEncoder().encode(theme) {
+            AppGroupHelper.shared.userDefaults?.set(data, forKey: ThemeSettings.sharedKey)
+            AppGroupHelper.shared.userDefaults?.synchronize()
+        }
+    }
+    
+    @objc private func resetTapped() {
+        theme = ThemeSettings(keyStyle: 0)
+        AppGroupHelper.shared.removeImage(fileName: "theme_bg.jpg")
+        saveTheme()
+        keyStyleSegment.selectedSegmentIndex = 0
+        tableView.reloadData()
+    }
+    
+    @objc private func styleChanged() {
+        theme.keyStyle = keyStyleSegment.selectedSegmentIndex
+        saveTheme()
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 2
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return section == 0 ? 2 : 1
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        return section == 0 ? (isEn ? "Background" : "背景") : (isEn ? "Key Style" : "キースタイル")
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        
+        if indexPath.section == 0 {
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Choose Background Image" : "背景画像を選択"
+                cell.detailTextLabel?.text = theme.backgroundImageFileName != nil ? (isEn ? "Image Set" : "画像設定済み") : (isEn ? "None" : "なし")
+                cell.accessoryType = .disclosureIndicator
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Remove Image" : "画像を削除"
+                cell.textLabel?.textColor = .systemRed
+            }
+        } else if indexPath.section == 1 {
+            if indexPath.row == 0 {
+                cell.contentView.addSubview(keyStyleSegment)
+                keyStyleSegment.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    keyStyleSegment.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    keyStyleSegment.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    keyStyleSegment.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
+                ])
+            }
+        }
+        
+        return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        if indexPath.section == 0 {
+            if indexPath.row == 0 {
+                let picker = UIImagePickerController()
+                picker.delegate = self
+                picker.sourceType = .photoLibrary
+                present(picker, animated: true)
+            } else if indexPath.row == 1 {
+                AppGroupHelper.shared.removeImage(fileName: "theme_bg.jpg")
+                theme.backgroundImageFileName = nil
+                saveTheme()
+                tableView.reloadData()
+            }
+        }
+    }
+    
+    // MARK: - UIImagePickerControllerDelegate
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        picker.dismiss(animated: true)
+        if let image = info[.originalImage] as? UIImage {
+            if AppGroupHelper.shared.saveImage(image, fileName: "theme_bg.jpg") {
+                theme.backgroundImageFileName = "theme_bg.jpg"
+                saveTheme()
+                tableView.reloadData()
+            }
+        }
+    }
+}
