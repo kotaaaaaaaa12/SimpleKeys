@@ -218,7 +218,7 @@ class SettingsViewController: UITableViewController {
         geminiSwitch.isOn = defaults?.bool(forKey: "enableGemini") ?? false
         geminiApiKeyField.text = defaults?.string(forKey: "geminiApiKey")
         let savedModel = defaults?.string(forKey: "geminiModel")
-        geminiModelField.text = (savedModel != nil && !savedModel!.isEmpty) ? savedModel : "gemini-2.0-flash"
+        geminiModelField.text = (savedModel != nil && !savedModel!.isEmpty) ? savedModel : "gemini-3.5-flash"
     }
     
     @objc private func settingsChanged() {
@@ -362,7 +362,7 @@ class SettingsViewController: UITableViewController {
                     geminiModelField.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
                     geminiModelField.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
                 ])
-                geminiModelField.placeholder = isEn ? "Model Name (e.g. gemini-2.0-flash)" : "モデル名 (例: gemini-2.0-flash)"
+                geminiModelField.placeholder = isEn ? "Model Name (e.g. gemini-3.5-flash)" : "モデル名 (例: gemini-3.5-flash)"
             }
         } else if indexPath.section == 5 {
             cell.textLabel?.textColor = .secondaryLabel

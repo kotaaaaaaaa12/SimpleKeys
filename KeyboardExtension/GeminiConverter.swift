@@ -6,7 +6,7 @@ class GeminiConverter {
     
     private var currentTask: URLSessionDataTask?
     
-    func convert(text: String, apiKey: String, model: String = "gemini-2.0-flash", completion: @escaping ([String]) -> Void) {
+    func convert(text: String, apiKey: String, model: String = "gemini-3.5-flash", completion: @escaping ([String]) -> Void) {
         // Cancel previous request if any
         currentTask?.cancel()
         
