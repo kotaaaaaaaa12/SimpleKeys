@@ -113,6 +113,7 @@ class FlickKeyboardView: UIView {
     weak var delegate: FlickKeyboardDelegate?
     
     private(set) var currentPage: KeyboardPage = .kana
+    private var currentTheme: ThemeSettings?
     private var isShifted = false // For ABC caps
     
     private var activeTouches: [UITouch: UIView] = [:]
@@ -438,6 +439,7 @@ class FlickKeyboardView: UIView {
     }
     
     func applyTheme(_ theme: ThemeSettings) {
+        self.currentTheme = theme
         let isFrosted = theme.keyStyle == 1
         let isFlat = theme.keyStyle == 2
         let isClear = theme.keyStyle == 3
@@ -1080,7 +1082,9 @@ class FlickKeyboardView: UIView {
         }
         
         // Re-apply theme if one exists
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+        if let theme = currentTheme {
+            applyTheme(theme)
+        } else if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
            let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
             applyTheme(theme)
         }
