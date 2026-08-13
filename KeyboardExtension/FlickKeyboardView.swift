@@ -1044,9 +1044,11 @@ class FlickKeyboardView: UIView {
         returnButton.backgroundColor = specialBg
         
         func apply(to view: UIView) {
+            if view is UIVisualEffectView { return }
+            
             let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view == faceButton || view == spaceButton || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "あいう" || ($0 as? UILabel)?.text == "^_^" || ($0 as? UILabel)?.text == "空白" }) != nil)
             
-            if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil && !(view is UIVisualEffectView) {
+            if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
                 view.backgroundColor = isSpecial ? specialBg : keyBg
                 if let lbl = view.subviews.first(where: { $0 is UILabel }) as? UILabel {
                     lbl.textColor = textCol
