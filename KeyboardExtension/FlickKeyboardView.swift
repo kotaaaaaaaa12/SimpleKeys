@@ -92,7 +92,6 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView)
-    func flickKeyboardDidLongPressABC(_ keyboard: FlickKeyboardView)
 }
 
 class FlickKeyboardView: UIView {
@@ -228,10 +227,6 @@ class FlickKeyboardView: UIView {
         abcButton = createSpecialKey(title: "ABC")
         abcButton.accessibilityIdentifier = "abc_switch"
         place(view: abcButton, row: 1, col: 0)
-        
-        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleABCLongPress(_:)))
-        longPress.minimumPressDuration = 0.5
-        abcButton.addGestureRecognizer(longPress)
         
         kaomojiButton = createSpecialKey(title: "^_^")
         kaomojiButton.accessibilityIdentifier = "kaomoji_switch"
@@ -545,16 +540,6 @@ class FlickKeyboardView: UIView {
         UIView.animate(withDuration: 0.1) {
             view.transform = .identity
             view.alpha = 1.0
-        }
-    }
-    
-    @objc private func handleABCLongPress(_ gesture: UILongPressGestureRecognizer) {
-        if gesture.state == .began {
-            delegate?.flickKeyboardDidLongPressABC(self)
-            
-            // Provide haptic feedback for long press
-            let generator = UIImpactFeedbackGenerator(style: .heavy)
-            generator.impactOccurred()
         }
     }
     
