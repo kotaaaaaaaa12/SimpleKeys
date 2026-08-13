@@ -707,6 +707,7 @@ class MyThemesViewController: UITableViewController {
     }
     
     private func loadThemes() {
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.themesArrayKey),
            let saved = try? JSONDecoder().decode([ThemeSettings].self, from: data) {
             themes = saved
@@ -714,7 +715,7 @@ class MyThemesViewController: UITableViewController {
         if themes.isEmpty {
             var defaultTheme = ThemeSettings(keyStyle: 0)
             defaultTheme.id = UUID().uuidString
-            defaultTheme.name = "Default"
+            defaultTheme.name = isEn ? "Default" : "デフォルト"
             themes.append(defaultTheme)
             saveThemes()
         }
@@ -743,11 +744,13 @@ class MyThemesViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: "Cell")
         let theme = themes[indexPath.row]
-        cell.textLabel?.text = theme.name ?? "Untitled Theme"
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         
-        let styles = ["Standard", "Frosted Glass", "Flat", "Clear Glass"]
-        let styleName = (theme.keyStyle >= 0 && theme.keyStyle < styles.count) ? styles[theme.keyStyle] : "Unknown"
-        cell.detailTextLabel?.text = "Style: \(styleName)"
+        cell.textLabel?.text = theme.name ?? (isEn ? "Untitled Theme" : "無題のテーマ")
+        
+        let styles = isEn ? ["Standard", "Frosted Glass", "Flat", "Clear Glass"] : ["標準", "磨りガラス", "フラット", "クリアガラス"]
+        let styleName = (theme.keyStyle >= 0 && theme.keyStyle < styles.count) ? styles[theme.keyStyle] : (isEn ? "Unknown" : "不明")
+        cell.detailTextLabel?.text = isEn ? "Style: \(styleName)" : "スタイル: \(styleName)"
         cell.detailTextLabel?.textColor = .secondaryLabel
         
         var activeThemeId: String? = nil
@@ -791,6 +794,15 @@ class MyThemesViewController: UITableViewController {
         navigationController?.pushViewController(editor, animated: true)
     }
     
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return indexPath.row != 0 // Prevent deleting the default theme
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForDeleteConfirmationButtonForRowAt indexPath: IndexPath) -> String? {
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        return isEn ? "Delete" : "削除"
+    }
+    
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             themes.remove(at: indexPath.row)
@@ -828,7 +840,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             currentTheme = t
         } else {
             currentTheme.id = UUID().uuidString
-            currentTheme.name = "Custom Theme"
+            currentTheme.name = isEn ? "Custom Theme" : "カスタムテーマ"
             currentTheme.keyOpacity = 1.0
         }
         
@@ -849,7 +861,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         setupUI()
         updatePreview()
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(saveTapped))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: isEn ? "Save" : "保存", style: .done, target: self, action: #selector(saveTapped))
     }
     
     private let keyboardTypeSegment = UISegmentedControl(items: ["Kana", "QWERTY"])
@@ -1070,7 +1082,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     
     @objc private func saveTapped() {
         if currentTheme.name == nil || currentTheme.name!.isEmpty {
-            currentTheme.name = "Custom Theme"
+            let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+            currentTheme.name = isEn ? "Custom Theme" : "カスタムテーマ"
         }
         onSave?(currentTheme)
         navigationController?.popViewController(animated: true)
