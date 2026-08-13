@@ -1370,7 +1370,7 @@ class HapticsSensitivityViewController: UITableViewController {
     }
     
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return 3
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -1406,19 +1406,18 @@ class HapticsSensitivityViewController: UITableViewController {
                 cell.textLabel?.text = isEn ? "Enable Custom Haptics" : "独自の振動をオン"
                 cell.accessoryView = hapticSwitch
             } else {
-                cell.textLabel?.text = isEn ? "Strength" : "振動の強さ"
                 hapticSlider.translatesAutoresizingMaskIntoConstraints = false
                 cell.contentView.addSubview(hapticSlider)
                 
                 let minLabel = UILabel()
                 minLabel.text = isEn ? "Light" : "弱"
-                minLabel.font = .systemFont(ofSize: 12)
+                minLabel.font = .systemFont(ofSize: 14)
                 minLabel.textColor = .secondaryLabel
                 minLabel.translatesAutoresizingMaskIntoConstraints = false
                 
                 let maxLabel = UILabel()
                 maxLabel.text = isEn ? "Heavy" : "強"
-                maxLabel.font = .systemFont(ofSize: 12)
+                maxLabel.font = .systemFont(ofSize: 14)
                 maxLabel.textColor = .secondaryLabel
                 maxLabel.translatesAutoresizingMaskIntoConstraints = false
                 
@@ -1426,31 +1425,30 @@ class HapticsSensitivityViewController: UITableViewController {
                 cell.contentView.addSubview(maxLabel)
                 
                 NSLayoutConstraint.activate([
-                    hapticSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
-                    hapticSlider.leadingAnchor.constraint(equalTo: cell.textLabel!.trailingAnchor, constant: 16),
-                    hapticSlider.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    minLabel.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    minLabel.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
                     
-                    minLabel.topAnchor.constraint(equalTo: hapticSlider.bottomAnchor, constant: 2),
-                    minLabel.leadingAnchor.constraint(equalTo: hapticSlider.leadingAnchor),
+                    maxLabel.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    maxLabel.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
                     
-                    maxLabel.topAnchor.constraint(equalTo: hapticSlider.bottomAnchor, constant: 2),
-                    maxLabel.trailingAnchor.constraint(equalTo: hapticSlider.trailingAnchor)
+                    hapticSlider.leadingAnchor.constraint(equalTo: minLabel.trailingAnchor, constant: 16),
+                    hapticSlider.trailingAnchor.constraint(equalTo: maxLabel.leadingAnchor, constant: -16),
+                    hapticSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
                 ])
             }
-        } else {
-            cell.textLabel?.text = isEn ? "Speed" : "速さ"
+        } else if indexPath.section == 1 {
             cursorSlider.translatesAutoresizingMaskIntoConstraints = false
             cell.contentView.addSubview(cursorSlider)
             
             let minLabel = UILabel()
             minLabel.text = isEn ? "Slow" : "遅い"
-            minLabel.font = .systemFont(ofSize: 12)
+            minLabel.font = .systemFont(ofSize: 14)
             minLabel.textColor = .secondaryLabel
             minLabel.translatesAutoresizingMaskIntoConstraints = false
             
             let maxLabel = UILabel()
             maxLabel.text = isEn ? "Fast" : "速い"
-            maxLabel.font = .systemFont(ofSize: 12)
+            maxLabel.font = .systemFont(ofSize: 14)
             maxLabel.textColor = .secondaryLabel
             maxLabel.translatesAutoresizingMaskIntoConstraints = false
             
@@ -1458,18 +1456,37 @@ class HapticsSensitivityViewController: UITableViewController {
             cell.contentView.addSubview(maxLabel)
             
             NSLayoutConstraint.activate([
-                cursorSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
-                cursorSlider.leadingAnchor.constraint(equalTo: cell.textLabel!.trailingAnchor, constant: 16),
-                cursorSlider.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                minLabel.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                minLabel.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
                 
-                minLabel.topAnchor.constraint(equalTo: cursorSlider.bottomAnchor, constant: 2),
-                minLabel.leadingAnchor.constraint(equalTo: cursorSlider.leadingAnchor),
+                maxLabel.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                maxLabel.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
                 
-                maxLabel.topAnchor.constraint(equalTo: cursorSlider.bottomAnchor, constant: 2),
-                maxLabel.trailingAnchor.constraint(equalTo: cursorSlider.trailingAnchor)
+                cursorSlider.leadingAnchor.constraint(equalTo: minLabel.trailingAnchor, constant: 16),
+                cursorSlider.trailingAnchor.constraint(equalTo: maxLabel.leadingAnchor, constant: -16),
+                cursorSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
             ])
+        } else if indexPath.section == 2 {
+            cell.textLabel?.text = isEn ? "Reset Settings" : "設定をリセット"
+            cell.textLabel?.textColor = .systemRed
+            cell.textLabel?.textAlignment = .center
         }
         
         return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if indexPath.section == 2 {
+            tableView.deselectRow(at: indexPath, animated: true)
+            AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customHapticEnabled")
+            AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customHapticStrength")
+            AppGroupHelper.shared.userDefaults?.removeObject(forKey: "cursorSensitivity")
+            
+            hapticSwitch.isOn = false
+            hapticSlider.value = 0.0
+            cursorSlider.value = 1.0
+            
+            tableView.reloadData()
+        }
     }
 }
