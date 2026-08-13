@@ -92,7 +92,7 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView)
-    @objc optional func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView)
 }
 
 class FlickKeyboardView: UIView {
@@ -444,7 +444,7 @@ class FlickKeyboardView: UIView {
                 } else if btn.accessibilityIdentifier == "return" {
                     delegate?.flickKeyboardDidPressReturn(self)
                 } else if btn.accessibilityIdentifier == "globe" {
-                    delegate?.flickKeyboardDidPressGlobe?(self)
+                    delegate?.flickKeyboardDidPressGlobe(self)
                 } else if btn.accessibilityIdentifier == "abc_switch" {
                     delegate?.flickKeyboardDidPressABC(self)
                 } else if btn.accessibilityIdentifier == "num_switch" {
