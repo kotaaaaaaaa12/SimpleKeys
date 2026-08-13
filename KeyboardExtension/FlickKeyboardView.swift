@@ -63,12 +63,12 @@ struct FlickKeyboardData {
 
     static let numberKeys: [[FlickKey]] = [
         [
-            FlickKey(center: "1", left: "☆", up: "♪", right: "→", down: "1"),
-            FlickKey(center: "2", left: "¥", up: "$", right: "€", down: "2"),
-            FlickKey(center: "3", left: "%", up: "°", right: "#", down: "3")
+            FlickKey(center: "1", left: "☆", up: "♪", right: "→", down: nil),
+            FlickKey(center: "2", left: "¥", up: "$", right: "€", down: nil),
+            FlickKey(center: "3", left: "%", up: "°", right: "#", down: nil)
         ],
         [
-            FlickKey(center: "4", left: "＋", up: "－", right: "×", down: "÷"),
+            FlickKey(center: "4", left: "＋", up: "－", right: "×", down: "÷"), // These are useful down operations
             FlickKey(center: "5", left: "＜", up: "＝", right: "＞", down: "～"),
             FlickKey(center: "6", left: "「", up: "」", right: "『", down: "』")
         ],
@@ -240,7 +240,7 @@ class FlickKeyboardView: UIView {
         abcButton.accessibilityIdentifier = "abc_switch"
         place(view: abcButton, row: 1, col: 0)
         
-        globeButton = createSpecialKey(title: "🌐")
+        globeButton = createSpecialImageKey(systemName: "globe")
         globeButton.accessibilityIdentifier = "globe"
         place(view: globeButton, row: 3, col: 0)
         
@@ -288,53 +288,28 @@ class FlickKeyboardView: UIView {
         view.layer.shadowOpacity = 0.3
         view.layer.shadowRadius = 0
         
-        let label = UILabel()
-        label.tag = 100
-        label.font = .systemFont(ofSize: 22, weight: .regular)
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(label)
+        let centerLabel = UILabel()
+        centerLabel.tag = 100
+        centerLabel.font = .systemFont(ofSize: 22, weight: .regular)
+        centerLabel.textAlignment = .center
+        centerLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(centerLabel)
+        
+        let subtitleLabel = UILabel()
+        subtitleLabel.tag = 105
+        subtitleLabel.font = .systemFont(ofSize: 10, weight: .medium)
+        subtitleLabel.textColor = .lightGray
+        subtitleLabel.textAlignment = .center
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(subtitleLabel)
         
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            centerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            centerLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -5),
+            
+            subtitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            subtitleLabel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
         ])
-        
-        let directions: [(Int, CGFloat, CGFloat)] = [
-            (101, -1, 0), // Left
-            (102, 1, 0),  // Right
-            (103, 0, -1), // Up
-            (104, 0, 1)   // Down
-        ]
-        
-        for (tag, dx, dy) in directions {
-            let hint = UILabel()
-            hint.tag = tag
-            hint.font = .systemFont(ofSize: 10, weight: .medium)
-            hint.textColor = .lightGray
-            hint.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(hint)
-            
-            var xConstraint: NSLayoutConstraint
-            if dx == -1 {
-                xConstraint = hint.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4)
-            } else if dx == 1 {
-                xConstraint = hint.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4)
-            } else {
-                xConstraint = hint.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-            }
-            
-            var yConstraint: NSLayoutConstraint
-            if dy == -1 {
-                yConstraint = hint.topAnchor.constraint(equalTo: view.topAnchor, constant: 2)
-            } else if dy == 1 {
-                yConstraint = hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -2)
-            } else {
-                yConstraint = hint.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-            }
-            
-            NSLayoutConstraint.activate([xConstraint, yConstraint])
-        }
         
         updateHints(for: view, keyData: keyData, isShifted: isShifted)
         keysMap[view] = keyData
@@ -348,22 +323,28 @@ class FlickKeyboardView: UIView {
                 text = text.lowercased()
             }
             lbl.text = text
+            // Center the label if there is no subtitle
+            if currentPage == .kana {
+                lbl.transform = CGAffineTransform(translationX: 0, y: 5)
+            } else {
+                lbl.transform = .identity
+            }
         }
         
-        let hints = [
-            (101, keyData.left),
-            (102, keyData.right),
-            (103, keyData.up),
-            (104, keyData.down)
-        ]
-        
-        for (tag, text) in hints {
-            if let lbl = btn.viewWithTag(tag) as? UILabel {
-                var hintText = text
+        if let sub = btn.viewWithTag(105) as? UILabel {
+            if currentPage == .kana {
+                sub.text = ""
+            } else {
+                var hints = [String]()
+                if let left = keyData.left { hints.append(left) }
+                if let up = keyData.up { hints.append(up) }
+                if let right = keyData.right { hints.append(right) }
+                
+                var hintStr = hints.joined(separator: " ")
                 if currentPage == .alphabet && !isShifted {
-                    hintText = hintText?.lowercased()
+                    hintStr = hintStr.lowercased()
                 }
-                lbl.text = hintText
+                sub.text = hintStr
             }
         }
     }
@@ -378,6 +359,7 @@ class FlickKeyboardView: UIView {
         view.layer.shadowRadius = 0
         
         let label = UILabel()
+        label.tag = 100
         label.text = title
         label.font = .systemFont(ofSize: 18, weight: .regular)
         label.textAlignment = .center
@@ -387,6 +369,29 @@ class FlickKeyboardView: UIView {
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        
+        return view
+    }
+    
+    private func createSpecialImageKey(systemName: String) -> UIView {
+        let view = UIView()
+        view.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        view.layer.cornerRadius = 6
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 1)
+        view.layer.shadowOpacity = 0.3
+        view.layer.shadowRadius = 0
+        
+        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
+        let imageView = UIImageView(image: UIImage(systemName: systemName, withConfiguration: config))
+        imageView.tintColor = .black
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(imageView)
+        
+        NSLayoutConstraint.activate([
+            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            imageView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         
         return view

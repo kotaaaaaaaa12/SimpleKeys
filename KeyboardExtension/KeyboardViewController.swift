@@ -249,8 +249,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         for key in bottomRow {
             if key == "globe" {
                 if needsInputModeSwitchKey {
-                    let globe = createSpecialKeyButton(title: "🌐")
-                    globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+                    let globe = createSpecialImageKeyButton(systemName: "globe")
+                    globe.addTarget(self, action: #selector(toggleMainMode), for: .touchUpInside)
                     globe.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
                     globe.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
                     globe.widthAnchor.constraint(equalToConstant: 42).isActive = true
@@ -398,6 +398,17 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         return button
     }
     
+    private func createSpecialImageKeyButton(systemName: String) -> UIButton {
+        let button = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .regular)
+        button.setImage(UIImage(systemName: systemName, withConfiguration: config), for: .normal)
+        button.layer.cornerRadius = 5
+        button.layer.shadowOffset = CGSize(width: 0, height: 1)
+        button.layer.shadowRadius = 0
+        button.layer.shadowOpacity = 0.3
+        return button
+    }
+    
     // MARK: - Appearance
     
     private func updateAppearance() {
@@ -418,6 +429,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             (row as? UIStackView)?.arrangedSubviews.forEach { sub in
                 if let btn = sub as? UIButton {
                     btn.setTitleColor(textColor, for: .normal)
+                    btn.tintColor = textColor
                     let title = btn.titleLabel?.text ?? ""
                     let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
                     btn.backgroundColor = isSpecialKey ? specialBg : letterBg
@@ -425,6 +437,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                     nestedStack.arrangedSubviews.forEach { btn in
                         if let b = btn as? UIButton {
                             b.setTitleColor(textColor, for: .normal)
+                            b.tintColor = textColor
                             let title = b.titleLabel?.text ?? ""
                             let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
                             b.backgroundColor = isSpecialKey ? specialBg : letterBg
@@ -529,8 +542,18 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         textDocumentProxy.insertText(text)
     }
     
+    @objc private func toggleMainMode() {
+        if currentMode == .flickKana || currentMode == .flickAlphabet || currentMode == .flickNumber {
+            currentMode = .qwertyEnglish
+        } else {
+            currentMode = .flickKana
+        }
+        applyMode()
+        UIDevice.current.playInputClick()
+    }
+    
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView) {
-        advanceToNextInputMode()
+        toggleMainMode()
     }
     
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
