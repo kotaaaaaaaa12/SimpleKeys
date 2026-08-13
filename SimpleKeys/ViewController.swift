@@ -1416,7 +1416,7 @@ class HapticsSensitivityViewController: UITableViewController {
             if indexPath.row == 0 {
                 cell.textLabel?.text = isEn ? "Enable Custom Haptics" : "独自の振動をオン"
                 cell.accessoryView = hapticSwitch
-            } else {
+            } else if indexPath.row == 1 {
                 hapticSlider.translatesAutoresizingMaskIntoConstraints = false
                 cell.contentView.addSubview(hapticSlider)
                 
