@@ -449,7 +449,7 @@ class FlickKeyboardView: UIView {
                 keyView.layer.shadowOpacity = 0
                 keyView.layer.borderWidth = 0
                 if existingBlur == nil {
-                    let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+                    let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
                     blur.tag = 8888
                     blur.layer.cornerRadius = 6
                     blur.clipsToBounds = true
@@ -1037,7 +1037,7 @@ class FlickKeyboardView: UIView {
         func apply(to view: UIView) {
             let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view == faceButton || view == spaceButton || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "あいう" || ($0 as? UILabel)?.text == "^_^" || ($0 as? UILabel)?.text == "空白" }) != nil)
             
-            if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
+            if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil && !(view is UIVisualEffectView) {
                 view.backgroundColor = isSpecial ? specialBg : keyBg
                 if let lbl = view.subviews.first(where: { $0 is UILabel }) as? UILabel {
                     lbl.textColor = textCol
