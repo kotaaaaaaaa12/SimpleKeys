@@ -195,11 +195,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let padding2R = UIView()
         padding2.translatesAutoresizingMaskIntoConstraints = false
         padding2R.translatesAutoresizingMaskIntoConstraints = false
-        padding2.widthAnchor.constraint(equalTo: padding2R.widthAnchor).isActive = true
+        
         let paddedRow2 = UIStackView(arrangedSubviews: [padding2, row2, padding2R])
         paddedRow2.axis = .horizontal
         paddedRow2.spacing = 0
         qwertyStack.addArrangedSubview(paddedRow2)
+        
+        // Activate constraint after they have a common ancestor (paddedRow2)
+        padding2.widthAnchor.constraint(equalTo: padding2R.widthAnchor).isActive = true
         
         let row3 = createLetterRow(letters: rows[2])
         let leftSpecial = createSpecialKeyButton(title: thirdRowSpecials.left)
