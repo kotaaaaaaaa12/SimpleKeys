@@ -1,6 +1,3 @@
-#if !APP
-#error("APP macro is not defined in SimpleKeys target!")
-#endif
 
 import UIKit
 
