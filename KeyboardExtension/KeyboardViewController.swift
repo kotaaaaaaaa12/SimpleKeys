@@ -281,7 +281,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 playerLayer.frame = view.bounds
                 view.layer.insertSublayer(playerLayer, at: 0)
                 themeBgVideoPlayerLayer = playerLayer
-                
+                player.isMuted = !(theme.videoAudioEnabled ?? false)
                 player.play()
                 
                 themeBgImageView?.isHidden = true

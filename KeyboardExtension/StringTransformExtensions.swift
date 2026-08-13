@@ -159,8 +159,9 @@ struct ThemeSettings: Codable, Equatable {
     var keyOpacity: CGFloat?
     var flickPopupBgHex: String?       // Flick popup background color
     var flickPopupTextHex: String?     // Flick popup text color
-    var flickHighlightHex: String?     // Flick popup selected highlight color
+    var flickHighlightHex: String?     // Highlight color for flick hints
     var flickPopupShape: Int?          // 0: rounded, 1: oval, 2: rect
+    var videoAudioEnabled: Bool?       // Toggle for video background audio
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"

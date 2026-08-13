@@ -878,9 +878,15 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationController?.popViewController(animated: true)
     }
     
+    func isVideoBackground() -> Bool {
+        guard let bgFile = currentTheme.backgroundImageFileName else { return false }
+        let ext = (bgFile as NSString).pathExtension.lowercased()
+        return ext == "mp4" || ext == "mov" || ext == "m4v"
+    }
+
     func numberOfSections(in tableView: UITableView) -> Int { return 7 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 1 { return 2 }
+        if section == 1 { return isVideoBackground() ? 3 : 2 }
         if section == 2 { return 2 } // Key Style and Button Shape
         if section == 3 { return 1 } // Opacity
         if section == 4 { return currentTheme.keyStyle == 0 ? 3 : 2 } // Colors
@@ -891,7 +897,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         if section == 0 { return isEn ? "Name" : "テーマ名" }
-        if section == 1 { return isEn ? "Background" : "背景画像" }
+        if section == 1 { return isEn ? "Background Media" : "背景メディア" }
         if section == 2 { return isEn ? "Key Style & Shape" : "キースタイル & 形状" }
         if section == 3 { return isEn ? "Transparency" : "透過度" }
         if section == 4 { return isEn ? "Colors" : "色設定" }
@@ -915,11 +921,19 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         } else if indexPath.section == 1 {
             cell.selectionStyle = .default
             if indexPath.row == 0 {
-                cell.textLabel?.text = isEn ? "Choose Image" : "画像を選択"
+                cell.textLabel?.text = isEn ? "Choose Media" : "メディアを選択"
                 cell.accessoryType = .disclosureIndicator
-            } else {
-                cell.textLabel?.text = isEn ? "Remove Image" : "画像を削除"
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Remove Media" : "メディアを削除"
                 cell.textLabel?.textColor = .systemRed
+            } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "Video Audio" : "動画の音声"
+                cell.textLabel?.textColor = .label
+                cell.selectionStyle = .none
+                let toggle = UISwitch()
+                toggle.isOn = currentTheme.videoAudioEnabled ?? false
+                toggle.addTarget(self, action: #selector(videoAudioToggled(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
             }
         } else if indexPath.section == 2 {
             cell.selectionStyle = .default
@@ -1029,9 +1043,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 picker.sourceType = .photoLibrary
                 picker.mediaTypes = ["public.image", "public.movie"]
                 present(picker, animated: true)
-            } else {
+            } else if indexPath.row == 1 {
                 currentTheme.backgroundImageFileName = nil
                 updatePreview()
+                tableView.reloadData()
             }
         } else if indexPath.section == 2 {
             let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
@@ -1209,7 +1224,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         tableView.reloadData()
     }
     
-
+    @objc func videoAudioToggled(_ sender: UISwitch) {
+        currentTheme.videoAudioEnabled = sender.isOn
+        updatePreview()
+    }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let mediaType = info[.mediaType] as? String, mediaType == "public.movie", let videoURL = info[.mediaURL] as? URL {
