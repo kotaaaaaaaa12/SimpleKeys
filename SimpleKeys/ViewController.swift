@@ -655,7 +655,6 @@ class MyThemesViewController: UITableViewController {
             present(alert, animated: true, completion: nil)
         }
     }
-    }
     
     private func saveThemes() {
         if let data = try? JSONEncoder().encode(themes) {
