@@ -55,11 +55,14 @@ class ViewController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        let lang = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") ?? "ja"
+        let isEn = lang == "en"
+        
         let settingsVC = UINavigationController(rootViewController: SettingsViewController())
-        settingsVC.tabBarItem = UITabBarItem(title: "設定", image: UIImage(systemName: "gearshape.fill"), tag: 0)
+        settingsVC.tabBarItem = UITabBarItem(title: isEn ? "Settings" : "設定", image: UIImage(systemName: "gearshape.fill"), tag: 0)
         
         let updatesNav = UINavigationController(rootViewController: updatesVC)
-        updatesNav.tabBarItem = UITabBarItem(title: "お知らせ", image: UIImage(systemName: "bell.fill"), tag: 1)
+        updatesNav.tabBarItem = UITabBarItem(title: isEn ? "Updates" : "アップデート情報", image: UIImage(systemName: "bell.fill"), tag: 1)
         
         viewControllers = [settingsVC, updatesNav]
         tabBar.tintColor = .systemBlue
