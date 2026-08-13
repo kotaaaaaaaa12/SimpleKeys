@@ -553,7 +553,9 @@ class FlickKeyboardView: UIView {
         }
         
         // Refresh hints and shifted states according to the current navStyle
-        updatePageUI()
+        for (btn, keyData) in keysMap {
+            updateHints(for: btn, keyData: keyData, isShifted: self.isShifted)
+        }
     }
     
     
