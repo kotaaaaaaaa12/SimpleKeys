@@ -46,6 +46,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var expandButton: UIButton!
     private var currentCandidates: [String] = []
     
+    // Expanded candidates
+    private var expandedCandidateView: UIView!
+    private var expandedCandidateScrollView: UIScrollView!
+    private var expandedCandidateStack: UIStackView! // Better to use a wrapping layout or a collection view. A wrapping Custom Flow Layout with UICollectionView is best, but a simple UIScrollView with a wrapping logic or just a vertical stack of horizontal stacks works. For simplicity, we'll use a wrapping Custom View or a Flow Layout. Let's use a UICollectionView.
+    private var candidateCollectionView: UICollectionView!
+    private var isExpanded: Bool = false
+    
     private let kanjiConverter = KanjiConverter.shared
     
     private let letterRows: [[String]] = [
@@ -144,6 +151,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         candidateStack.translatesAutoresizingMaskIntoConstraints = false
         candidateScrollView.addSubview(candidateStack)
         
+        setupExpandedCandidateView()
+        
         expandButton = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(weight: .bold)
         expandButton.setImage(UIImage(systemName: "chevron.down", withConfiguration: config), for: .normal)
@@ -180,9 +189,55 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         ])
     }
     
+    private func setupExpandedCandidateView() {
+        expandedCandidateView = UIView()
+        expandedCandidateView.backgroundColor = UIColor.systemBackground
+        expandedCandidateView.translatesAutoresizingMaskIntoConstraints = false
+        expandedCandidateView.isHidden = true
+        view.addSubview(expandedCandidateView)
+        
+        let layout = UICollectionViewFlowLayout()
+        layout.estimatedItemSize = CGSize(width: 80, height: 44)
+        layout.minimumInteritemSpacing = 8
+        layout.minimumLineSpacing = 8
+        layout.sectionInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+        
+        candidateCollectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        candidateCollectionView.backgroundColor = .clear
+        candidateCollectionView.translatesAutoresizingMaskIntoConstraints = false
+        candidateCollectionView.register(CandidateCell.self, forCellWithReuseIdentifier: "CandidateCell")
+        candidateCollectionView.dataSource = self
+        candidateCollectionView.delegate = self
+        expandedCandidateView.addSubview(candidateCollectionView)
+        
+        NSLayoutConstraint.activate([
+            expandedCandidateView.topAnchor.constraint(equalTo: conversionBar.bottomAnchor),
+            expandedCandidateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            expandedCandidateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            expandedCandidateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            candidateCollectionView.topAnchor.constraint(equalTo: expandedCandidateView.topAnchor),
+            candidateCollectionView.leadingAnchor.constraint(equalTo: expandedCandidateView.leadingAnchor),
+            candidateCollectionView.trailingAnchor.constraint(equalTo: expandedCandidateView.trailingAnchor),
+            candidateCollectionView.bottomAnchor.constraint(equalTo: expandedCandidateView.bottomAnchor)
+        ])
+    }
+    
     @objc private func expandButtonTapped() {
-        // TODO: Expand candidates view
-        print("Expand tapped")
+        isExpanded.toggle()
+        updateExpandUI()
+    }
+    
+    private func updateExpandUI() {
+        let config = UIImage.SymbolConfiguration(weight: .bold)
+        let iconName = isExpanded ? "chevron.up" : "chevron.down"
+        expandButton.setImage(UIImage(systemName: iconName, withConfiguration: config), for: .normal)
+        
+        expandedCandidateView.isHidden = !isExpanded
+        if isExpanded {
+            candidateCollectionView.reloadData()
+            view.bringSubviewToFront(expandedCandidateView)
+        }
     }
     
     private func updateConversionBar() {
@@ -242,19 +297,30 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 
                 candidateStack.addArrangedSubview(container)
             }
+            
+            if isExpanded {
+                candidateCollectionView.reloadData()
+            }
         }
     }
     
     @objc private func candidateTapped(_ sender: UIButton) {
-        let index = sender.tag
+        commitCandidate(at: sender.tag)
+    }
+    
+    private func commitCandidate(at index: Int) {
         guard index >= 0 && index < currentCandidates.count else { return }
         let text = currentCandidates[index]
         
         textDocumentProxy.insertText(text)
         _ = romajiConverter.commit() // Clear internal state
         
-        // Remove marked text
         textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+        
+        if isExpanded {
+            isExpanded = false
+            updateExpandUI()
+        }
         
         updateConversionBar()
     }
@@ -881,7 +947,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String) {
-        if currentMode == .flickKana {
+        if keyboard.currentPage == .kana {
             romajiConverter.inputKana(text)
             let display = romajiConverter.displayText
             textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
@@ -921,7 +987,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
-        if currentMode == .flickKana && romajiConverter.hasPendingInput {
+        if keyboard.currentPage == .kana && romajiConverter.hasPendingInput {
             romajiConverter.deleteBackward()
             let display = romajiConverter.displayText
             if display.isEmpty {
@@ -1108,5 +1174,49 @@ class AppGroupHelper {
             }
         }
         return nil
+    }
+}
+
+// MARK: - Expanded Candidate View CollectionView
+extension KeyboardViewController: UICollectionViewDataSource, UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return currentCandidates.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CandidateCell", for: indexPath) as! CandidateCell
+        cell.titleLabel.text = currentCandidates[indexPath.item]
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        commitCandidate(at: indexPath.item)
+    }
+}
+
+class CandidateCell: UICollectionViewCell {
+    let titleLabel = UILabel()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        contentView.backgroundColor = UIColor.systemGray5
+        contentView.layer.cornerRadius = 8
+        
+        titleLabel.font = .systemFont(ofSize: 18)
+        titleLabel.textColor = .label
+        titleLabel.textAlignment = .center
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(titleLabel)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12)
+        ])
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
