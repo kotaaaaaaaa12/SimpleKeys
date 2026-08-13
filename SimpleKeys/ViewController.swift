@@ -800,7 +800,7 @@ class MyThemesViewController: UITableViewController {
     }
 }
 
-class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIColorPickerViewControllerDelegate {
     var theme: ThemeSettings?
     var onSave: ((ThemeSettings) -> Void)?
     
@@ -815,9 +815,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     private let buttonShapeSegment = UISegmentedControl(items: [])
     private let nameField = UITextField()
     private let opacitySlider = UISlider()
-    private let borderSegment = UISegmentedControl(items: ["White", "Black", "Blue", "Pink", "Gold"])
     
-    private let borderColors = ["#FFFFFF", "#000000", "#0A84FF", "#FF2D55", "#FFD700"]
+    private var pickingColorFor: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -887,6 +886,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 label.text = letter
                 label.textAlignment = .center
                 label.font = .systemFont(ofSize: 18)
+                label.tag = 777
                 label.translatesAutoresizingMaskIntoConstraints = false
                 key.addSubview(label)
                 NSLayoutConstraint.activate([
@@ -937,13 +937,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         opacitySlider.value = Float(currentTheme.keyOpacity ?? 1.0)
         opacitySlider.addTarget(self, action: #selector(opacityChanged), for: .valueChanged)
         
-        if let hex = currentTheme.keyBorderColorHex, let idx = borderColors.firstIndex(of: hex) {
-            borderSegment.selectedSegmentIndex = idx
-        } else {
-            borderSegment.selectedSegmentIndex = 0
-        }
-        borderSegment.addTarget(self, action: #selector(settingChanged), for: .valueChanged)
-        
         nameField.text = currentTheme.name
         nameField.placeholder = "Theme Name"
         nameField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
@@ -961,7 +954,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     @objc private func settingChanged() {
         currentTheme.keyStyle = keyStyleSegment.selectedSegmentIndex
         currentTheme.buttonShape = buttonShapeSegment.selectedSegmentIndex
-        currentTheme.keyBorderColorHex = borderColors[borderSegment.selectedSegmentIndex]
         updatePreview()
     }
     
@@ -977,14 +969,26 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         let shape = currentTheme.buttonShape ?? 0
         let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? 22 : 0)
         let opacity = currentTheme.keyOpacity ?? 1.0
+        
         let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
         let borderCol = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
+        
+        let defaultTextCol = UIColor.label
+        let textCol = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? defaultTextCol) : defaultTextCol
+        
+        let defaultKeyBgCol = UIColor.white
+        let keyBgCol = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? defaultKeyBgCol) : defaultKeyBgCol
+        
         let clearBgAlpha = 0.15 * opacity
         
         for row in previewGrid.arrangedSubviews {
             if let stack = row as? UIStackView {
                 for v in stack.arrangedSubviews {
                     v.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+                    
+                    if let label = v.viewWithTag(777) as? UILabel {
+                        label.textColor = textCol
+                    }
                     
                     v.layer.cornerRadius = radius
                     
@@ -1014,9 +1018,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                         v.backgroundColor = .clear
                         v.layer.shadowOpacity = 0
                         v.layer.borderWidth = 1
-                        v.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+                        v.layer.borderColor = borderCol
                     } else {
-                        v.backgroundColor = .white
+                        v.backgroundColor = keyBgCol
                         v.layer.shadowOpacity = 0.3
                         v.layer.borderWidth = 0
                     }
@@ -1033,10 +1037,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationController?.popViewController(animated: true)
     }
     
-    func numberOfSections(in tableView: UITableView) -> Int { return 4 }
+    func numberOfSections(in tableView: UITableView) -> Int { return 5 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 1 { return 2 }
-        if section == 3 { return 2 }
+        if section == 3 { return 1 } // Opacity
+        if section == 4 { return 3 } // Colors
         return 1
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -1044,10 +1049,12 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 0 { return isEn ? "Name" : "テーマ名" }
         if section == 1 { return isEn ? "Background" : "背景画像" }
         if section == 2 { return isEn ? "Key Style & Shape" : "キースタイル & 形状" }
-        return isEn ? "Transparency & Border Color" : "透過度 & フチの色"
+        if section == 3 { return isEn ? "Transparency" : "透過度" }
+        return isEn ? "Colors" : "色設定"
     }
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = UITableViewCell()
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
         cell.selectionStyle = .none
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         
@@ -1080,27 +1087,45 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
                 stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
             ])
-        } else {
+        } else if indexPath.section == 3 {
+            let stack = UIStackView(arrangedSubviews: [opacitySlider])
+            stack.axis = .vertical
+            stack.spacing = 8
+            stack.translatesAutoresizingMaskIntoConstraints = false
+            cell.contentView.addSubview(stack)
+            NSLayoutConstraint.activate([
+                stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+            ])
+        } else if indexPath.section == 4 {
+            cell.selectionStyle = .default
+            cell.accessoryType = .disclosureIndicator
             if indexPath.row == 0 {
-                let stack = UIStackView(arrangedSubviews: [opacitySlider])
-                stack.axis = .vertical
-                stack.spacing = 8
-                stack.translatesAutoresizingMaskIntoConstraints = false
-                cell.contentView.addSubview(stack)
-                NSLayoutConstraint.activate([
-                    stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
-                    stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
-                    stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
-                    stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
-                ])
-            } else {
-                borderSegment.translatesAutoresizingMaskIntoConstraints = false
-                cell.contentView.addSubview(borderSegment)
-                NSLayoutConstraint.activate([
-                    borderSegment.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
-                    borderSegment.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
-                    borderSegment.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
-                ])
+                cell.textLabel?.text = isEn ? "Text Color" : "テキストの色"
+                if let hex = currentTheme.textColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Border Color" : "フチの色"
+                if let hex = currentTheme.keyBorderColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
+            } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "Key Background Color" : "キーの背景色 (標準用)"
+                if let hex = currentTheme.keyColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
             }
         }
         return cell
@@ -1118,7 +1143,49 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 currentTheme.backgroundImageFileName = nil
                 updatePreview()
             }
+        } else if indexPath.section == 4 {
+            let picker = UIColorPickerViewController()
+            picker.delegate = self
+            picker.supportsAlpha = true
+            
+            if indexPath.row == 0 {
+                pickingColorFor = "text"
+                picker.selectedColor = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? .label) : .label
+            } else if indexPath.row == 1 {
+                pickingColorFor = "border"
+                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .white) : .white
+            } else if indexPath.row == 2 {
+                pickingColorFor = "keyBg"
+                picker.selectedColor = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? .white) : .white
+            }
+            present(picker, animated: true)
         }
+    }
+    
+    func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
+        let color = viewController.selectedColor
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        
+        let hexStr: String
+        if a < 1.0 {
+            hexStr = String(format: "#%02lX%02lX%02lX%02lX", lroundf(Float(a * 255)), lroundf(Float(r * 255)), lroundf(Float(g * 255)), lroundf(Float(b * 255)))
+        } else {
+            hexStr = String(format: "#%02lX%02lX%02lX", lroundf(Float(r * 255)), lroundf(Float(g * 255)), lroundf(Float(b * 255)))
+        }
+        
+        if pickingColorFor == "text" {
+            currentTheme.textColorHex = hexStr
+        } else if pickingColorFor == "border" {
+            currentTheme.keyBorderColorHex = hexStr
+        } else if pickingColorFor == "keyBg" {
+            currentTheme.keyColorHex = hexStr
+        }
+        updatePreview()
+        tableView.reloadData()
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {

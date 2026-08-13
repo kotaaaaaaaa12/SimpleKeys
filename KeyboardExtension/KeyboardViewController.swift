@@ -887,9 +887,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             theme = saved
         }
         let isDark = textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
-        let letterBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+        let customBg = theme.keyColorHex != nil ? UIColor(hex: theme.keyColorHex!) : nil
+        let letterBg = customBg ?? (isDark ? UIColor(white: 0.35, alpha: 1.0) : .white)
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        let textColor = isDark ? UIColor.white : UIColor.black
+        let defaultTextColor = isDark ? UIColor.white : UIColor.black
+        let textColor = theme.textColorHex != nil ? (UIColor(hex: theme.textColorHex!) ?? defaultTextColor) : defaultTextColor
         
         qwertyStack.subviews.forEach { row in
             (row as? UIStackView)?.arrangedSubviews.forEach { sub in

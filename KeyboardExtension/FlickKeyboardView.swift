@@ -440,6 +440,14 @@ class FlickKeyboardView: UIView {
         let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
         let clearBgAlpha = 0.15 * opacity
         
+        let isDark = self.isDarkMode
+        let defaultTextCol = isDark ? UIColor.white : UIColor.black
+        let textCol = theme.textColorHex != nil ? (UIColor(hex: theme.textColorHex!) ?? defaultTextCol) : defaultTextCol
+        
+        let defaultKeyBgCol = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+        let keyBgCol = theme.keyColorHex != nil ? (UIColor(hex: theme.keyColorHex!) ?? defaultKeyBgCol) : defaultKeyBgCol
+        let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        
         for keyView in allKeys {
             let existingBlur = keyView.viewWithTag(8888) as? UIVisualEffectView
             let isSpecial = [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].contains(keyView)
@@ -483,12 +491,21 @@ class FlickKeyboardView: UIView {
                 }
             } else {
                 existingBlur?.removeFromSuperview()
-                let isDark = self.isDarkMode
-                let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
-                let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-                keyView.backgroundColor = isSpecial ? specialBg : keyBg
+                keyView.backgroundColor = isSpecial ? specialBg : keyBgCol
                 keyView.layer.shadowOpacity = 0.3
                 keyView.layer.borderWidth = 0
+            }
+            
+            if let lbl = keyView.viewWithTag(100) as? UILabel {
+                lbl.textColor = textCol
+            }
+            if let sub = keyView.viewWithTag(105) as? UILabel {
+                sub.textColor = textCol.withAlphaComponent(0.6)
+            }
+            for subview in keyView.subviews {
+                if let img = subview as? UIImageView {
+                    img.tintColor = textCol
+                }
             }
         }
     }
