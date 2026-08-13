@@ -8,6 +8,46 @@ class KanjiConverter {
     /// 辞書: [ひらがな読み: [変換候補]]
     private var dictionary: [String: [String]] = [:]
     
+    // 頻出の話し言葉や助詞付きのフレーズを優先・補完するためのカスタム辞書
+    private let customDictionary: [String: [String]] = [
+        "きょうは": ["今日は"], "あしたは": ["明日は"], "きのうは": ["昨日は"],
+        "いい": ["いい", "良い", "言い"], "よい": ["良い"],
+        "ですね": ["ですね"], "です": ["です"], "ます": ["ます"],
+        "ました": ["ました"], "ません": ["ません"], "から": ["から"],
+        "まで": ["まで"], "けど": ["けど", "けれど"], "ね": ["ね"], "よ": ["よ"],
+        "てんき": ["天気"], "いいてんき": ["いい天気", "良い天気"],
+        "よろしく": ["よろしく", "宜しく"], "おねがいします": ["お願いします"],
+        "ありがとう": ["ありがとう", "有難う"], "おはよう": ["おはよう", "お早う"],
+        "こんにちは": ["こんにちは", "今日は"], "こんばんは": ["こんばんは", "今晩は"],
+        "おつかれさま": ["お疲れ様", "おつかれさま"], "おつかれさまです": ["お疲れ様です"],
+        "ありがとうございます": ["ありがとうございます", "有難う御座います"],
+        "ほんとうに": ["本当に"], "すごく": ["すごく", "凄く"], "とても": ["とても"],
+        "わたし": ["私", "わたし"], "ぼく": ["僕", "ぼく"], "おれ": ["俺", "おれ"],
+        "あなた": ["あなた", "貴方"], "これ": ["これ"], "それ": ["それ"],
+        "あれ": ["あれ"], "どれ": ["どれ"], "この": ["この"], "その": ["その"],
+        "あの": ["あの"], "どの": ["どの"], "ここ": ["ここ"], "そこ": ["そこ"],
+        "あそこ": ["あそこ"], "どこ": ["どこ"], "どう": ["どう"], "こう": ["こう"],
+        "そう": ["そう"], "ああ": ["ああ"], "する": ["する"], "して": ["して"],
+        "した": ["した"], "くる": ["来る", "くる"], "きて": ["来て", "きて"],
+        "きた": ["来た", "きた"], "いく": ["行く", "いく"], "いって": ["行って", "いって"],
+        "いった": ["行った", "いった"], "いる": ["いる", "居る"], "いて": ["いて", "居て"],
+        "いた": ["いた", "居た"], "ある": ["ある", "有る"], "あって": ["あって", "有って"],
+        "あった": ["あった", "有った"], "ない": ["ない", "無い"], "なくて": ["なくて", "無くて"],
+        "なかった": ["なかった", "無かった"], "できる": ["できる", "出来る"],
+        "できない": ["できない", "出来ない"], "わかる": ["わかる", "分かる"],
+        "わからない": ["わからない", "分からない"], "きょう": ["今日", "きょう"],
+        "あした": ["明日", "あした"], "きのう": ["昨日", "きのう"], "あさ": ["朝", "あさ"],
+        "ひる": ["昼", "ひる"], "よる": ["夜", "よる"], "いま": ["今", "いま"],
+        "あと": ["後", "あと"], "まえ": ["前", "まえ"], "ちょっと": ["ちょっと", "一寸"],
+        "もう": ["もう"], "まだ": ["まだ", "未だ"], "いつも": ["いつも"],
+        "たぶん": ["たぶん", "多分"], "もしかして": ["もしかして"],
+        "やっぱり": ["やっぱり", "矢張り"], "なるほど": ["なるほど", "成程"],
+        "でも": ["でも"], "だから": ["だから"], "そして": ["そして"],
+        "なぜ": ["なぜ", "何故"], "どうして": ["どうして"], "で": ["で", "出"],
+        "に": ["に", "二"], "は": ["は", "歯", "葉"], "を": ["を"], "が": ["が", "蛾"],
+        "の": ["の", "野"], "や": ["や", "矢", "屋"]
+    ]
+    
     /// 辞書が読み込み済みかどうか
     private(set) var isLoaded: Bool = false
     
@@ -47,7 +87,7 @@ class KanjiConverter {
         guard isLoaded, !reading.isEmpty else { return [] }
         
         // 完全一致
-        if let results = dictionary[reading] {
+        if let results = lookup(reading) {
             return Array(results.prefix(10))
         }
         
@@ -57,13 +97,20 @@ class KanjiConverter {
     /// ひらがな文字列を最長一致で分割して変換候補を生成する
     /// - Parameter text: ひらがなのテキスト
     /// - Returns: 変換候補のリスト (各セグメントの最初の候補を結合したもの + 個別候補)
+    func lookup(_ text: String) -> [String]? {
+        if let custom = customDictionary[text] {
+            return custom
+        }
+        return dictionary[text]
+    }
+    
     func convert(_ text: String) -> [String] {
         guard isLoaded, !text.isEmpty else { return [] }
         
         var results: [String] = []
         
         // 1. 全体一致
-        if let fullMatch = dictionary[text] {
+        if let fullMatch = lookup(text) {
             results.append(contentsOf: fullMatch.prefix(5))
         }
         
@@ -72,7 +119,7 @@ class KanjiConverter {
         if segments.count > 1 {
             // セグメントごとの候補リストを取得
             let segmentCands: [[String]] = segments.map { seg in
-                if let cands = dictionary[seg], !cands.isEmpty { return cands }
+                if let cands = lookup(seg), !cands.isEmpty { return cands }
                 return [seg]
             }
             
@@ -104,7 +151,7 @@ class KanjiConverter {
             }
         } else if segments.count == 1 {
             let seg = segments[0]
-            if let cands = dictionary[seg] {
+            if let cands = lookup(seg) {
                 for c in cands.prefix(10) {
                     if !results.contains(c) { results.append(c) }
                 }
@@ -145,7 +192,7 @@ class KanjiConverter {
             
             for len in stride(from: maxLen, through: 2, by: -1) {
                 let substr = String(chars[i..<(i + len)])
-                if dictionary[substr] != nil {
+                if lookup(substr) != nil {
                     bestLength = len
                     break
                 }
