@@ -741,6 +741,18 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         }
     }
     
+    class QwertyKeyButton: UIButton {
+        var shape: Int = 0 { didSet { setNeedsLayout() } }
+        var blurView: UIVisualEffectView?
+        
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
+            layer.cornerRadius = radius
+            blurView?.layer.cornerRadius = radius
+        }
+    }
+    
     // MARK: - Conversion Bar
     
     // MARK: - Row Builders
@@ -763,11 +775,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     // MARK: - Key Button Factory
     
-    private func createKeyButton(title: String) -> UIButton {
-        let button = UIButton(type: .system)
+    private func createKeyButton(title: String) -> QwertyKeyButton {
+        let button = QwertyKeyButton(type: .system)
         button.setTitle(title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
-        button.layer.cornerRadius = 5
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
@@ -781,22 +792,20 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         return button
     }
     
-    private func createSpecialKeyButton(title: String) -> UIButton {
-        let button = UIButton(type: .system)
+    private func createSpecialKeyButton(title: String) -> QwertyKeyButton {
+        let button = QwertyKeyButton(type: .system)
         button.setTitle(title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        button.layer.cornerRadius = 5
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
         return button
     }
     
-    private func createSpecialImageKeyButton(systemName: String) -> UIButton {
-        let button = UIButton(type: .system)
+    private func createSpecialImageKeyButton(systemName: String) -> QwertyKeyButton {
+        let button = QwertyKeyButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .regular)
         button.setImage(UIImage(systemName: systemName, withConfiguration: config), for: .normal)
-        button.layer.cornerRadius = 5
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
@@ -832,19 +841,22 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let opacity = theme.keyOpacity ?? 1.0
         let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
         let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
-        
         let clearBgAlpha = 0.15 * opacity
         
-        if theme.keyStyle == 1 || theme.keyStyle == 3 { // Frosted or Clear Glass
+        if let qwertyBtn = b as? QwertyKeyButton {
+            qwertyBtn.shape = theme.buttonShape ?? 0
+        }
+        
+        if theme.keyStyle == 1 || theme.keyStyle == 3 { // Frosted or Clear
             b.backgroundColor = theme.keyStyle == 3 ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
             b.layer.shadowOpacity = 0
             b.layer.borderWidth = 0.5
             b.layer.borderColor = borderCol
+            
             if theme.keyStyle == 1 {
                 if existingBlur == nil {
                     let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                     blur.tag = 8888
-                    blur.layer.cornerRadius = 5
                     blur.layer.borderWidth = 0.5
                     blur.layer.borderColor = borderCol
                     blur.clipsToBounds = true
@@ -858,6 +870,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                         blur.topAnchor.constraint(equalTo: b.topAnchor),
                         blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
                     ])
+                    if let qwertyBtn = b as? QwertyKeyButton {
+                        qwertyBtn.blurView = blur
+                    }
                 } else {
                     existingBlur?.alpha = opacity
                     existingBlur?.layer.borderColor = borderCol
@@ -871,7 +886,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 b.backgroundColor = .clear
                 b.layer.shadowOpacity = 0
                 b.layer.borderWidth = 1
-                b.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+                b.layer.borderColor = borderCol
             } else { // Standard
                 b.backgroundColor = isSpecialKey ? specialBg : letterBg
                 b.layer.shadowOpacity = 0.3

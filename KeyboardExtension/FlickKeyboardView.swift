@@ -296,10 +296,21 @@ class FlickKeyboardView: UIView {
     
     // MARK: - Key Builders
     
-    private func createFlickKey(_ keyData: FlickKey) -> UIView {
-        let view = UIView()
+    class FlickKeyView: UIView {
+        var shape: Int = 0 { didSet { setNeedsLayout() } }
+        var blurView: UIVisualEffectView?
+        
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            let radius: CGFloat = shape == 0 ? 6 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
+            layer.cornerRadius = radius
+            blurView?.layer.cornerRadius = radius
+        }
+    }
+    
+    private func createFlickKey(_ keyData: FlickKey) -> FlickKeyView {
+        let view = FlickKeyView()
         view.backgroundColor = .white
-        view.layer.cornerRadius = 6
         view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 1)
         view.layer.shadowOpacity = 0.3
@@ -328,12 +339,12 @@ class FlickKeyboardView: UIView {
             subtitleLabel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
         ])
         
-        updateHints(for: view, keyData: keyData, isShifted: isShifted)
+        updateHints(for: view, keyData: keyData, isShifted: false)
         keysMap[view] = keyData
         return view
     }
     
-    private func updateHints(for btn: UIView, keyData: FlickKey, isShifted: Bool) {
+    private func updateHints(for btn: UIView, keyData: FlickKey, isShifted: Bool = false) {
         if let lbl = btn.viewWithTag(100) as? UILabel {
             var text = keyData.center
             if currentPage == .alphabet && !isShifted {
@@ -380,10 +391,9 @@ class FlickKeyboardView: UIView {
         }
     }
     
-    private func createSpecialKey(title: String) -> UIView {
-        let view = UIView()
+    private func createSpecialKey(title: String) -> FlickKeyView {
+        let view = FlickKeyView()
         view.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        view.layer.cornerRadius = 6
         view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 1)
         view.layer.shadowOpacity = 0.3
@@ -405,10 +415,9 @@ class FlickKeyboardView: UIView {
         return view
     }
     
-    private func createSpecialImageKey(systemName: String) -> UIView {
-        let view = UIView()
+    private func createSpecialImageKey(systemName: String) -> FlickKeyView {
+        let view = FlickKeyView()
         view.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        view.layer.cornerRadius = 6
         view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 1)
         view.layer.shadowOpacity = 0.3
@@ -448,7 +457,13 @@ class FlickKeyboardView: UIView {
         let keyBgCol = theme.keyColorHex != nil ? (UIColor(hex: theme.keyColorHex!) ?? defaultKeyBgCol) : defaultKeyBgCol
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         
+        let shape = theme.buttonShape ?? 0
+        
         for keyView in allKeys {
+            if let fkv = keyView as? FlickKeyView {
+                fkv.shape = shape
+            }
+            
             let existingBlur = keyView.viewWithTag(8888) as? UIVisualEffectView
             let isSpecial = [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].contains(keyView)
             
@@ -468,7 +483,6 @@ class FlickKeyboardView: UIView {
                     if existingBlur == nil {
                         let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                         blur.tag = 8888
-                        blur.layer.cornerRadius = 6
                         blur.layer.borderWidth = 0.5
                         blur.layer.borderColor = borderCol
                         blur.clipsToBounds = true
@@ -482,6 +496,9 @@ class FlickKeyboardView: UIView {
                             blur.topAnchor.constraint(equalTo: keyView.topAnchor),
                             blur.bottomAnchor.constraint(equalTo: keyView.bottomAnchor)
                         ])
+                        if let fkv = keyView as? FlickKeyView {
+                            fkv.blurView = blur
+                        }
                     } else {
                         existingBlur?.alpha = opacity
                         existingBlur?.layer.borderColor = borderCol

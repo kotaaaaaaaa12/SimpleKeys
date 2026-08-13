@@ -852,7 +852,26 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(saveTapped))
     }
     
+    private let keyboardTypeSegment = UISegmentedControl(items: ["Kana", "QWERTY"])
+    
+    class PreviewKeyView: UIView {
+        var shape: Int = 0 { didSet { setNeedsLayout() } }
+        var blurView: UIVisualEffectView?
+        
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            let radius: CGFloat = shape == 0 ? 6 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
+            layer.cornerRadius = radius
+            blurView?.layer.cornerRadius = radius
+        }
+    }
+    
     private func setupUI() {
+        keyboardTypeSegment.selectedSegmentIndex = 0
+        keyboardTypeSegment.addTarget(self, action: #selector(keyboardTypeChanged), for: .valueChanged)
+        keyboardTypeSegment.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(keyboardTypeSegment)
+        
         previewContainer.translatesAutoresizingMaskIntoConstraints = false
         previewContainer.backgroundColor = .systemGray5
         previewContainer.layer.cornerRadius = 12
@@ -869,34 +888,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         previewGrid.spacing = 8
         previewContainer.addSubview(previewGrid)
         
-        // Build a fake QWERTY grid
-        let rows = [
-            ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-            ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-            ["Z", "X", "C", "V", "B", "N", "M"]
-        ]
-        for row in rows {
-            let rowStack = UIStackView()
-            rowStack.axis = .horizontal
-            rowStack.distribution = .fillEqually
-            rowStack.spacing = 6
-            for letter in row {
-                let key = UIView()
-                let label = UILabel()
-                label.text = letter
-                label.textAlignment = .center
-                label.font = .systemFont(ofSize: 18)
-                label.tag = 777
-                label.translatesAutoresizingMaskIntoConstraints = false
-                key.addSubview(label)
-                NSLayoutConstraint.activate([
-                    label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
-                    label.centerYAnchor.constraint(equalTo: key.centerYAnchor)
-                ])
-                rowStack.addArrangedSubview(key)
-            }
-            previewGrid.addArrangedSubview(rowStack)
-        }
+        buildGrid(isQwerty: false)
         
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
@@ -905,10 +897,13 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            previewContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            keyboardTypeSegment.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            keyboardTypeSegment.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            previewContainer.topAnchor.constraint(equalTo: keyboardTypeSegment.bottomAnchor, constant: 12),
             previewContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             previewContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            previewContainer.heightAnchor.constraint(equalToConstant: 200),
+            previewContainer.heightAnchor.constraint(equalToConstant: 220),
             
             previewBgImageView.topAnchor.constraint(equalTo: previewContainer.topAnchor),
             previewBgImageView.leadingAnchor.constraint(equalTo: previewContainer.leadingAnchor),
@@ -918,7 +913,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             previewGrid.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
             previewGrid.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
             previewGrid.widthAnchor.constraint(equalTo: previewContainer.widthAnchor, constant: -16),
-            previewGrid.heightAnchor.constraint(equalToConstant: 160),
+            previewGrid.heightAnchor.constraint(equalToConstant: 180),
             
             tableView.topAnchor.constraint(equalTo: previewContainer.bottomAnchor, constant: 16),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -940,6 +935,49 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         nameField.text = currentTheme.name
         nameField.placeholder = "Theme Name"
         nameField.addTarget(self, action: #selector(nameChanged), for: .editingChanged)
+    }
+    
+    @objc private func keyboardTypeChanged() {
+        buildGrid(isQwerty: keyboardTypeSegment.selectedSegmentIndex == 1)
+        updatePreview()
+    }
+    
+    private func buildGrid(isQwerty: Bool) {
+        previewGrid.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        let rows = isQwerty ? [
+            ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+            ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+            ["Z", "X", "C", "V", "B", "N", "M"]
+        ] : [
+            ["あ", "か", "さ", "⌫"],
+            ["た", "な", "は", "⏎"],
+            ["ま", "や", "ら", "！？"],
+            ["小/濁", "わ", "、", "空白"]
+        ]
+        
+        for row in rows {
+            let rowStack = UIStackView()
+            rowStack.axis = .horizontal
+            rowStack.distribution = .fillEqually
+            rowStack.spacing = 8
+            for letter in row {
+                let key = PreviewKeyView()
+                let label = UILabel()
+                label.text = letter
+                label.textAlignment = .center
+                label.font = .systemFont(ofSize: 18)
+                label.tag = 777
+                label.translatesAutoresizingMaskIntoConstraints = false
+                key.addSubview(label)
+                NSLayoutConstraint.activate([
+                    label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
+                    label.centerYAnchor.constraint(equalTo: key.centerYAnchor)
+                ])
+                rowStack.addArrangedSubview(key)
+            }
+            previewGrid.addArrangedSubview(rowStack)
+        }
     }
     
     @objc private func nameChanged() {
@@ -967,7 +1005,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         }
         
         let shape = currentTheme.buttonShape ?? 0
-        let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? 22 : 0)
         let opacity = currentTheme.keyOpacity ?? 1.0
         
         let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
@@ -984,45 +1021,47 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         for row in previewGrid.arrangedSubviews {
             if let stack = row as? UIStackView {
                 for v in stack.arrangedSubviews {
-                    v.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+                    guard let keyView = v as? PreviewKeyView else { continue }
                     
-                    if let label = v.viewWithTag(777) as? UILabel {
+                    keyView.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+                    
+                    if let label = keyView.viewWithTag(777) as? UILabel {
                         label.textColor = textCol
                     }
                     
-                    v.layer.cornerRadius = radius
+                    keyView.shape = shape
                     
                     if currentTheme.keyStyle == 1 || currentTheme.keyStyle == 3 {
-                        v.backgroundColor = currentTheme.keyStyle == 3 ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
-                        v.layer.shadowOpacity = 0
-                        v.layer.borderWidth = 0.5
-                        v.layer.borderColor = borderCol
+                        keyView.backgroundColor = currentTheme.keyStyle == 3 ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
+                        keyView.layer.shadowOpacity = 0
+                        keyView.layer.borderWidth = 0.5
+                        keyView.layer.borderColor = borderCol
                         
                         if currentTheme.keyStyle == 1 {
                             let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
-                            blur.layer.cornerRadius = radius
                             blur.layer.borderWidth = 0.5
                             blur.layer.borderColor = borderCol
                             blur.clipsToBounds = true
                             blur.translatesAutoresizingMaskIntoConstraints = false
                             blur.alpha = opacity
-                            v.insertSubview(blur, at: 0)
+                            keyView.insertSubview(blur, at: 0)
                             NSLayoutConstraint.activate([
-                                blur.leadingAnchor.constraint(equalTo: v.leadingAnchor),
-                                blur.trailingAnchor.constraint(equalTo: v.trailingAnchor),
-                                blur.topAnchor.constraint(equalTo: v.topAnchor),
-                                blur.bottomAnchor.constraint(equalTo: v.bottomAnchor)
+                                blur.leadingAnchor.constraint(equalTo: keyView.leadingAnchor),
+                                blur.trailingAnchor.constraint(equalTo: keyView.trailingAnchor),
+                                blur.topAnchor.constraint(equalTo: keyView.topAnchor),
+                                blur.bottomAnchor.constraint(equalTo: keyView.bottomAnchor)
                             ])
+                            keyView.blurView = blur
                         }
                     } else if currentTheme.keyStyle == 2 {
-                        v.backgroundColor = .clear
-                        v.layer.shadowOpacity = 0
-                        v.layer.borderWidth = 1
-                        v.layer.borderColor = borderCol
+                        keyView.backgroundColor = .clear
+                        keyView.layer.shadowOpacity = 0
+                        keyView.layer.borderWidth = 1
+                        keyView.layer.borderColor = borderCol
                     } else {
-                        v.backgroundColor = keyBgCol
-                        v.layer.shadowOpacity = 0.3
-                        v.layer.borderWidth = 0
+                        keyView.backgroundColor = keyBgCol
+                        keyView.layer.shadowOpacity = 0.3
+                        keyView.layer.borderWidth = 0
                     }
                 }
             }
