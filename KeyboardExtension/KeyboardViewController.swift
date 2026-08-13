@@ -55,6 +55,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var expandedStartIndex: Int = 0
     
     private var englishBuffer: String = ""
+    private var qwertyReturnButton: UIButton?
     
     private let kanjiConverter = KanjiConverter.shared
     
@@ -127,6 +128,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         updateAppearance()
+        
+        // If text was externally cleared (e.g., sent in LINE), clear our buffers
+        if !textDocumentProxy.hasText {
+            if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
+                _ = romajiConverter.commit()
+                englishBuffer = ""
+                updateConversionBar()
+            }
+        }
     }
     
     // MARK: - Conversion Bar
@@ -265,6 +275,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let displayEnglish = englishBuffer
         
         let display = !displayRomaji.isEmpty ? displayRomaji : displayEnglish
+        
+        // Update Return Key Title
+        let flickReturnTitle = display.isEmpty ? "改行" : "確定"
+        flickKeyboard?.setReturnKeyTitle(flickReturnTitle)
+        let qwertyReturnTitle = display.isEmpty ? "return" : "確定"
+        qwertyReturnButton?.setTitle(qwertyReturnTitle, for: .normal)
         
         // Clear previous candidates
         for subview in candidateStack.arrangedSubviews {
@@ -517,6 +533,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 retBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
                 retBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
                 retBtn.widthAnchor.constraint(equalToConstant: 80).isActive = true
+                qwertyReturnButton = retBtn
                 bottomStack.addArrangedSubview(retBtn)
             } else if key == "ABC" {
                 let abcBtn = createSpecialKeyButton(title: "ABC")

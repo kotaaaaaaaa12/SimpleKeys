@@ -276,7 +276,10 @@ class FlickKeyboardView: UIView {
         
         returnButton = createSpecialKey(title: "改行")
         returnButton.accessibilityIdentifier = "return"
-        if let lbl = returnButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        if let lbl = returnButton.subviews.first as? UILabel { 
+            lbl.font = .systemFont(ofSize: 16)
+            lbl.tag = 999 // Tag to identify the label easily
+        }
         place(view: returnButton, row: 2, col: 4, rowSpan: 2) // Spans row 2 and 3
     }
     
@@ -838,5 +841,11 @@ class FlickKeyboardView: UIView {
         }
         apply(to: self)
         updatePageUI()
+    }
+    
+    func setReturnKeyTitle(_ title: String) {
+        if let lbl = returnButton?.viewWithTag(999) as? UILabel {
+            lbl.text = title
+        }
     }
 }
