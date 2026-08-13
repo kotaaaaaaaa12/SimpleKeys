@@ -71,25 +71,50 @@ class ViewController: UITabBarController {
         let lang = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") ?? "ja"
         let urlString = "https://raw.githubusercontent.com/kotaaaaaaaa12/SimpleKeys/main/updates_\(lang).json"
         
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: urlString) else {
+            DispatchQueue.main.async {
+                self.updatesVC.showError("Invalid URL: \(urlString)")
+            }
+            return
+        }
         
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            guard let data = data, error == nil else { return }
-            do {
-                let updateInfo = try JSONDecoder().decode(UpdateInfo.self, from: data)
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.updatesVC.showError("Network error: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    self?.updatesVC.showError("No HTTP response received.")
+                    return
+                }
+                
+                guard httpResponse.statusCode == 200 else {
+                    self?.updatesVC.showError("HTTP \(httpResponse.statusCode) from \(urlString)")
+                    return
+                }
+                
+                guard let data = data else {
+                    self?.updatesVC.showError("No data received.")
+                    return
+                }
+                
+                do {
+                    let updateInfo = try JSONDecoder().decode(UpdateInfo.self, from: data)
                     self?.updatesVC.updates = updateInfo.updates
+                    self?.updatesVC.errorMessage = nil
                     self?.updatesVC.tableView.reloadData()
                     
-                    let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.0"
+                    let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
                     if updateInfo.latest_version.compare(currentVersion, options: .numeric) == .orderedDescending {
                         self?.tabBar.items?[1].badgeValue = "1"
                     } else {
                         self?.tabBar.items?[1].badgeValue = nil
                     }
+                } catch {
+                    self?.updatesVC.showError("JSON decode error: \(error.localizedDescription)")
                 }
-            } catch {
-                print("Failed to decode updates JSON: \(error)")
             }
         }.resume()
     }
@@ -320,6 +345,7 @@ class SettingsViewController: UITableViewController {
 class UpdatesViewController: UITableViewController {
     
     var updates: [UpdateItem] = []
+    var errorMessage: String? = nil
     
     init() {
         super.init(style: .insetGrouped)
@@ -344,7 +370,15 @@ class UpdatesViewController: UITableViewController {
         tabBarController?.tabBar.items?[1].badgeValue = nil
     }
     
+    func showError(_ message: String) {
+        errorMessage = message
+        updates = []
+        tableView.reloadData()
+    }
+    
     override func numberOfSections(in tableView: UITableView) -> Int {
+        if errorMessage != nil { return 1 }
+        if updates.isEmpty { return 1 }
         return updates.count
     }
     
@@ -353,19 +387,35 @@ class UpdatesViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        if errorMessage != nil { return "⚠️ Error" }
+        if updates.isEmpty { return nil }
         return updates[section].title
     }
     
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        if errorMessage != nil || updates.isEmpty { return nil }
         return updates[section].date
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
-        cell.textLabel?.text = updates[indexPath.section].body
+        cell.selectionStyle = .none
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.font = .systemFont(ofSize: 15)
-        cell.selectionStyle = .none
+        
+        if let error = errorMessage {
+            cell.textLabel?.text = error
+            cell.textLabel?.textColor = .systemRed
+        } else if updates.isEmpty {
+            let lang = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") ?? "ja"
+            cell.textLabel?.text = lang == "en" ? "Loading..." : "読み込み中..."
+            cell.textLabel?.textColor = .secondaryLabel
+        } else {
+            cell.textLabel?.text = updates[indexPath.section].body
+            cell.textLabel?.textColor = .label
+        }
+        
         return cell
     }
 }
+
