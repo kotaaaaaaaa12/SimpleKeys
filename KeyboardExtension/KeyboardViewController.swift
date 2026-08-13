@@ -154,10 +154,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         
         view.backgroundColor = .systemGray4
         
+        setupConversionBar()
         setupFlickKeyboard()
         setupQWERTYKeyboard()
-        setupConversionBar()
-        setupExpandedCandidateView()
         
         if let modeStr = defaults?.string(forKey: "keyboardMode") {
             if modeStr == "flick", enableFlick { currentMode = .flickKana }
