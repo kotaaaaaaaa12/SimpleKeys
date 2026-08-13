@@ -19,6 +19,15 @@ No ads. No tracking. Just a keyboard that works.
 
 ---
 
+## ✨ Features
+
+- **Offline Kanji Conversion:** Powered by the open-source SKK dictionary (~130,000 entries), SimpleKeys converts Hiragana to Kanji completely offline. No network requests are made.
+- **Privacy First:** Your keystrokes never leave your device.
+- **QWERTY & Flick Input:** Supports both classic QWERTY Romaji input and Japanese Flick input.
+- **App Group Syncing:** Dynamically resolves App Group IDs to fully support sideloading (AltStore/SideStore).
+
+---
+
 ## 📦 Installation
 
 ### Build from Source
