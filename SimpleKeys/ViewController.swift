@@ -129,24 +129,18 @@ class SettingsViewController: UITableViewController {
     }
     
     private func checkKeyboardEnabled() {
-        // activeInputModes often reliably contains enabled keyboards
-        let isEnabled = UITextInputMode.activeInputModes.contains(where: {
-            if let identifier = $0.value(forKey: "identifier") as? String {
-                return identifier.contains("KeyboardExtension") || identifier.contains("SimpleKeys")
-            }
-            return false
-        })
+        let hasLaunched = sharedDefaults?.bool(forKey: "keyboardHasLaunched") ?? false
         
-        if !isEnabled {
+        if !hasLaunched {
             let isEn = languageSegment.selectedSegmentIndex == 1
             let alert = UIAlertController(
                 title: isEn ? "Setup Required" : "キーボードの設定",
-                message: isEn ? "SimpleKeys is not enabled. Please open Settings, go to Keyboards, and add SimpleKeys." : "SimpleKeysキーボードが追加されていません。設定を開き、「新しいキーボードを追加」からSimpleKeysを追加してください。",
+                message: isEn ? "SimpleKeys keyboard has not been added yet. Please go to Settings > General > Keyboard > Keyboards > Add New Keyboard and add SimpleKeys." : "SimpleKeysキーボードがまだ追加されていません。設定 > 一般 > キーボード > キーボード > 新しいキーボードを追加 からSimpleKeysを追加してください。",
                 preferredStyle: .alert
             )
             alert.addAction(UIAlertAction(title: isEn ? "Later" : "あとで", style: .cancel, handler: nil))
             alert.addAction(UIAlertAction(title: isEn ? "Open Settings" : "設定を開く", style: .default, handler: { _ in
-                if let url = URL(string: UIApplication.openSettingsURLString) {
+                if let url = URL(string: "App-prefs:General&path=Keyboard/KEYBOARDS") {
                     UIApplication.shared.open(url)
                 }
             }))
@@ -315,10 +309,8 @@ class SettingsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if indexPath.section == 1 {
             tableView.deselectRow(at: indexPath, animated: true)
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                if UIApplication.shared.canOpenURL(url) {
-                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                }
+            if let url = URL(string: "App-prefs:General&path=Keyboard/KEYBOARDS") {
+                UIApplication.shared.open(url)
             }
         }
     }

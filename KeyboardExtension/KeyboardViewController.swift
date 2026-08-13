@@ -56,6 +56,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         // Read default keyboard mode
         let defaults = AppGroupHelper.shared.userDefaults
         defaults?.synchronize()
+        
+        // Mark that the keyboard has been activated at least once
+        defaults?.set(true, forKey: "keyboardHasLaunched")
+        defaults?.synchronize()
         let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
         let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
         let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
