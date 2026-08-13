@@ -841,7 +841,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             tableView.topAnchor.constraint(equalTo: previewContainer.bottomAnchor, constant: 16),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
         
         opacitySlider.minimumValue = 0.0
@@ -883,7 +883,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 1 { return 2 }
         if section == 2 { return 2 } // Key Style and Button Shape
         if section == 3 { return 1 } // Opacity
-        if section == 4 { return 3 } // Colors
+        if section == 4 { return currentTheme.keyStyle == 0 ? 3 : 2 } // Colors
         if section == 5 { return 1 } // Font
         if section == 6 { return 4 } // Flick popup bg, text, highlight, shape
         return 1
@@ -1137,9 +1137,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             if indexPath.row == 0 {
                 pickingColorFor = "flickPopupBg"
                 picker.selectedColor = currentTheme.flickPopupBgHex != nil ? (UIColor(hex: currentTheme.flickPopupBgHex!) ?? .white) : .white
+                present(picker, animated: true)
             } else if indexPath.row == 1 {
                 pickingColorFor = "flickPopupText"
                 picker.selectedColor = currentTheme.flickPopupTextHex != nil ? (UIColor(hex: currentTheme.flickPopupTextHex!) ?? .black) : .black
+                present(picker, animated: true)
             } else if indexPath.row == 2 {
                 pickingColorFor = "flickHighlight"
                 picker.selectedColor = currentTheme.flickHighlightHex != nil ? (UIColor(hex: currentTheme.flickHighlightHex!) ?? .systemBlue) : .systemBlue

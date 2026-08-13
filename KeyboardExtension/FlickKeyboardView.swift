@@ -363,13 +363,20 @@ class FlickKeyboardView: UIView {
                 text = text.uppercased()
             }
             lbl.text = text
+            let fontSize: CGFloat
             if text.count >= 4 {
-                lbl.font = .systemFont(ofSize: 16, weight: .regular)
+                fontSize = 16
                 shouldShowHint = false // Don't show hints for wide text
             } else if currentPage == .alphabet && text.count >= 3 {
-                lbl.font = .systemFont(ofSize: 17, weight: .regular)
+                fontSize = 17
             } else {
-                lbl.font = .systemFont(ofSize: 22, weight: .regular)
+                fontSize = 22
+            }
+            
+            if let fontName = currentTheme?.fontName, let customFont = UIFont(name: fontName, size: fontSize) {
+                lbl.font = customFont
+            } else {
+                lbl.font = .systemFont(ofSize: fontSize, weight: .regular)
             }
             
             if !shouldShowHint {
@@ -873,7 +880,11 @@ class FlickKeyboardView: UIView {
             if dir != .center && textForDirection(dir, key: keyData) == nil { continue }
             
             let label = UILabel()
-            label.font = .systemFont(ofSize: 22, weight: .semibold)
+            if let fontName = themeToUse?.fontName, let customFont = UIFont(name: fontName, size: 22) {
+                label.font = customFont
+            } else {
+                label.font = .systemFont(ofSize: 22, weight: .semibold)
+            }
             label.textColor = popupTextCol
             label.textAlignment = .center
             label.backgroundColor = popupBg
