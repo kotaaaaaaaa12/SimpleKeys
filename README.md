@@ -63,14 +63,16 @@ Switch between modes seamlessly using the built-in mode buttons.
 | Mode | Button | Description |
 |:-----|:------:|:------------|
 | **English QWERTY** | `🌐` | Standard English keyboard with Shift support |
+| **Romaji QWERTY** | `🌐` | Romaji input → Real-time auto-conversion to Hiragana |
 | **Flick Kana** | `🌐` / `あ` | Japanese flick-style input |
-| **Flick Alphabet** | `ABC` | Alphabet flick-style input with sub-labels |
+| **Flick Alphabet** | `あいう` | Alphabet flick-style input with sub-labels |
 | **Flick Numbers** | `☆123` | Numbers and symbols flick-style input |
 
 ### 🔄 Mode Cycling
 
-- Tap the Globe icon (🌐) to instantly toggle between QWERTY English and Flick Kana modes.
-- Tap the `ABC` or `☆123` keys within Flick mode to switch to Alphabet or Number layouts.
+- Tap the Globe icon (🌐) to instantly toggle between your active modes (e.g. QWERTY English, QWERTY Romaji, Flick Kana).
+- You can fully customize which input modes are enabled/disabled via the main SimpleKeys app settings!
+- Tap the `あいう` or `☆123` keys within Flick mode to switch to Alphabet or Number layouts.
 
 ---
 
@@ -82,6 +84,8 @@ Switch between modes seamlessly using the built-in mode buttons.
 
 #### ⌨️ QWERTY Keyboard
 - Full QWERTY layout
+- English & Japanese Romaji support
+- Real-time Hiragana conversion
 - Shift key (uppercase toggle)
 - Backspace & Return
 - Mode toggle button (Globe)
@@ -145,10 +149,12 @@ Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleK
 | Status | Feature |
 |:------:|:--------|
 | ✅ | English QWERTY keyboard |
+| ✅ | Japanese Romaji QWERTY (auto-conversion) |
 | ✅ | Flick input (Kana, ABC, 123) |
 | ✅ | Multi-touch & fast typing |
+| ✅ | Customizable active input modes |
 | ✅ | Dark mode |
-| ✅ | Nightly CI builds |
+| ✅ | Automatic CI builds (GitHub Actions) |
 | 🔲 | Kanji conversion (predictive) |
 | 🔲 | Custom themes |
 | 🔲 | User dictionary |
