@@ -1,6 +1,13 @@
 import UIKit
 
-/// フリック入力キーボードビュー
+protocol FlickKeyboardDelegate: AnyObject {
+    func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String)
+    func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView)
+    func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView)
+}
+
 class FlickKeyboardView: UIView {
     
     // MARK: - Types
@@ -21,279 +28,322 @@ class FlickKeyboardView: UIView {
     
     weak var delegate: FlickKeyboardDelegate?
     
-    private var flickKeys: [[FlickKey]] = []
-    private var activeButton: UIButton?
+    private var activeTouch: UITouch?
+    private var activeButton: UIView?
     private var startPoint: CGPoint = .zero
     private var popupView: UIView?
+    private var popupLabel: UILabel?
     
-    /// 濁点/半濁点/小文字モード
-    private var isSmallMode = false
+    // State
+    private var isDarkMode = false
     
-    // MARK: - Flick Key Definitions
+    // Layout views
+    private var containerView: UIView!
+    private var keysMap: [UIView: FlickKey] = [:]
     
-    private static let kanaKeys: [[FlickKey]] = [
-        // Row 1
+    // Basic Kana Keys
+    private let kanaKeys: [[FlickKey]] = [
         [
             FlickKey(center: "あ", left: "い", up: "う", right: "え", down: "お"),
             FlickKey(center: "か", left: "き", up: "く", right: "け", down: "こ"),
-            FlickKey(center: "さ", left: "し", up: "す", right: "せ", down: "そ"),
+            FlickKey(center: "さ", left: "し", up: "す", right: "せ", down: "そ")
+        ],
+        [
             FlickKey(center: "た", left: "ち", up: "つ", right: "て", down: "と"),
             FlickKey(center: "な", left: "に", up: "ぬ", right: "ね", down: "の"),
+            FlickKey(center: "は", left: "ひ", up: "ふ", right: "へ", down: "ほ")
         ],
-        // Row 2
         [
-            FlickKey(center: "は", left: "ひ", up: "ふ", right: "へ", down: "ほ"),
             FlickKey(center: "ま", left: "み", up: "む", right: "め", down: "も"),
-            FlickKey(center: "や", left: "（", up: "ゆ", right: "）", down: "よ"),
-            FlickKey(center: "ら", left: "り", up: "る", right: "れ", down: "ろ"),
-            FlickKey(center: "わ", left: "を", up: "ん", right: "ー", down: "〜"),
+            FlickKey(center: "や", left: "「", up: "ゆ", right: "」", down: "よ"),
+            FlickKey(center: "ら", left: "り", up: "る", right: "れ", down: "ろ")
         ],
+        [
+            // ゛゜小 is handled specially
+            FlickKey(center: "゛゜小", left: nil, up: nil, right: nil, down: nil),
+            FlickKey(center: "わ", left: "を", up: "ん", right: "ー", down: "〜"),
+            FlickKey(center: "、", left: "。", up: "？", right: "！", down: "…")
+        ]
     ]
     
-    // 濁点・半濁点テーブル
-    private static let dakutenMap: [Character: Character] = [
-        "か": "が", "き": "ぎ", "く": "ぐ", "け": "げ", "こ": "ご",
-        "さ": "ざ", "し": "じ", "す": "ず", "せ": "ぜ", "そ": "ぞ",
-        "た": "だ", "ち": "ぢ", "つ": "づ", "て": "で", "と": "ど",
-        "は": "ば", "ひ": "び", "ふ": "ぶ", "へ": "べ", "ほ": "ぼ",
-        "う": "ゔ",
-    ]
-    
-    private static let handakutenMap: [Character: Character] = [
-        "は": "ぱ", "ひ": "ぴ", "ふ": "ぷ", "へ": "ぺ", "ほ": "ぽ",
-    ]
-    
-    private static let smallMap: [Character: Character] = [
-        "あ": "ぁ", "い": "ぃ", "う": "ぅ", "え": "ぇ", "お": "ぉ",
-        "つ": "っ", "や": "ゃ", "ゆ": "ゅ", "よ": "ょ", "わ": "ゎ",
-    ]
+    // Buttons we need references to
+    private var globeButton: UIView!
+    private var deleteButton: UIView!
+    private var returnButton: UIView!
+    private var spaceButton: UIView!
+    private var shiftButton: UIView! // ABC, ☆123 etc
     
     // MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        flickKeys = FlickKeyboardView.kanaKeys
         setupView()
+        isMultipleTouchEnabled = false
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        flickKeys = FlickKeyboardView.kanaKeys
         setupView()
+        isMultipleTouchEnabled = false
     }
     
     // MARK: - Setup
     
     private func setupView() {
-        let mainStack = UIStackView()
-        mainStack.axis = .vertical
-        mainStack.spacing = 6
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(mainStack)
+        containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(containerView)
         
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-            mainStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
-            mainStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
-            mainStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            containerView.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            containerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
+            containerView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            containerView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
         ])
         
-        // Kana rows (2 rows × 5 keys)
-        for (rowIndex, row) in flickKeys.enumerated() {
+        // Main Horizontal Stack: [ Left Sidebar ] [ Center Grid ] [ Right Sidebar ]
+        let mainStack = UIStackView()
+        mainStack.axis = .horizontal
+        mainStack.spacing = 6
+        mainStack.distribution = .fillProportionally
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(mainStack)
+        
+        NSLayoutConstraint.activate([
+            mainStack.topAnchor.constraint(equalTo: containerView.topAnchor),
+            mainStack.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            mainStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            mainStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+        ])
+        
+        // 1. Left Sidebar
+        let leftStack = UIStackView()
+        leftStack.axis = .vertical
+        leftStack.spacing = 6
+        leftStack.distribution = .fillEqually
+        
+        let numBtn = createSpecialKey(title: "☆123")
+        let abcBtn = createSpecialKey(title: "ABC")
+        let kaomojiBtn = createSpecialKey(title: "^_^")
+        globeButton = createSpecialKey(title: "🌐")
+        
+        leftStack.addArrangedSubview(numBtn)
+        leftStack.addArrangedSubview(abcBtn)
+        leftStack.addArrangedSubview(kaomojiBtn)
+        leftStack.addArrangedSubview(globeButton)
+        leftStack.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        mainStack.addArrangedSubview(leftStack)
+        
+        // 2. Center Grid
+        let centerStack = UIStackView()
+        centerStack.axis = .vertical
+        centerStack.spacing = 6
+        centerStack.distribution = .fillEqually
+        
+        for rowIndex in 0..<4 {
             let rowStack = UIStackView()
             rowStack.axis = .horizontal
+            rowStack.spacing = 6
             rowStack.distribution = .fillEqually
-            rowStack.spacing = 4
             
-            for (colIndex, key) in row.enumerated() {
-                let button = createFlickButton(title: key.center)
-                button.tag = rowIndex * 100 + colIndex
-                
-                let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleFlickPan(_:)))
-                button.addGestureRecognizer(panGesture)
-                
-                let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleFlickTap(_:)))
-                button.addGestureRecognizer(tapGesture)
-                
-                rowStack.addArrangedSubview(button)
+            for colIndex in 0..<3 {
+                let keyData = kanaKeys[rowIndex][colIndex]
+                let isSpecial = (rowIndex == 3 && colIndex == 0)
+                let btn = isSpecial ? createSpecialKey(title: keyData.center) : createFlickKey(keyData)
+                if isSpecial { btn.accessibilityIdentifier = "dakuten" }
+                rowStack.addArrangedSubview(btn)
             }
-            
-            rowStack.heightAnchor.constraint(equalToConstant: 46).isActive = true
-            mainStack.addArrangedSubview(rowStack)
+            centerStack.addArrangedSubview(rowStack)
         }
         
-        // Function row 3: 小゛゜  、  。  ？  ！
-        let funcRow = UIStackView()
-        funcRow.axis = .horizontal
-        funcRow.distribution = .fillEqually
-        funcRow.spacing = 4
+        // Add space bar below center grid? 
+        // Apple puts Space in the bottom row, spanning across.
+        // For simplicity, let's just make a 5th row in centerStack for Space
+        spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
+        if let lbl = spaceButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        centerStack.addArrangedSubview(spaceButton)
         
-        let dakutenBtn = createSpecialButton(title: "゛小")
-        dakutenBtn.addTarget(self, action: #selector(dakutenPressed), for: .touchUpInside)
-        funcRow.addArrangedSubview(dakutenBtn)
+        mainStack.addArrangedSubview(centerStack)
         
-        let commaBtn = createFlickButton(title: "、")
-        commaBtn.tag = 9000
-        commaBtn.addTarget(self, action: #selector(punctuationPressed(_:)), for: .touchUpInside)
-        funcRow.addArrangedSubview(commaBtn)
+        // 3. Right Sidebar
+        let rightStack = UIStackView()
+        rightStack.axis = .vertical
+        rightStack.spacing = 6
         
-        let periodBtn = createFlickButton(title: "。")
-        periodBtn.tag = 9001
-        periodBtn.addTarget(self, action: #selector(punctuationPressed(_:)), for: .touchUpInside)
-        funcRow.addArrangedSubview(periodBtn)
+        deleteButton = createSpecialKey(title: "⌫")
+        returnButton = createSpecialKey(title: "改行")
+        if let lbl = returnButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
         
-        let questionBtn = createFlickButton(title: "？")
-        questionBtn.tag = 9002
-        questionBtn.addTarget(self, action: #selector(punctuationPressed(_:)), for: .touchUpInside)
-        funcRow.addArrangedSubview(questionBtn)
+        rightStack.addArrangedSubview(deleteButton)
+        rightStack.addArrangedSubview(returnButton)
         
-        let exclaimBtn = createFlickButton(title: "！")
-        exclaimBtn.tag = 9003
-        exclaimBtn.addTarget(self, action: #selector(punctuationPressed(_:)), for: .touchUpInside)
-        funcRow.addArrangedSubview(exclaimBtn)
-        
-        funcRow.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        mainStack.addArrangedSubview(funcRow)
-        
-        // Bottom row: 🌐 space return ⌫
-        let bottomRow = UIStackView()
-        bottomRow.axis = .horizontal
-        bottomRow.spacing = 4
-        
-        let globeBtn = createSpecialButton(title: "🌐")
-        globeBtn.tag = 8000
-        globeBtn.widthAnchor.constraint(equalToConstant: 44).isActive = true
-        bottomRow.addArrangedSubview(globeBtn)
-        // Globe button must be set up by the view controller
-        
-        let spaceBtn = createFlickButton(title: "スペース")
-        spaceBtn.titleLabel?.font = .systemFont(ofSize: 14)
-        spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
-        bottomRow.addArrangedSubview(spaceBtn)
-        
-        let returnBtn = createSpecialButton(title: "確定")
-        returnBtn.titleLabel?.font = .systemFont(ofSize: 14)
-        returnBtn.addTarget(self, action: #selector(returnPressed), for: .touchUpInside)
-        returnBtn.widthAnchor.constraint(equalToConstant: 72).isActive = true
-        bottomRow.addArrangedSubview(returnBtn)
-        
-        let deleteBtn = createSpecialButton(title: "⌫")
-        deleteBtn.addTarget(self, action: #selector(deletePressed), for: .touchUpInside)
-        deleteBtn.widthAnchor.constraint(equalToConstant: 44).isActive = true
-        bottomRow.addArrangedSubview(deleteBtn)
-        
-        bottomRow.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        mainStack.addArrangedSubview(bottomRow)
+        deleteButton.heightAnchor.constraint(equalTo: rightStack.heightAnchor, multiplier: 0.2).isActive = true
+        rightStack.widthAnchor.constraint(equalToConstant: 54).isActive = true
+        mainStack.addArrangedSubview(rightStack)
     }
     
-    // MARK: - Button Factory
+    // MARK: - Key Builders
     
-    private func createFlickButton(title: String) -> UIButton {
-        let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
-        button.backgroundColor = .white
-        button.setTitleColor(.black, for: .normal)
-        button.layer.cornerRadius = 6
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOffset = CGSize(width: 0, height: 1)
-        button.layer.shadowRadius = 0.5
-        button.layer.shadowOpacity = 0.3
-        button.clipsToBounds = false
-        return button
+    private func createFlickKey(_ keyData: FlickKey) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .white
+        view.layer.cornerRadius = 6
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 1)
+        view.layer.shadowOpacity = 0.3
+        view.layer.shadowRadius = 0
+        
+        let label = UILabel()
+        label.text = keyData.center
+        label.font = .systemFont(ofSize: 22, weight: .regular)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        
+        keysMap[view] = keyData
+        return view
     }
     
-    private func createSpecialButton(title: String) -> UIButton {
-        let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 16)
-        button.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        button.setTitleColor(.black, for: .normal)
-        button.layer.cornerRadius = 6
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOffset = CGSize(width: 0, height: 1)
-        button.layer.shadowRadius = 0.5
-        button.layer.shadowOpacity = 0.3
-        button.clipsToBounds = false
-        return button
+    private func createSpecialKey(title: String) -> UIView {
+        let view = UIView()
+        view.backgroundColor = UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        view.layer.cornerRadius = 6
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 1)
+        view.layer.shadowOpacity = 0.3
+        view.layer.shadowRadius = 0
+        
+        let label = UILabel()
+        label.text = title
+        label.font = .systemFont(ofSize: 18, weight: .regular)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        
+        return view
     }
     
-    // MARK: - Globe Button Access
+    // MARK: - Public Accessors
     
-    /// 🌐ボタンを外部から取得（handleInputModeList設定用）
-    func getGlobeButton() -> UIButton? {
-        return findButton(withTag: 8000)
+    func getGlobeButton() -> UIView {
+        return globeButton
     }
     
-    private func findButton(withTag tag: Int) -> UIButton? {
-        func search(in view: UIView) -> UIButton? {
-            if let button = view as? UIButton, button.tag == tag {
-                return button
+    // MARK: - Touch Handling (Responsive)
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, activeTouch == nil else { return }
+        activeTouch = touch
+        startPoint = touch.location(in: self)
+        
+        activeButton = findButton(at: startPoint)
+        guard let btn = activeButton else { return }
+        
+        animateKeyDown(btn)
+        
+        if keysMap[btn] != nil {
+            showPopup(for: btn)
+        }
+    }
+    
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, touch == activeTouch, let btn = activeButton else { return }
+        let currentPoint = touch.location(in: self)
+        
+        if keysMap[btn] != nil {
+            let dx = currentPoint.x - startPoint.x
+            let dy = currentPoint.y - startPoint.y
+            let direction = detectDirection(dx: dx, dy: dy)
+            updatePopup(direction: direction, for: btn)
+        }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, touch == activeTouch else { return }
+        finishTouch(at: touch.location(in: self))
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, touch == activeTouch else { return }
+        finishTouch(at: touch.location(in: self), cancelled: true)
+    }
+    
+    private func finishTouch(at point: CGPoint, cancelled: Bool = false) {
+        guard let btn = activeButton else {
+            activeTouch = nil
+            return
+        }
+        
+        animateKeyUp(btn)
+        hidePopup()
+        
+        if !cancelled {
+            if let keyData = keysMap[btn] {
+                // Kana key
+                let dx = point.x - startPoint.x
+                let dy = point.y - startPoint.y
+                let direction = detectDirection(dx: dx, dy: dy)
+                if let text = textForDirection(direction, key: keyData) {
+                    if text == "空白" {
+                        delegate?.flickKeyboardDidPressSpace(self)
+                    } else {
+                        delegate?.flickKeyboard(self, didInputText: text)
+                    }
+                }
+            } else {
+                // Special key
+                if btn == deleteButton {
+                    delegate?.flickKeyboardDidPressDelete(self)
+                } else if btn == returnButton {
+                    delegate?.flickKeyboardDidPressReturn(self)
+                } else if btn == globeButton {
+                    // Handled by KeyboardViewController UIControl target if we converted to UIButton,
+                    // but since it's UIView now, we must trigger it manually or let VC attach a recognizer.
+                    // Actually, let's leave globe to standard target-action in VC if possible,
+                    // but we changed it to UIView. We will fix this by providing a UIButton for globe.
+                } else if btn.accessibilityIdentifier == "dakuten" {
+                    delegate?.flickKeyboardDidPressDakuten(self)
+                }
             }
-            for sub in view.subviews {
-                if let found = search(in: sub) { return found }
+        }
+        
+        activeTouch = nil
+        activeButton = nil
+    }
+    
+    private func findButton(at point: CGPoint) -> UIView? {
+        // Deep search for the lowest level view that looks like a button
+        func search(in view: UIView) -> UIView? {
+            for sub in view.subviews.reversed() { // search top-most first
+                if sub.frame.contains(view.convert(point, to: sub.superview)) {
+                    if sub.backgroundColor != nil && sub.layer.cornerRadius > 0 {
+                        return sub
+                    }
+                    if let found = search(in: sub) { return found }
+                }
             }
             return nil
         }
         return search(in: self)
     }
     
-    // MARK: - Flick Gesture Handling
-    
-    @objc private func handleFlickTap(_ gesture: UITapGestureRecognizer) {
-        guard let button = gesture.view as? UIButton else { return }
-        let key = flickKeyForButton(button)
-        guard let key = key else { return }
-        
-        animateKeyPress(button)
-        delegate?.flickKeyboard(self, didInputText: key.center)
-    }
-    
-    @objc private func handleFlickPan(_ gesture: UIPanGestureRecognizer) {
-        guard let button = gesture.view as? UIButton else { return }
-        
-        switch gesture.state {
-        case .began:
-            startPoint = gesture.location(in: button)
-            activeButton = button
-            showPopup(for: button)
-            
-        case .changed:
-            let current = gesture.location(in: button)
-            let dx = current.x - startPoint.x
-            let dy = current.y - startPoint.y
-            let direction = detectDirection(dx: dx, dy: dy)
-            updatePopup(direction: direction, for: button)
-            
-        case .ended, .cancelled:
-            let current = gesture.location(in: button)
-            let dx = current.x - startPoint.x
-            let dy = current.y - startPoint.y
-            let direction = detectDirection(dx: dx, dy: dy)
-            
-            if let key = flickKeyForButton(button) {
-                let text = textForDirection(direction, key: key)
-                if let text = text {
-                    animateKeyPress(button)
-                    delegate?.flickKeyboard(self, didInputText: text)
-                }
-            }
-            
-            hidePopup()
-            activeButton = nil
-            
-        default:
-            break
-        }
-    }
+    // MARK: - Flick Logic
     
     private func detectDirection(dx: CGFloat, dy: CGFloat) -> FlickDirection {
-        let threshold: CGFloat = 20
+        let threshold: CGFloat = 25
         let distance = sqrt(dx * dx + dy * dy)
         
-        if distance < threshold {
-            return .center
-        }
+        if distance < threshold { return .center }
         
         if abs(dx) > abs(dy) {
             return dx < 0 ? .left : .right
@@ -302,156 +352,122 @@ class FlickKeyboardView: UIView {
         }
     }
     
-    private func flickKeyForButton(_ button: UIButton) -> FlickKey? {
-        let tag = button.tag
-        let row = tag / 100
-        let col = tag % 100
-        guard row < flickKeys.count, col < flickKeys[row].count else { return nil }
-        return flickKeys[row][col]
-    }
-    
     private func textForDirection(_ direction: FlickDirection, key: FlickKey) -> String? {
         switch direction {
         case .center: return key.center
-        case .left: return key.left
-        case .up: return key.up
-        case .right: return key.right
-        case .down: return key.down
+        case .left: return key.left ?? key.center
+        case .up: return key.up ?? key.center
+        case .right: return key.right ?? key.center
+        case .down: return key.down ?? key.center
         }
     }
     
-    // MARK: - Popup Preview
+    // MARK: - Popup
     
-    private func showPopup(for button: UIButton) {
+    private func showPopup(for button: UIView) {
+        guard keysMap[button] != nil else { return }
+        
         let popup = UIView()
-        popup.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.9)
+        popup.backgroundColor = UIColor.systemBlue
         popup.layer.cornerRadius = 8
+        popup.layer.shadowColor = UIColor.black.cgColor
+        popup.layer.shadowOpacity = 0.3
+        popup.layer.shadowOffset = CGSize(width: 0, height: 2)
         popup.translatesAutoresizingMaskIntoConstraints = false
         
-        guard let key = flickKeyForButton(button) else { return }
-        
         let label = UILabel()
-        label.text = key.center
-        label.font = .systemFont(ofSize: 28, weight: .bold)
+        label.font = .systemFont(ofSize: 32, weight: .bold)
         label.textColor = .white
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         popup.addSubview(label)
+        popupLabel = label
+        
+        updatePopup(direction: .center, for: button)
         
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: popup.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: popup.centerYAnchor),
+            label.centerYAnchor.constraint(equalTo: popup.centerYAnchor)
         ])
         
-        // Show popup above the button
         if let window = button.window {
             window.addSubview(popup)
-            let buttonFrame = button.convert(button.bounds, to: window)
+            let frame = button.convert(button.bounds, to: window)
             
             NSLayoutConstraint.activate([
-                popup.widthAnchor.constraint(equalToConstant: 52),
-                popup.heightAnchor.constraint(equalToConstant: 52),
-                popup.centerXAnchor.constraint(equalTo: window.leadingAnchor, constant: buttonFrame.midX),
-                popup.bottomAnchor.constraint(equalTo: window.topAnchor, constant: buttonFrame.minY - 4),
+                popup.widthAnchor.constraint(equalToConstant: 60),
+                popup.heightAnchor.constraint(equalToConstant: 60),
+                popup.centerXAnchor.constraint(equalTo: window.leadingAnchor, constant: frame.midX),
+                popup.bottomAnchor.constraint(equalTo: window.topAnchor, constant: frame.minY - 10)
             ])
         }
-        
         popupView = popup
     }
     
-    private func updatePopup(direction: FlickDirection, for button: UIButton) {
-        guard let popup = popupView,
-              let label = popup.subviews.first as? UILabel,
-              let key = flickKeyForButton(button) else { return }
+    private func updatePopup(direction: FlickDirection, for button: UIView) {
+        guard let key = keysMap[button], let text = textForDirection(direction, key: key) else { return }
+        popupLabel?.text = text
         
-        let text = textForDirection(direction, key: key)
-        label.text = text ?? key.center
+        // Optional: animate popup position slightly based on direction
+        guard let popup = popupView, let window = button.window else { return }
+        let frame = button.convert(button.bounds, to: window)
+        let offset: CGFloat = 15
+        var dx: CGFloat = 0, dy: CGFloat = 0
+        switch direction {
+        case .left: dx = -offset
+        case .right: dx = offset
+        case .up: dy = -offset
+        case .down: dy = offset
+        case .center: break
+        }
+        
+        popup.transform = CGAffineTransform(translationX: dx, y: dy)
     }
     
     private func hidePopup() {
         popupView?.removeFromSuperview()
         popupView = nil
+        popupLabel = nil
     }
     
-    // MARK: - Key Press Animation
+    // MARK: - Animations
     
-    private func animateKeyPress(_ button: UIButton) {
-        UIView.animate(withDuration: 0.05, animations: {
-            button.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
-        }) { _ in
-            UIView.animate(withDuration: 0.1) {
-                button.transform = .identity
-            }
+    private func animateKeyDown(_ view: UIView) {
+        UIView.animate(withDuration: 0.05) {
+            view.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
+            view.alpha = 0.8
         }
     }
     
-    // MARK: - Button Actions
-    
-    @objc private func dakutenPressed() {
-        delegate?.flickKeyboardDidPressDakuten(self)
-    }
-    
-    @objc private func punctuationPressed(_ sender: UIButton) {
-        guard let text = sender.titleLabel?.text else { return }
-        animateKeyPress(sender)
-        delegate?.flickKeyboard(self, didInputText: text)
-    }
-    
-    @objc private func spacePressed() {
-        delegate?.flickKeyboard(self, didInputText: " ")
-    }
-    
-    @objc private func returnPressed() {
-        delegate?.flickKeyboard(self, didInputText: "\n")
-    }
-    
-    @objc private func deletePressed() {
-        delegate?.flickKeyboardDidPressDelete(self)
+    private func animateKeyUp(_ view: UIView) {
+        UIView.animate(withDuration: 0.1) {
+            view.transform = .identity
+            view.alpha = 1.0
+        }
     }
     
     // MARK: - Appearance
     
     func updateAppearance(isDark: Bool) {
-        if isDark {
-            backgroundColor = UIColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0)
-            updateColors(
-                keyBg: UIColor(white: 0.35, alpha: 1.0),
-                specialBg: UIColor(white: 0.25, alpha: 1.0),
-                textColor: .white,
-                shadowColor: UIColor.black.cgColor
-            )
-        } else {
-            backgroundColor = UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1.0)
-            updateColors(
-                keyBg: .white,
-                specialBg: UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0),
-                textColor: .black,
-                shadowColor: UIColor(white: 0.5, alpha: 1.0).cgColor
-            )
-        }
-    }
-    
-    private func updateColors(keyBg: UIColor, specialBg: UIColor, textColor: UIColor, shadowColor: CGColor) {
+        self.isDarkMode = isDark
+        let bg = isDark ? UIColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0) : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1.0)
+        let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+        let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        let textCol = isDark ? UIColor.white : UIColor.black
+        
+        backgroundColor = bg
+        
         func apply(to view: UIView) {
-            if let button = view as? UIButton {
-                button.setTitleColor(textColor, for: .normal)
-                button.layer.shadowColor = shadowColor
-                let title = button.titleLabel?.text ?? ""
-                let isSpecial = ["🌐", "⌫", "確定", "゛小"].contains(title)
-                button.backgroundColor = isSpecial ? specialBg : keyBg
+            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view.accessibilityIdentifier == "dakuten" || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "^_^" }) != nil)
+            
+            if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
+                view.backgroundColor = isSpecial ? specialBg : keyBg
+                if let lbl = view.subviews.first(where: { $0 is UILabel }) as? UILabel {
+                    lbl.textColor = textCol
+                }
             }
-            for sub in view.subviews {
-                apply(to: sub)
-            }
+            for sub in view.subviews { apply(to: sub) }
         }
         apply(to: self)
     }
-}
-
-// MARK: - Delegate Protocol
-
-protocol FlickKeyboardDelegate: AnyObject {
-    func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String)
-    func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView)
-    func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView)
 }

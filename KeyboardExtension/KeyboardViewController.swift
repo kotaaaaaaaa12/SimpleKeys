@@ -179,9 +179,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             flickKeyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
         
-        if let globeBtn = flickKeyboard.getGlobeButton() {
-            globeBtn.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
-        }
+        let globeBtn = flickKeyboard.getGlobeButton()
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleFlickGlobeTap(_:)))
+        globeBtn.addGestureRecognizer(tap)
+        globeBtn.isUserInteractionEnabled = true
     }
     
     // MARK: - Next Keyboard Button Visibility
@@ -189,10 +190,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func updateNextKeyboardButtonVisibility() {
         let showGlobe = needsInputModeSwitchKey
         nextKeyboardButton?.isHidden = !showGlobe
-        
-        if let flickGlobe = flickKeyboard?.getGlobeButton() {
-            flickGlobe.isHidden = !showGlobe
-        }
+        flickKeyboard?.getGlobeButton().isHidden = !showGlobe
     }
     
     // MARK: - Mode Switching
@@ -545,12 +543,25 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     // MARK: - FlickKeyboardDelegate
     
+    @objc private func handleFlickGlobeTap(_ gesture: UITapGestureRecognizer) {
+        // Fallback globe toggle if target-action doesn't work well on UIViews
+        advanceToNextInputMode()
+    }
+    
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String) {
         textDocumentProxy.insertText(text)
     }
     
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
         textDocumentProxy.deleteBackward()
+    }
+    
+    func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView) {
+        textDocumentProxy.insertText("\n")
+    }
+    
+    func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView) {
+        textDocumentProxy.insertText(" ")
     }
     
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
