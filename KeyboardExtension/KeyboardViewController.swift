@@ -58,6 +58,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
+        defaults?.synchronize()
+        let defaultMode = defaults?.integer(forKey: "defaultKeyboardMode") ?? 0
+        currentMode = defaultMode == 0 ? .flickKana : .qwertyEnglish
+        applyMode()
+        
         updateNextKeyboardButtonVisibility()
         updateAppearance()
     }

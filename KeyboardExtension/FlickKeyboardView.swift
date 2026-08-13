@@ -110,12 +110,11 @@ class FlickKeyboardView: UIView {
     private(set) var currentPage: KeyboardPage = .kana
     private var isShifted = false // For ABC caps
     
-    private var activeTouch: UITouch?
-    private var activeButton: UIView?
-    private var startPoint: CGPoint = .zero
-    private var popupView: UIView?
-    private var popupLabels: [FlickDirection: UILabel] = [:]
-    private var popupTimer: Timer?
+    private var activeTouches: [UITouch: UIView] = [:]
+    private var startPoints: [UITouch: CGPoint] = [:]
+    private var popupViews: [UITouch: UIView] = [:]
+    private var popupLabelsDict: [UITouch: [FlickDirection: UILabel]] = [:]
+    private var popupTimers: [UITouch: Timer] = [:]
     
     // State
     private var isDarkMode = false
@@ -143,13 +142,13 @@ class FlickKeyboardView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupView()
-        isMultipleTouchEnabled = false
+        isMultipleTouchEnabled = true
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupView()
-        isMultipleTouchEnabled = false
+        isMultipleTouchEnabled = true
     }
     
     // MARK: - Setup
@@ -269,7 +268,7 @@ class FlickKeyboardView: UIView {
         place(view: deleteButton, row: 0, col: 4)
         
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
-        if let lbl = spaceButton.subviews.first as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 16) }
         place(view: spaceButton, row: 1, col: 4)
         
         returnButton = createSpecialKey(title: "改行")
@@ -290,7 +289,7 @@ class FlickKeyboardView: UIView {
         view.layer.shadowRadius = 0
         
         let label = UILabel()
-        label.text = keyData.center
+        label.tag = 100
         label.font = .systemFont(ofSize: 22, weight: .regular)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -301,8 +300,72 @@ class FlickKeyboardView: UIView {
             label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
         
+        let directions: [(Int, CGFloat, CGFloat)] = [
+            (101, -1, 0), // Left
+            (102, 1, 0),  // Right
+            (103, 0, -1), // Up
+            (104, 0, 1)   // Down
+        ]
+        
+        for (tag, dx, dy) in directions {
+            let hint = UILabel()
+            hint.tag = tag
+            hint.font = .systemFont(ofSize: 10, weight: .medium)
+            hint.textColor = .lightGray
+            hint.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(hint)
+            
+            var xConstraint: NSLayoutConstraint
+            if dx == -1 {
+                xConstraint = hint.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 4)
+            } else if dx == 1 {
+                xConstraint = hint.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -4)
+            } else {
+                xConstraint = hint.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            }
+            
+            var yConstraint: NSLayoutConstraint
+            if dy == -1 {
+                yConstraint = hint.topAnchor.constraint(equalTo: view.topAnchor, constant: 2)
+            } else if dy == 1 {
+                yConstraint = hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -2)
+            } else {
+                yConstraint = hint.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            }
+            
+            NSLayoutConstraint.activate([xConstraint, yConstraint])
+        }
+        
+        updateHints(for: view, keyData: keyData, isShifted: isShifted)
         keysMap[view] = keyData
         return view
+    }
+    
+    private func updateHints(for btn: UIView, keyData: FlickKey, isShifted: Bool) {
+        if let lbl = btn.viewWithTag(100) as? UILabel {
+            var text = keyData.center
+            if currentPage == .alphabet && !isShifted {
+                text = text.lowercased()
+            }
+            lbl.text = text
+        }
+        
+        let hints = [
+            (101, keyData.left),
+            (102, keyData.right),
+            (103, keyData.up),
+            (104, keyData.down)
+        ]
+        
+        for (tag, text) in hints {
+            if let lbl = btn.viewWithTag(tag) as? UILabel {
+                var hintText = text
+                if currentPage == .alphabet && !isShifted {
+                    hintText = hintText?.lowercased()
+                }
+                lbl.text = hintText
+            }
+        }
     }
     
     private func createSpecialKey(title: String) -> UIView {
@@ -338,58 +401,62 @@ class FlickKeyboardView: UIView {
     // MARK: - Touch Handling (Responsive)
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard activeTouch == nil, let touch = touches.first else { return }
-        
-        let point = touch.location(in: self)
-        
-        for btn in allButtons {
-            if btn.frame.contains(point) {
-                activeTouch = touch
-                activeButton = btn
-                startPoint = touch.location(in: self)
-                animateKeyDown(btn)
-                
-                if keysMap[btn] != nil {
-                    popupTimer?.invalidate()
-                    popupTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
-                        guard let self = self, let activeBtn = self.activeButton else { return }
-                        self.showPopup(for: activeBtn)
+        for touch in touches {
+            let point = touch.location(in: self)
+            for btn in allButtons {
+                if btn.frame.contains(point) {
+                    activeTouches[touch] = btn
+                    startPoints[touch] = point
+                    animateKeyDown(btn)
+                    
+                    if keysMap[btn] != nil {
+                        let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
+                            self?.showPopup(for: touch, button: btn)
+                        }
+                        popupTimers[touch] = timer
+                    } else if btn.accessibilityIdentifier == "delete" {
+                        startDeleteTimer()
                     }
-                } else if btn.accessibilityIdentifier == "delete" {
-                    startDeleteTimer()
+                    break
                 }
-                
-                return
             }
         }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, touch == activeTouch, let btn = activeButton else { return }
-        let currentPoint = touch.location(in: self)
-        
-        if keysMap[btn] != nil {
-            let dx = currentPoint.x - startPoint.x
-            let dy = currentPoint.y - startPoint.y
-            let direction = detectDirection(dx: dx, dy: dy)
-            updatePopup(direction: direction, for: btn)
+        for touch in touches {
+            guard let btn = activeTouches[touch], let start = startPoints[touch] else { continue }
+            let currentPoint = touch.location(in: self)
+            
+            if keysMap[btn] != nil {
+                let dx = currentPoint.x - start.x
+                let dy = currentPoint.y - start.y
+                let direction = detectDirection(dx: dx, dy: dy)
+                updatePopup(direction: direction, for: touch)
+            }
         }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        popupTimer?.invalidate()
-        stopDeleteTimer()
-        guard let touch = touches.first, touch == activeTouch else { return }
-        finishTouch(at: touch.location(in: self))
+        for touch in touches {
+            popupTimers[touch]?.invalidate()
+            popupTimers.removeValue(forKey: touch)
+            if activeTouches[touch]?.accessibilityIdentifier == "delete" {
+                stopDeleteTimer()
+            }
+            finishTouch(touch: touch, cancelled: false)
+        }
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        popupTimer?.invalidate()
-        stopDeleteTimer()
-        hidePopup()
-        if let btn = activeButton { animateKeyUp(btn) }
-        activeButton = nil
-        activeTouch = nil
+        for touch in touches {
+            popupTimers[touch]?.invalidate()
+            popupTimers.removeValue(forKey: touch)
+            if activeTouches[touch]?.accessibilityIdentifier == "delete" {
+                stopDeleteTimer()
+            }
+            finishTouch(touch: touch, cancelled: true)
+        }
     }
     
     private func startDeleteTimer() {
@@ -408,14 +475,11 @@ class FlickKeyboardView: UIView {
         deleteTimer = nil
     }
     
-    private func finishTouch(at point: CGPoint, cancelled: Bool = false) {
-        guard let btn = activeButton else {
-            activeTouch = nil
-            return
-        }
+    private func finishTouch(touch: UITouch, cancelled: Bool = false) {
+        guard let btn = activeTouches[touch] else { return }
         
         animateKeyUp(btn)
-        hidePopup()
+        hidePopup(for: touch)
         
         if !cancelled {
             if btn.accessibilityIdentifier == "dakuten" {
@@ -426,7 +490,8 @@ class FlickKeyboardView: UIView {
                     delegate?.flickKeyboardDidPressDakuten(self)
                 }
             } else if let keyData = keysMap[btn] {
-                // Kana key
+                let point = touch.location(in: self)
+                let startPoint = startPoints[touch] ?? point
                 let dx = point.x - startPoint.x
                 let dy = point.y - startPoint.y
                 let direction = detectDirection(dx: dx, dy: dy)
@@ -438,7 +503,6 @@ class FlickKeyboardView: UIView {
                     }
                 }
             } else {
-                // Special key
                 if btn.accessibilityIdentifier == "delete" {
                     delegate?.flickKeyboardDidPressDelete(self)
                 } else if btn.accessibilityIdentifier == "return" {
@@ -460,8 +524,8 @@ class FlickKeyboardView: UIView {
             }
         }
         
-        activeTouch = nil
-        activeButton = nil
+        activeTouches.removeValue(forKey: touch)
+        startPoints.removeValue(forKey: touch)
     }
     
     private func findButton(at point: CGPoint) -> UIView? {
@@ -492,7 +556,7 @@ class FlickKeyboardView: UIView {
     private func textForDirection(_ direction: FlickDirection, key: FlickKey) -> String? {
         var text: String?
         switch direction {
-        case .center: text = key.center
+        case .center: text = (currentPage == .alphabet) ? (key.left ?? key.center) : key.center
         case .left: text = key.left ?? key.center
         case .up: text = key.up ?? key.center
         case .right: text = key.right ?? key.center
@@ -508,7 +572,7 @@ class FlickKeyboardView: UIView {
     
     // MARK: - Popup
     
-    private func showPopup(for button: UIView) {
+    private func showPopup(for touch: UITouch, button: UIView) {
         guard let keyData = keysMap[button] else { return }
         
         let popup = UIView()
@@ -520,6 +584,7 @@ class FlickKeyboardView: UIView {
         let spacing: CGFloat = 3
         
         let directions: [FlickDirection] = [.center, .left, .up, .right, .down]
+        var labels: [FlickDirection: UILabel] = [:]
         
         for dir in directions {
             if dir != .center && textForDirection(dir, key: keyData) == nil { continue }
@@ -538,7 +603,7 @@ class FlickKeyboardView: UIView {
             label.text = textForDirection(dir, key: keyData) ?? ""
             label.translatesAutoresizingMaskIntoConstraints = false
             popup.addSubview(label)
-            popupLabels[dir] = label
+            labels[dir] = label
             
             NSLayoutConstraint.activate([
                 label.widthAnchor.constraint(equalToConstant: keyWidth),
@@ -563,25 +628,26 @@ class FlickKeyboardView: UIView {
         }
         
         addSubview(popup)
-        popupView = popup
+        popupViews[touch] = popup
+        popupLabelsDict[touch] = labels
         
         NSLayoutConstraint.activate([
             popup.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             popup.centerYAnchor.constraint(equalTo: button.centerYAnchor, constant: -10)
         ])
         
-        updatePopup(direction: .center, for: button)
+        updatePopup(direction: .center, for: touch)
     }
     
-    private func updatePopup(direction: FlickDirection, for button: UIView) {
-        guard popupView != nil else { return }
+    private func updatePopup(direction: FlickDirection, for touch: UITouch) {
+        guard let popup = popupViews[touch], let labels = popupLabelsDict[touch] else { return }
         
-        for (dir, label) in popupLabels {
+        for (dir, label) in labels {
             if dir == direction {
                 label.backgroundColor = UIColor.systemBlue
                 label.textColor = .white
                 label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
-                popupView?.bringSubviewToFront(label)
+                popup.bringSubviewToFront(label)
             } else {
                 label.backgroundColor = .white
                 label.textColor = .black
@@ -590,10 +656,10 @@ class FlickKeyboardView: UIView {
         }
     }
     
-    private func hidePopup() {
-        popupView?.removeFromSuperview()
-        popupView = nil
-        popupLabels.removeAll()
+    private func hidePopup(for touch: UITouch) {
+        popupViews[touch]?.removeFromSuperview()
+        popupViews.removeValue(forKey: touch)
+        popupLabelsDict.removeValue(forKey: touch)
     }
     
     // MARK: - Animations
@@ -646,29 +712,27 @@ class FlickKeyboardView: UIView {
                 let keyData = keys[rowIndex][colIndex]
                 keysMap[btn] = keyData
                 
-                if let label = btn.subviews.first(where: { $0 is UILabel }) as? UILabel {
-                    var text = keyData.center
-                    if currentPage == .alphabet && !isShifted {
-                        text = text.lowercased()
-                    }
-                    if rowIndex == 3 && colIndex == 0 {
-                        // The dakuten / shift button
-                        if currentPage == .alphabet {
+                if rowIndex == 3 && colIndex == 0 {
+                    // The dakuten / shift button
+                    if currentPage == .alphabet {
+                        if let label = btn.viewWithTag(100) as? UILabel {
                             label.text = isShifted ? "⬆︎" : "⇧"
-                            btn.accessibilityIdentifier = "dakuten" // Reuse for shift
-                        } else if currentPage == .kana {
-                            label.text = "゛゜小"
-                            btn.accessibilityIdentifier = "dakuten"
-                        } else {
-                            label.text = text
-                            btn.accessibilityIdentifier = nil
                         }
-                        // Change styling for the special button
-                        btn.backgroundColor = normalColor
+                        btn.accessibilityIdentifier = "dakuten" // Reuse for shift
+                    } else if currentPage == .kana {
+                        if let label = btn.viewWithTag(100) as? UILabel {
+                            label.text = "゛゜小"
+                        }
+                        btn.accessibilityIdentifier = "dakuten"
                     } else {
-                        label.text = text
-                        btn.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+                        updateHints(for: btn, keyData: keyData, isShifted: isShifted)
+                        btn.accessibilityIdentifier = nil
                     }
+                    // Change styling for the special button
+                    btn.backgroundColor = normalColor
+                } else {
+                    updateHints(for: btn, keyData: keyData, isShifted: isShifted)
+                    btn.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
                 }
             }
         }
