@@ -58,19 +58,19 @@ Tired of bloated keyboard apps with invasive permissions, annoying ads, and feat
 
 ## 🎹 Input Modes
 
-Switch between modes with a single tap on the mode button.
+Switch between modes seamlessly using the built-in mode buttons.
 
 | Mode | Button | Description |
 |:-----|:------:|:------------|
-| **English QWERTY** | `EN` | Standard English keyboard with Shift support |
-| **Japanese Romaji** | `あ` | Type romaji → auto-converts to hiragana in real-time |
-| **Flick Input** | `flick` | Japanese flick-style input — swipe to select characters |
+| **English QWERTY** | `🌐` | Standard English keyboard with Shift support |
+| **Flick Kana** | `🌐` / `あ` | Japanese flick-style input |
+| **Flick Alphabet** | `ABC` | Alphabet flick-style input with sub-labels |
+| **Flick Numbers** | `☆123` | Numbers and symbols flick-style input |
 
 ### 🔄 Mode Cycling
 
-```
-EN  →  あ  →  flick  →  EN  → ...
-```
+- Tap the Globe icon (🌐) to instantly toggle between QWERTY English and Flick Kana modes.
+- Tap the `ABC` or `☆123` keys within Flick mode to switch to Alphabet or Number layouts.
 
 ---
 
@@ -78,34 +78,24 @@ EN  →  あ  →  flick  →  EN  → ...
 
 <table>
 <tr>
-<td>
+<td width="50%" valign="top">
 
-#### ⌨️ Keyboard
+#### ⌨️ QWERTY Keyboard
 - Full QWERTY layout
 - Shift key (uppercase toggle)
 - Backspace & Return
-- 🌐 Keyboard switcher
+- Mode toggle button (Globe)
 - Press animation feedback
 
 </td>
-<td>
+<td width="50%" valign="top">
 
-#### 🇯🇵 Japanese
-- Romaji → Hiragana engine
-- Yōon (きゃ, しゅ, etc.)
-- Sokuon (っ) auto-detection
-- N-before-consonant → ん
-- Dakuten cycle (か→が→か)
-
-</td>
-<td>
-
-#### 📱 Flick
-- Directional swipe input
-- Popup character preview
-- Dakuten / Handakuten / Small
-- Punctuation row
-- iOS-native feel
+#### 📱 Flick Keyboard
+- Directional swipe input (Kana, ABC, 123)
+- Multi-touch support for fast typing
+- Clean and native-like hint labels
+- Auto-capitalization for Alphabet
+- Dakuten / Handakuten / Small character toggles
 
 </td>
 </tr>
@@ -133,10 +123,12 @@ open SimpleKeys.xcodeproj
 
 ### Option 2: SideStore / AltStore
 
-1. Go to **Actions** tab → **Build SimpleKeys for SideStore**
-2. Click **Run workflow**
-3. Download the IPA from the auto-generated **Release** (pre-release)
-4. Install via SideStore / AltStore
+The GitHub Action (`build-unsigned-ipa.yml`) runs automatically on every push!
+
+1. Go to the **Actions** tab on GitHub.
+2. Click the latest workflow run.
+3. Download the compiled IPA from the **Artifacts** section at the bottom (or from Releases if published).
+4. Install via SideStore / AltStore.
 
 ### ⚙️ Enable the Keyboard
 
@@ -144,28 +136,7 @@ open SimpleKeys.xcodeproj
 Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleKeys
 ```
 
----
-
-## 🏗️ Architecture
-
-```
-SimpleKeys/
-│
-├── SimpleKeys/                        # Container App
-│   ├── AppDelegate.swift
-│   ├── SceneDelegate.swift
-│   ├── ViewController.swift           # Setup instructions UI
-│   └── Info.plist
-│
-├── KeyboardExtension/                 # Keyboard Extension
-│   ├── KeyboardViewController.swift   # Main controller & mode switching
-│   ├── RomajiConverter.swift          # Romaji → Kana conversion engine
-│   ├── FlickKeyboardView.swift        # Flick input UI & gestures
-│   └── Info.plist
-│
-└── .github/workflows/
-    └── build-ipa.yml                  # CI: Build + nightly pre-release
-```
+**Important**: Turn on **"Allow Full Access"**! This is required to sync your settings (like QWERTY vs Flick preference) between the main app and the keyboard extension via App Groups.
 
 ---
 
@@ -174,8 +145,8 @@ SimpleKeys/
 | Status | Feature |
 |:------:|:--------|
 | ✅ | English QWERTY keyboard |
-| ✅ | Japanese Romaji → Hiragana |
-| ✅ | Flick input |
+| ✅ | Flick input (Kana, ABC, 123) |
+| ✅ | Multi-touch & fast typing |
 | ✅ | Dark mode |
 | ✅ | Nightly CI builds |
 | 🔲 | Kanji conversion (predictive) |
@@ -183,19 +154,21 @@ SimpleKeys/
 | 🔲 | User dictionary |
 | 🔲 | Emoji panel |
 | 🔲 | Haptic feedback |
-| 🔲 | Number & symbol keyboard |
 
 ---
 
 ## 🔒 Privacy
 
-SimpleKeys operates with **`RequestsOpenAccess = false`**.
+SimpleKeys requires **"Allow Full Access"** (`RequestsOpenAccess = true`), but we respect your privacy!
 
-This means:
-- 🚫 **No network access** — the keyboard cannot connect to the internet
-- 🚫 **No data collection** — nothing leaves your device
-- 🚫 **No clipboard access** — your copied data stays private
-- ✅ **Fully offline** — everything runs locally on your device
+Why we need Full Access:
+- Apple strictly isolates keyboards from their container apps. Full Access allows the keyboard to read your settings (e.g., Default Mode) using a shared App Group.
+
+What we **DON'T** do:
+- 🚫 **No network access** — the keyboard has zero code to connect to the internet.
+- 🚫 **No data collection** — nothing leaves your device.
+- 🚫 **No clipboard tracking** — your copied data stays private.
+- ✅ **Fully offline** — everything runs locally on your device.
 
 ---
 
