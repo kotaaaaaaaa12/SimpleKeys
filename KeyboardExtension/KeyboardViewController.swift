@@ -1,5 +1,19 @@
 import UIKit
 
+class MockDocumentProxy: NSObject, UITextDocumentProxy {
+    var documentContextBeforeInput: String? = nil
+    var documentContextAfterInput: String? = nil
+    var selectedText: String? = nil
+    var documentInputMode: UITextInputMode? = nil
+    var documentIdentifier: UUID = UUID()
+    func adjustTextPosition(byCharacterOffset offset: Int) {}
+    func setMarkedText(_ markedText: String, selectedRange: NSRange) {}
+    func unmarkText() {}
+    var hasText: Bool = false
+    func insertText(_ text: String) {}
+    func deleteBackward() {}
+}
+
 @objc(KeyboardViewController)
 class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var alternateKeysPopup: UIView?
@@ -70,6 +84,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     // UI Elements
     private var geminiDebounceTimer: Timer?
     
+    var isPreviewMode: Bool = false
+    var previewTheme: ThemeSettings?
+    private let mockProxy = MockDocumentProxy()
+    
+    override var textDocumentProxy: UITextDocumentProxy {
+        return isPreviewMode ? mockProxy : super.textDocumentProxy
+    }
+    
     private let kanjiConverter = KanjiConverter.shared
     
     private let letterRows: [[String]] = [
@@ -102,13 +124,26 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             currentMode = .qwertyRomaji
         }
         
-        setupConversionBar()
-        setupQWERTYKeyboard()
+        view.backgroundColor = .systemGray4
+        
         setupFlickKeyboard()
+        setupQWERTYKeyboard()
+        setupConversionBar()
+        setupExpandedCandidateView()
+        
+        if let modeStr = defaults?.string(forKey: "keyboardMode") {
+            if modeStr == "flick", enableFlick { currentMode = .flickKana }
+            if modeStr == "qwertyEn", enableQwertyEn { currentMode = .qwertyEnglish }
+            if modeStr == "qwertyJa", enableQwertyJa { currentMode = .qwertyRomaji }
+        }
         applyMode()
         
+        updateNextKeyboardButtonVisibility()
+        updateAppearance()
+        applyTheme()
+        
         let heightConstraint = view.heightAnchor.constraint(equalToConstant: 260)
-        heightConstraint.priority = .defaultHigh
+        heightConstraint.priority = isPreviewMode ? .defaultLow : .defaultHigh
         heightConstraint.isActive = true
     }
     
@@ -187,7 +222,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         }
         
         var theme = ThemeSettings(keyStyle: 0)
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+        if let preview = previewTheme {
+            theme = preview
+        } else if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
            let saved = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
             theme = saved
         }
@@ -203,6 +240,19 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         }
         
         flickKeyboard?.applyTheme(theme)
+    }
+    
+    func updatePreviewTheme() {
+        applyTheme()
+        if currentMode != .flickKana {
+            updateButtonColors()
+        }
+    }
+    
+    func setPreviewMode(isQwerty: Bool) {
+        self.currentMode = isQwerty ? .qwertyEnglish : .flickKana
+        applyMode()
+        updatePreviewTheme()
     }
     
     override func textDidChange(_ textInput: UITextInput?) {
@@ -897,7 +947,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     private func updateButtonColors() {
         var theme = ThemeSettings(keyStyle: 0)
-        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+        if let preview = previewTheme {
+            theme = preview
+        } else if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
            let saved = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
             theme = saved
         }
@@ -905,7 +957,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let customBg = theme.keyColorHex != nil ? UIColor(hex: theme.keyColorHex!) : nil
         let letterBg = customBg ?? (isDark ? UIColor(white: 0.35, alpha: 1.0) : .white)
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        let defaultTextColor = isDark ? UIColor.white : UIColor.black
+        let defaultTextColor = UIColor.black
         let textColor = theme.textColorHex != nil ? (UIColor(hex: theme.textColorHex!) ?? defaultTextColor) : defaultTextColor
         
         qwertyStack.subviews.forEach { row in

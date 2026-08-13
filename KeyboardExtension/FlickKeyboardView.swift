@@ -450,7 +450,7 @@ class FlickKeyboardView: UIView {
         let clearBgAlpha = 0.15 * opacity
         
         let isDark = self.isDarkMode
-        let defaultTextCol = isDark ? UIColor.white : UIColor.black
+        let defaultTextCol = UIColor.black
         let textCol = theme.textColorHex != nil ? (UIColor(hex: theme.textColorHex!) ?? defaultTextCol) : defaultTextCol
         
         let defaultKeyBgCol = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
