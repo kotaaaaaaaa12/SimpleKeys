@@ -1,88 +1,223 @@
-# 🎹 SimpleKeys
+<div align="center">
 
-**シンプルで使いやすい、日本語対応カスタムキーボードアプリ**
+# ⌨️ SimpleKeys
 
-Simejiのような余計な機能がない、軽量でプライバシーを重視したiOS用キーボードです。
+### A lightweight, privacy-first custom keyboard for iOS
 
-## ✨ 機能
+**No ads. No tracking. No bloat. Just typing.**
 
-### キーボードモード
-| モード | 説明 |
-|--------|------|
-| 🔤 English QWERTY | 標準的な英語キーボード（Shift対応） |
-| 🇯🇵 日本語ローマ字 | ローマ字入力 → ひらがな自動変換 |
-| 📱 フリック入力 | iOS標準風フリック入力 |
+[![iOS 15.0+](https://img.shields.io/badge/iOS-15.0%2B-007AFF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
+[![Swift 5](https://img.shields.io/badge/Swift-5-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![Build](https://img.shields.io/badge/Build-Nightly-blueviolet?style=for-the-badge&logo=github-actions&logoColor=white)](.github/workflows/build-ipa.yml)
 
-### 対応機能
-- ⬆️ Shiftキー（大文字/小文字切替）
-- ⌫ バックスペース
-- 🌐 キーボード切替（他のキーボードへ）
-- 🔄 入力モード切替（EN → あ → flick）
-- 🌙 ダークモード自動対応
-- ✨ キー押下アニメーション
-- 📝 ローマ字 → ひらがなリアルタイム変換
-- 👆 フリックジェスチャー（上下左右）
-- ゛ 濁点・半濁点・小文字変換サイクル
+<br>
 
-## 📱 対応環境
+🌐 **[日本語](README.ja.md)** · English
 
-- iOS 15.0+
-- iPhone / iPad
+<br>
 
-## 🚀 インストール方法
+<img src="https://img.shields.io/badge/QWERTY-English-4A90D9?style=flat-square" alt="QWERTY">
+<img src="https://img.shields.io/badge/ローマ字-Japanese-E84855?style=flat-square" alt="Romaji">
+<img src="https://img.shields.io/badge/フリック-Flick-34C759?style=flat-square" alt="Flick">
 
-### Xcode から
-1. `SimpleKeys.xcodeproj` を Xcode で開く
-2. Signing & Capabilities で Team を設定
-3. 実機にビルド & インストール
+</div>
 
-### SideStore / AltStore から
-1. GitHub Actions の `Build SimpleKeys for SideStore` を実行
-2. Artifacts から IPA をダウンロード
-3. SideStore / AltStore でインストール
+---
 
-### キーボードの有効化
-1. **設定** > **一般** > **キーボード**
-2. **キーボード** > **新しいキーボードを追加**
-3. **SimpleKeys** を選択
+## ✨ Why SimpleKeys?
 
-## 🏗️ プロジェクト構成
+Tired of bloated keyboard apps with invasive permissions, annoying ads, and features you never asked for? **SimpleKeys** is a clean, open-source keyboard built from scratch — designed to do one thing well: **let you type.**
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎯 What SimpleKeys does
+- ✅ Fast, responsive typing
+- ✅ Multiple input modes
+- ✅ Dark mode support
+- ✅ Zero network access
+- ✅ Open source & transparent
+
+</td>
+<td width="50%">
+
+### 🚫 What SimpleKeys doesn't do
+- ❌ Collect your data
+- ❌ Show ads
+- ❌ Require internet access
+- ❌ Slow down your phone
+- ❌ Sell your typing habits
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🎹 Input Modes
+
+Switch between modes with a single tap on the mode button.
+
+| Mode | Button | Description |
+|:-----|:------:|:------------|
+| **English QWERTY** | `EN` | Standard English keyboard with Shift support |
+| **Japanese Romaji** | `あ` | Type romaji → auto-converts to hiragana in real-time |
+| **Flick Input** | `flick` | Japanese flick-style input — swipe to select characters |
+
+### 🔄 Mode Cycling
+
+```
+EN  →  あ  →  flick  →  EN  → ...
+```
+
+---
+
+## 🧩 Features
+
+<table>
+<tr>
+<td>
+
+#### ⌨️ Keyboard
+- Full QWERTY layout
+- Shift key (uppercase toggle)
+- Backspace & Return
+- 🌐 Keyboard switcher
+- Press animation feedback
+
+</td>
+<td>
+
+#### 🇯🇵 Japanese
+- Romaji → Hiragana engine
+- Yōon (きゃ, しゅ, etc.)
+- Sokuon (っ) auto-detection
+- N-before-consonant → ん
+- Dakuten cycle (か→が→か)
+
+</td>
+<td>
+
+#### 📱 Flick
+- Directional swipe input
+- Popup character preview
+- Dakuten / Handakuten / Small
+- Punctuation row
+- iOS-native feel
+
+</td>
+</tr>
+</table>
+
+### 🌙 Appearance
+
+Automatically adapts to **Light** and **Dark** mode with iOS-accurate key styling — rounded corners, subtle shadows, and proper spacing.
+
+---
+
+## 📦 Installation
+
+### Option 1: Build from Source (Xcode)
+
+```bash
+git clone https://github.com/kotaaaaaaaa12/SimpleKeys.git
+cd SimpleKeys
+open SimpleKeys.xcodeproj
+```
+
+1. Set your **Signing Team** in Xcode
+2. Build & run on your device
+3. Enable the keyboard (see below)
+
+### Option 2: SideStore / AltStore
+
+1. Go to **Actions** tab → **Build SimpleKeys for SideStore**
+2. Click **Run workflow**
+3. Download the IPA from the auto-generated **Release** (pre-release)
+4. Install via SideStore / AltStore
+
+### ⚙️ Enable the Keyboard
+
+```
+Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleKeys
+```
+
+---
+
+## 🏗️ Architecture
 
 ```
 SimpleKeys/
-├── SimpleKeys/                    # メインアプリ（設定画面）
+│
+├── SimpleKeys/                        # Container App
 │   ├── AppDelegate.swift
 │   ├── SceneDelegate.swift
-│   ├── ViewController.swift
+│   ├── ViewController.swift           # Setup instructions UI
 │   └── Info.plist
-├── KeyboardExtension/             # キーボード本体
-│   ├── KeyboardViewController.swift   # メインコントローラ
-│   ├── RomajiConverter.swift          # ローマ字→かな変換エンジン
-│   ├── FlickKeyboardView.swift        # フリック入力UI
+│
+├── KeyboardExtension/                 # Keyboard Extension
+│   ├── KeyboardViewController.swift   # Main controller & mode switching
+│   ├── RomajiConverter.swift          # Romaji → Kana conversion engine
+│   ├── FlickKeyboardView.swift        # Flick input UI & gestures
 │   └── Info.plist
+│
 └── .github/workflows/
-    └── build-ipa.yml              # unsigned IPA 自動ビルド
+    └── build-ipa.yml                  # CI: Build + nightly pre-release
 ```
 
-## 🗺️ ロードマップ
+---
 
-- [x] 英語QWERTYキーボード
-- [x] 日本語ローマ字入力（ひらがな変換）
-- [x] フリック入力
-- [x] ダークモード対応
-- [x] GitHub Actions CI
-- [ ] 漢字変換（予測変換）
-- [ ] テーマ・着せ替え機能
-- [ ] 学習辞書
-- [ ] 絵文字パネル
-- [ ] カスタムフォント
-- [ ] 触覚フィードバック
+## 🗺️ Roadmap
 
-## 🔒 プライバシー
+| Status | Feature |
+|:------:|:--------|
+| ✅ | English QWERTY keyboard |
+| ✅ | Japanese Romaji → Hiragana |
+| ✅ | Flick input |
+| ✅ | Dark mode |
+| ✅ | Nightly CI builds |
+| 🔲 | Kanji conversion (predictive) |
+| 🔲 | Custom themes |
+| 🔲 | User dictionary |
+| 🔲 | Emoji panel |
+| 🔲 | Haptic feedback |
+| 🔲 | Number & symbol keyboard |
 
-SimpleKeysは **RequestsOpenAccess = false** で動作します。
-ネットワークアクセスやデータ収集は一切行いません。
+---
+
+## 🔒 Privacy
+
+SimpleKeys operates with **`RequestsOpenAccess = false`**.
+
+This means:
+- 🚫 **No network access** — the keyboard cannot connect to the internet
+- 🚫 **No data collection** — nothing leaves your device
+- 🚫 **No clipboard access** — your copied data stays private
+- ✅ **Fully offline** — everything runs locally on your device
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- 🐛 Report bugs via [Issues](https://github.com/kotaaaaaaaa12/SimpleKeys/issues)
+- 💡 Suggest features
+- 🔧 Submit pull requests
+
+---
 
 ## 📄 License
 
-MIT License
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Built with ❤️ for people who just want to type.**
+
+<sub>SimpleKeys is not affiliated with Apple Inc.</sub>
+
+</div>
