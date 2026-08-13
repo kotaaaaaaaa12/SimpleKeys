@@ -640,6 +640,23 @@ class MyThemesViewController: UITableViewController {
         }
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        let defaults = AppGroupHelper.shared.userDefaults
+        if let crashLog = defaults?.string(forKey: "lastCrashLog") {
+            let alert = UIAlertController(title: "Crash Detected", message: crashLog, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Copy & Clear", style: .default, handler: { _ in
+                UIPasteboard.general.string = crashLog
+                defaults?.removeObject(forKey: "lastCrashLog")
+                defaults?.synchronize()
+            }))
+            alert.addAction(UIAlertAction(title: "Close", style: .cancel, handler: nil))
+            present(alert, animated: true, completion: nil)
+        }
+    }
+    }
+    
     private func saveThemes() {
         if let data = try? JSONEncoder().encode(themes) {
             AppGroupHelper.shared.userDefaults?.set(data, forKey: ThemeSettings.themesArrayKey)
