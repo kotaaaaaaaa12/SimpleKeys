@@ -1112,7 +1112,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 }
                 if let sel = selected, gesture.state == .ended {
                     textDocumentProxy.insertText(sel)
-                    UIDevice.current.playInputClick()
+                    triggerHaptic()
                     
                     if shiftState == .shifted {
                         shiftState = .off
@@ -1227,7 +1227,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             updateButtonColors()
         }
         
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func shiftPressed() {
@@ -1245,7 +1245,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         qwertyShifted = (shiftState != .off)
         rebuildQWERTYLayout()
         updateButtonColors()
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func switchToNumbers() {
@@ -1258,19 +1258,19 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             currentMode = .qwertyNumbers
         }
         applyMode()
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func switchToSymbols() {
         currentMode = .qwertySymbols
         applyMode()
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func switchToEnglish() {
         currentMode = .qwertyEnglish
         applyMode()
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func spacePressed() {
@@ -1279,7 +1279,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         } else {
             textDocumentProxy.insertText(" ")
         }
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func returnPressed() {
@@ -1290,11 +1290,11 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             if !text.isEmpty { textDocumentProxy.insertText(text) }
             englishBuffer = ""
             updateConversionBar()
-            UIDevice.current.playInputClick()
+            triggerHaptic()
             return
         }
         textDocumentProxy.insertText("\n")
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func deleteTouchDown() {
@@ -1334,7 +1334,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         } else {
             textDocumentProxy.deleteBackward()
         }
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     @objc private func keyTouchDown(_ sender: UIButton) {
@@ -1346,7 +1346,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     @objc private func keyTouchUp(_ sender: UIButton) {
         lastFlickTapBaseChar = nil
-        UIDevice.current.playInputClick()
+        triggerHaptic()
         UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = .identity
             sender.alpha = 1.0
@@ -1366,20 +1366,23 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     @objc private func handleQwertySpaceLongPress(_ gesture: UILongPressGestureRecognizer) {
         let point = gesture.location(in: view)
         
+        let sensitivity = AppGroupHelper.shared.userDefaults?.float(forKey: "cursorSensitivity") ?? 1.0
+        let threshold = CGFloat(20.0 / max(0.1, sensitivity))
+        
         if gesture.state == .began {
             qwertySpaceDragStart = point
             setKeyboardLabelsAlpha(0.0)
-            UIDevice.current.playInputClick()
+            triggerHaptic()
         } else if gesture.state == .changed {
             let dx = point.x - qwertySpaceDragStart.x
-            if dx > 20 {
+            if dx > threshold {
                 textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
-                qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x + 20, y: qwertySpaceDragStart.y)
-                UIDevice.current.playInputClick()
-            } else if dx < -20 {
+                qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x + threshold, y: qwertySpaceDragStart.y)
+                triggerHaptic()
+            } else if dx < -threshold {
                 textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
-                qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x - 20, y: qwertySpaceDragStart.y)
-                UIDevice.current.playInputClick()
+                qwertySpaceDragStart = CGPoint(x: qwertySpaceDragStart.x - threshold, y: qwertySpaceDragStart.y)
+                triggerHaptic()
             }
         } else if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
             setKeyboardLabelsAlpha(1.0)
@@ -1528,7 +1531,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         
         currentMode = nextMode
         applyMode()
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView) {
@@ -1543,7 +1546,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     func flickKeyboardDidFlickDeleteLeft(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
-        UIDevice.current.playInputClick()
+        triggerHaptic()
         
         if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
             _ = romajiConverter.commit()
@@ -1570,7 +1573,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     func flickKeyboardDidFlickDeleteUp(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
-        UIDevice.current.playInputClick()
+        triggerHaptic()
         
         if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
             _ = romajiConverter.commit()
@@ -1596,16 +1599,16 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         lastFlickTapBaseChar = nil
         if direction == .right {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
-            UIDevice.current.playInputClick()
+            triggerHaptic()
         } else if direction == .left {
             textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
-            UIDevice.current.playInputClick()
+            triggerHaptic()
         }
     }
     
     func flickKeyboardDidBeginSpaceDrag(_ keyboard: FlickKeyboardView) {
         setKeyboardLabelsAlpha(0.0)
-        UIDevice.current.playInputClick()
+        triggerHaptic()
     }
     
     func flickKeyboardDidEndSpaceDrag(_ keyboard: FlickKeyboardView) {
@@ -1682,7 +1685,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
                 updateConversionBar()
             }
-            UIDevice.current.playInputClick()
+            triggerHaptic()
             return
         }
         
@@ -1745,7 +1748,22 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             textDocumentProxy.insertText("゛")
         }
         
-        UIDevice.current.playInputClick()
+        triggerHaptic()
+    }
+    
+    // MARK: - Haptic Feedback
+    func triggerHaptic() {
+        if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
+            let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
+            let style: UIImpactFeedbackGenerator.FeedbackStyle = {
+                if strength < 0.5 { return .light }
+                if strength < 1.5 { return .medium }
+                return .heavy
+            }()
+            UIImpactFeedbackGenerator(style: style).impactOccurred()
+        } else {
+            UIDevice.current.playInputClick()
+        }
     }
 }
 

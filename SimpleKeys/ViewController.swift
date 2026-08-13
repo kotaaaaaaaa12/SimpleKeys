@@ -368,7 +368,7 @@ class SettingsViewController: UITableViewController {
             cell.imageView?.image = UIImage(systemName: "book.fill")
             cell.accessoryType = .disclosureIndicator
         } else if indexPath.section == 6 {
-            if indexPath.row > 1 {
+            if indexPath.row > 2 {
                 cell.textLabel?.textColor = .secondaryLabel
                 cell.detailTextLabel?.textColor = .tertiaryLabel
                 cell.imageView?.tintColor = .systemGray
@@ -385,21 +385,22 @@ class SettingsViewController: UITableViewController {
                 cell.imageView?.image = UIImage(systemName: "textformat")
                 cell.accessoryType = .disclosureIndicator
             } else if indexPath.row == 2 {
-                cell.textLabel?.text = isEn ? "Real-time AI Translation" : "AIリアルタイム翻訳＆トーン変換"
-                cell.detailTextLabel?.text = isEn ? "Translate or change text tone instantly" : "入力中のテキストを自動翻訳したり、敬語などに変換します"
-                cell.imageView?.image = UIImage(systemName: "character.bubble.fill")
-            } else if indexPath.row == 3 {
-                cell.textLabel?.text = isEn ? "Clipboard & Snippets" : "クリップボード履歴＆定型文ボード"
-                cell.detailTextLabel?.text = isEn ? "Access copy history and quick phrases" : "過去のコピー履歴やよく使う定型文をワンタップで入力"
-                cell.imageView?.image = UIImage(systemName: "doc.on.clipboard.fill")
-            } else if indexPath.row == 4 {
-                cell.textLabel?.text = isEn ? "AI Emoji Suggestion" : "AI文脈絵文字・顔文字サジェスト"
-                cell.detailTextLabel?.text = isEn ? "Smart emoji suggestions based on context" : "文章の感情に合わせて最適な絵文字・顔文字をAIが提案"
-                cell.imageView?.image = UIImage(systemName: "face.smiling.fill")
-            } else if indexPath.row == 5 {
                 cell.textLabel?.text = isEn ? "Haptics & Sensitivity Settings" : "振動・カーソル感度の詳細カスタマイズ"
                 cell.detailTextLabel?.text = isEn ? "Fine-tune vibration and cursor speed" : "キーを弾いた時の振動やカーソル移動のスピードを調整"
                 cell.imageView?.image = UIImage(systemName: "slider.horizontal.3")
+                cell.accessoryType = .disclosureIndicator
+            } else if indexPath.row == 3 {
+                cell.textLabel?.text = isEn ? "Real-time AI Translation" : "AIリアルタイム翻訳＆トーン変換"
+                cell.detailTextLabel?.text = isEn ? "Translate or change text tone instantly" : "入力中のテキストを自動翻訳したり、敬語などに変換します"
+                cell.imageView?.image = UIImage(systemName: "character.bubble.fill")
+            } else if indexPath.row == 4 {
+                cell.textLabel?.text = isEn ? "Clipboard & Snippets" : "クリップボード履歴＆定型文ボード"
+                cell.detailTextLabel?.text = isEn ? "Access copy history and quick phrases" : "過去のコピー履歴やよく使う定型文をワンタップで入力"
+                cell.imageView?.image = UIImage(systemName: "doc.on.clipboard.fill")
+            } else if indexPath.row == 5 {
+                cell.textLabel?.text = isEn ? "AI Emoji Suggestion" : "AI文脈絵文字・顔文字サジェスト"
+                cell.detailTextLabel?.text = isEn ? "Smart emoji suggestions based on context" : "文章の感情に合わせて最適な絵文字・顔文字をAIが提案"
+                cell.imageView?.image = UIImage(systemName: "face.smiling.fill")
             }
         }
         
@@ -424,6 +425,10 @@ class SettingsViewController: UITableViewController {
             } else if indexPath.row == 1 {
                 tableView.deselectRow(at: indexPath, animated: true)
                 let vc = FontManagerViewController()
+                navigationController?.pushViewController(vc, animated: true)
+            } else if indexPath.row == 2 {
+                tableView.deselectRow(at: indexPath, animated: true)
+                let vc = HapticsSensitivityViewController()
                 navigationController?.pushViewController(vc, animated: true)
             }
         }
@@ -1294,5 +1299,177 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         } else {
             picker.dismiss(animated: true)
         }
+    }
+}
+
+// MARK: - Haptics & Sensitivity Settings
+class HapticsSensitivityViewController: UITableViewController {
+    
+    private let hapticSwitch = UISwitch()
+    private let hapticSlider = UISlider()
+    private let cursorSlider = UISlider()
+    
+    init() {
+        super.init(style: .insetGrouped)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        title = isEn ? "Haptics & Sensitivity" : "振動・カーソル感度"
+        
+        hapticSwitch.isOn = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticEnabled") as? Bool ?? false
+        hapticSwitch.addTarget(self, action: #selector(hapticSwitchChanged), for: .valueChanged)
+        
+        hapticSlider.minimumValue = 0
+        hapticSlider.maximumValue = 2
+        hapticSlider.isContinuous = false
+        hapticSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticStrength") as? Float ?? 0.0
+        hapticSlider.addTarget(self, action: #selector(hapticSliderChanged), for: .valueChanged)
+        
+        cursorSlider.minimumValue = 0.5
+        cursorSlider.maximumValue = 2.5
+        cursorSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "cursorSensitivity") as? Float ?? 1.0
+        cursorSlider.addTarget(self, action: #selector(cursorSliderChanged), for: .valueChanged)
+    }
+    
+    @objc private func hapticSwitchChanged() {
+        AppGroupHelper.shared.userDefaults?.set(hapticSwitch.isOn, forKey: "customHapticEnabled")
+        tableView.reloadData()
+        
+        if hapticSwitch.isOn {
+            let style: UIImpactFeedbackGenerator.FeedbackStyle = {
+                let val = Int(round(hapticSlider.value))
+                if val == 0 { return .light }
+                if val == 1 { return .medium }
+                return .heavy
+            }()
+            UIImpactFeedbackGenerator(style: style).impactOccurred()
+        }
+    }
+    
+    @objc private func hapticSliderChanged() {
+        hapticSlider.value = round(hapticSlider.value)
+        AppGroupHelper.shared.userDefaults?.set(hapticSlider.value, forKey: "customHapticStrength")
+        
+        let style: UIImpactFeedbackGenerator.FeedbackStyle = {
+            let val = Int(hapticSlider.value)
+            if val == 0 { return .light }
+            if val == 1 { return .medium }
+            return .heavy
+        }()
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    }
+    
+    @objc private func cursorSliderChanged() {
+        AppGroupHelper.shared.userDefaults?.set(cursorSlider.value, forKey: "cursorSensitivity")
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return 2
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if section == 0 {
+            return hapticSwitch.isOn ? 2 : 1
+        }
+        return 1
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        if section == 0 {
+            return isEn ? "Haptic Feedback (Vibration)" : "触覚フィードバック (振動)"
+        }
+        return isEn ? "Cursor Sensitivity" : "カーソル移動の感度"
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        if section == 0 {
+            return isEn ? "Custom vibration when pressing keys. (Note: Apple's default keyboard sounds may still play based on system settings)." : "キーを押した時の独自の振動を設定します。（※システムのキーボード音設定がオンの場合、標準の音と振動も同時に鳴る場合があります）"
+        }
+        return isEn ? "Adjust how fast the cursor moves when dragging the space bar." : "空白キーを長押しして左右にスライドした時の、カーソル移動の速さを調整します。"
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
+        cell.selectionStyle = .none
+        
+        if indexPath.section == 0 {
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Enable Custom Haptics" : "独自の振動をオン"
+                cell.accessoryView = hapticSwitch
+            } else {
+                cell.textLabel?.text = isEn ? "Strength" : "振動の強さ"
+                hapticSlider.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(hapticSlider)
+                
+                let minLabel = UILabel()
+                minLabel.text = isEn ? "Light" : "弱"
+                minLabel.font = .systemFont(ofSize: 12)
+                minLabel.textColor = .secondaryLabel
+                minLabel.translatesAutoresizingMaskIntoConstraints = false
+                
+                let maxLabel = UILabel()
+                maxLabel.text = isEn ? "Heavy" : "強"
+                maxLabel.font = .systemFont(ofSize: 12)
+                maxLabel.textColor = .secondaryLabel
+                maxLabel.translatesAutoresizingMaskIntoConstraints = false
+                
+                cell.contentView.addSubview(minLabel)
+                cell.contentView.addSubview(maxLabel)
+                
+                NSLayoutConstraint.activate([
+                    hapticSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    hapticSlider.leadingAnchor.constraint(equalTo: cell.textLabel!.trailingAnchor, constant: 16),
+                    hapticSlider.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    
+                    minLabel.topAnchor.constraint(equalTo: hapticSlider.bottomAnchor, constant: 2),
+                    minLabel.leadingAnchor.constraint(equalTo: hapticSlider.leadingAnchor),
+                    
+                    maxLabel.topAnchor.constraint(equalTo: hapticSlider.bottomAnchor, constant: 2),
+                    maxLabel.trailingAnchor.constraint(equalTo: hapticSlider.trailingAnchor)
+                ])
+            }
+        } else {
+            cell.textLabel?.text = isEn ? "Speed" : "速さ"
+            cursorSlider.translatesAutoresizingMaskIntoConstraints = false
+            cell.contentView.addSubview(cursorSlider)
+            
+            let minLabel = UILabel()
+            minLabel.text = isEn ? "Slow" : "遅い"
+            minLabel.font = .systemFont(ofSize: 12)
+            minLabel.textColor = .secondaryLabel
+            minLabel.translatesAutoresizingMaskIntoConstraints = false
+            
+            let maxLabel = UILabel()
+            maxLabel.text = isEn ? "Fast" : "速い"
+            maxLabel.font = .systemFont(ofSize: 12)
+            maxLabel.textColor = .secondaryLabel
+            maxLabel.translatesAutoresizingMaskIntoConstraints = false
+            
+            cell.contentView.addSubview(minLabel)
+            cell.contentView.addSubview(maxLabel)
+            
+            NSLayoutConstraint.activate([
+                cursorSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                cursorSlider.leadingAnchor.constraint(equalTo: cell.textLabel!.trailingAnchor, constant: 16),
+                cursorSlider.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                
+                minLabel.topAnchor.constraint(equalTo: cursorSlider.bottomAnchor, constant: 2),
+                minLabel.leadingAnchor.constraint(equalTo: cursorSlider.leadingAnchor),
+                
+                maxLabel.topAnchor.constraint(equalTo: cursorSlider.bottomAnchor, constant: 2),
+                maxLabel.trailingAnchor.constraint(equalTo: cursorSlider.trailingAnchor)
+            ])
+        }
+        
+        return cell
     }
 }

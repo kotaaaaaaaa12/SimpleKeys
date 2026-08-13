@@ -633,13 +633,16 @@ class FlickKeyboardView: UIView {
                 let isDragging = isSpaceDragging[touch] ?? false
                 let dx = currentPoint.x - start.x
                 
+                let sensitivity = AppGroupHelper.shared.userDefaults?.float(forKey: "cursorSensitivity") ?? 1.0
+                let threshold = CGFloat(20.0 / max(0.1, sensitivity))
+                
                 if isDragging {
-                    if dx > 20 {
+                    if dx > threshold {
                         delegate?.flickKeyboardDidSwipeSpace(self, direction: .right)
-                        startPoints[touch] = CGPoint(x: start.x + 20, y: start.y)
-                    } else if dx < -20 {
+                        startPoints[touch] = CGPoint(x: start.x + threshold, y: start.y)
+                    } else if dx < -threshold {
                         delegate?.flickKeyboardDidSwipeSpace(self, direction: .left)
-                        startPoints[touch] = CGPoint(x: start.x - 20, y: start.y)
+                        startPoints[touch] = CGPoint(x: start.x - threshold, y: start.y)
                     }
                 } else {
                     if abs(dx) > 15 {
@@ -716,8 +719,7 @@ class FlickKeyboardView: UIView {
             self?.deleteTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
                 guard let self = self else { return }
                 self.delegate?.flickKeyboardDidPressDelete(self)
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
+                self.triggerHaptic()
             }
         }
     }
@@ -1176,6 +1178,21 @@ class FlickKeyboardView: UIView {
     func setReturnKeyTitle(_ title: String) {
         if let lbl = returnButton?.viewWithTag(999) as? UILabel {
             lbl.text = title
+        }
+    }
+    
+    // MARK: - Haptic Feedback
+    private func triggerHaptic() {
+        if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
+            let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
+            let style: UIImpactFeedbackGenerator.FeedbackStyle = {
+                if strength < 0.5 { return .light }
+                if strength < 1.5 { return .medium }
+                return .heavy
+            }()
+            UIImpactFeedbackGenerator(style: style).impactOccurred()
+        } else {
+            UIDevice.current.playInputClick()
         }
     }
 }
