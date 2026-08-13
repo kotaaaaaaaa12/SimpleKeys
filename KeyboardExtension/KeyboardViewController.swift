@@ -1,5 +1,6 @@
 import UIKit
 
+@objc(KeyboardViewController)
 class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     // MARK: - Types
