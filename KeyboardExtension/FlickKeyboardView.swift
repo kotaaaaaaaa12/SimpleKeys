@@ -445,7 +445,7 @@ class FlickKeyboardView: UIView {
         let allKeys = Array(keysMap.keys) + [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].compactMap { $0 }
         
         let opacity = theme.keyOpacity ?? 1.0
-        let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
+        let defaultBorderCol = UIColor.black.withAlphaComponent(0.3).cgColor
         let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
         let clearBgAlpha = 0.15 * opacity
         
@@ -472,7 +472,7 @@ class FlickKeyboardView: UIView {
                 keyView.backgroundColor = .clear
                 keyView.layer.shadowOpacity = 0
                 keyView.layer.borderWidth = 1
-                keyView.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+                keyView.layer.borderColor = borderCol
             } else if isFrosted || isClear {
                 keyView.backgroundColor = isClear ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
                 keyView.layer.shadowOpacity = 0
@@ -515,9 +515,15 @@ class FlickKeyboardView: UIView {
             
             if let lbl = keyView.viewWithTag(100) as? UILabel {
                 lbl.textColor = textCol
+                if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: lbl.font.pointSize) {
+                    lbl.font = customFont
+                }
             }
             if let sub = keyView.viewWithTag(105) as? UILabel {
                 sub.textColor = textCol.withAlphaComponent(0.6)
+                if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: sub.font.pointSize) {
+                    sub.font = customFont
+                }
             }
             for subview in keyView.subviews {
                 if let img = subview as? UIImageView {
@@ -822,6 +828,15 @@ class FlickKeyboardView: UIView {
         
         fullPopupModes[touch] = isFull
         
+        // Read theme colors
+        var popupBg = UIColor.white
+        var popupTextCol = UIColor.black
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            if let hex = theme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
+            if let hex = theme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
+        }
+        
         let popup = UIView()
         popup.translatesAutoresizingMaskIntoConstraints = false
         
@@ -837,9 +852,9 @@ class FlickKeyboardView: UIView {
             
             let label = UILabel()
             label.font = .systemFont(ofSize: 22, weight: .semibold)
-            label.textColor = .black
+            label.textColor = popupTextCol
             label.textAlignment = .center
-            label.backgroundColor = .white
+            label.backgroundColor = popupBg
             label.layer.cornerRadius = 6
             label.layer.masksToBounds = true
             label.layer.shadowColor = UIColor.black.cgColor
@@ -874,7 +889,7 @@ class FlickKeyboardView: UIView {
         }
         
         let bgLayer = CAShapeLayer()
-        bgLayer.fillColor = UIColor.white.cgColor
+        bgLayer.fillColor = popupBg.cgColor
         bgLayer.shadowColor = UIColor.black.cgColor
         bgLayer.shadowOpacity = 0.2
         bgLayer.shadowOffset = CGSize(width: 0, height: 1)
@@ -899,23 +914,34 @@ class FlickKeyboardView: UIView {
         let isFull = fullPopupModes[touch] ?? false
         let bgLayer = popupBgLayers[touch]
         
+        // Read theme colors
+        var popupBg = UIColor.white
+        var popupTextCol = UIColor.black
+        var highlightCol = UIColor.systemBlue
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            if let hex = theme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
+            if let hex = theme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
+            if let hex = theme.flickHighlightHex { highlightCol = UIColor(hex: hex) ?? .systemBlue }
+        }
+        
         for (dir, label) in labels {
             if dir == direction {
                 label.isHidden = false
                 popup.bringSubviewToFront(label)
                 if isFull {
-                    label.backgroundColor = UIColor.systemBlue
+                    label.backgroundColor = highlightCol
                     label.textColor = .white
                     label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
                 } else {
                     label.backgroundColor = .clear
-                    label.textColor = .black
+                    label.textColor = popupTextCol
                     label.transform = .identity
                 }
             } else {
                 if isFull {
-                    label.backgroundColor = .white
-                    label.textColor = .black
+                    label.backgroundColor = popupBg
+                    label.textColor = popupTextCol
                     label.transform = .identity
                     label.isHidden = false
                 } else {
@@ -954,8 +980,8 @@ class FlickKeyboardView: UIView {
             arrow.close()
             path.append(arrow)
             bgLayer?.path = path.cgPath
-            bgLayer?.fillColor = UIColor.white.cgColor
-            bgLayer?.strokeColor = UIColor(white: 0.8, alpha: 1.0).cgColor
+            bgLayer?.fillColor = popupBg.cgColor
+            bgLayer?.strokeColor = popupBg.withAlphaComponent(0.6).cgColor
             bgLayer?.lineWidth = 0.5
         } else {
             bgLayer?.path = nil

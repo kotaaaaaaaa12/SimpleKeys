@@ -76,6 +76,9 @@ struct ThemeSettings: Codable, Equatable {
     var textColorHex: String?
     var keyBorderColorHex: String?
     var keyOpacity: CGFloat?
+    var flickPopupBgHex: String?       // Flick popup background color
+    var flickPopupTextHex: String?     // Flick popup text color
+    var flickHighlightHex: String?     // Flick popup selected highlight color
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"
@@ -1115,10 +1118,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         let shape = currentTheme.buttonShape ?? 0
         let opacity = currentTheme.keyOpacity ?? 1.0
         
-        let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
+        let defaultBorderCol = UIColor.black.withAlphaComponent(0.3).cgColor
         let borderCol = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
         
-        let defaultTextCol = UIColor.label
+        let defaultTextCol = UIColor.black
         let textCol = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? defaultTextCol) : defaultTextCol
         
         let defaultKeyBgCol = UIColor.white
@@ -1137,6 +1140,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             
             if let label = keyView.viewWithTag(777) as? UILabel {
                 label.textColor = textCol
+                if let fontName = currentTheme.fontName, let customFont = UIFont(name: fontName, size: label.font.pointSize) {
+                    label.font = customFont
+                }
             }
             if let imageView = keyView.viewWithTag(778) as? UIImageView {
                 imageView.tintColor = textCol
@@ -1192,11 +1198,13 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         navigationController?.popViewController(animated: true)
     }
     
-    func numberOfSections(in tableView: UITableView) -> Int { return 5 }
+    func numberOfSections(in tableView: UITableView) -> Int { return 7 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 1 { return 2 }
         if section == 3 { return 1 } // Opacity
         if section == 4 { return 3 } // Colors
+        if section == 5 { return 1 } // Font
+        if section == 6 { return 3 } // Flick popup colors
         return 1
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -1205,7 +1213,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 1 { return isEn ? "Background" : "背景画像" }
         if section == 2 { return isEn ? "Key Style & Shape" : "キースタイル & 形状" }
         if section == 3 { return isEn ? "Transparency" : "透過度" }
-        return isEn ? "Colors" : "色設定"
+        if section == 4 { return isEn ? "Colors" : "色設定" }
+        if section == 5 { return isEn ? "Font" : "フォント" }
+        return isEn ? "Flick Popup" : "フリック吹き出し"
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -1282,6 +1292,39 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
                 }
             }
+        } else if indexPath.section == 5 {
+            cell.selectionStyle = .default
+            cell.accessoryType = .disclosureIndicator
+            cell.textLabel?.text = isEn ? "Font Family" : "フォントファミリー"
+            cell.detailTextLabel?.text = currentTheme.fontName ?? (isEn ? "System Default" : "システムデフォルト")
+        } else if indexPath.section == 6 {
+            cell.selectionStyle = .default
+            cell.accessoryType = .disclosureIndicator
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Popup Background" : "吹き出しの背景色"
+                if let hex = currentTheme.flickPopupBgHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default (White)" : "デフォルト（白）"
+                }
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Popup Text" : "吹き出しの文字色"
+                if let hex = currentTheme.flickPopupTextHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default (Black)" : "デフォルト（黒）"
+                }
+            } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "Highlight Color" : "選択時のハイライト色"
+                if let hex = currentTheme.flickHighlightHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default (Blue)" : "デフォルト（青）"
+                }
+            }
         }
         return cell
     }
@@ -1305,13 +1348,59 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             
             if indexPath.row == 0 {
                 pickingColorFor = "text"
-                picker.selectedColor = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? .label) : .label
+                picker.selectedColor = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? .black) : .black
             } else if indexPath.row == 1 {
                 pickingColorFor = "border"
-                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .white) : .white
+                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .black) : .black
             } else if indexPath.row == 2 {
                 pickingColorFor = "keyBg"
                 picker.selectedColor = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? .white) : .white
+            }
+            present(picker, animated: true)
+        } else if indexPath.section == 5 {
+            let fontNames = [nil, "HiraginoSans-W3", "HiraMinProN-W3", "Courier", "Menlo-Regular", "AvenirNext-Regular", "GillSans", "Georgia", "Futura-Medium"]
+            let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+            let fontLabels = [
+                isEn ? "System Default" : "システムデフォルト",
+                isEn ? "Hiragino Sans" : "ヒラギノ角ゴ",
+                isEn ? "Hiragino Mincho" : "ヒラギノ明朝",
+                "Courier",
+                "Menlo",
+                "Avenir Next",
+                "Gill Sans",
+                "Georgia",
+                "Futura"
+            ]
+            let alert = UIAlertController(title: isEn ? "Select Font" : "フォントを選択", message: nil, preferredStyle: .actionSheet)
+            for (i, name) in fontLabels.enumerated() {
+                let action = UIAlertAction(title: name, style: .default) { [weak self] _ in
+                    self?.currentTheme.fontName = fontNames[i]
+                    self?.updatePreview()
+                    self?.tableView.reloadData()
+                }
+                if fontNames[i] == currentTheme.fontName { action.setValue(true, forKey: "checked") }
+                alert.addAction(action)
+            }
+            alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
+            if let popover = alert.popoverPresentationController {
+                popover.sourceView = tableView.cellForRow(at: indexPath)
+                popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
+            }
+            present(alert, animated: true)
+        } else if indexPath.section == 6 {
+            let picker = UIColorPickerViewController()
+            picker.delegate = self
+            picker.supportsAlpha = true
+            
+            if indexPath.row == 0 {
+                pickingColorFor = "flickPopupBg"
+                picker.selectedColor = currentTheme.flickPopupBgHex != nil ? (UIColor(hex: currentTheme.flickPopupBgHex!) ?? .white) : .white
+            } else if indexPath.row == 1 {
+                pickingColorFor = "flickPopupText"
+                picker.selectedColor = currentTheme.flickPopupTextHex != nil ? (UIColor(hex: currentTheme.flickPopupTextHex!) ?? .black) : .black
+            } else if indexPath.row == 2 {
+                pickingColorFor = "flickHighlight"
+                picker.selectedColor = currentTheme.flickHighlightHex != nil ? (UIColor(hex: currentTheme.flickHighlightHex!) ?? .systemBlue) : .systemBlue
             }
             present(picker, animated: true)
         }
@@ -1338,6 +1427,12 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             currentTheme.keyBorderColorHex = hexStr
         } else if pickingColorFor == "keyBg" {
             currentTheme.keyColorHex = hexStr
+        } else if pickingColorFor == "flickPopupBg" {
+            currentTheme.flickPopupBgHex = hexStr
+        } else if pickingColorFor == "flickPopupText" {
+            currentTheme.flickPopupTextHex = hexStr
+        } else if pickingColorFor == "flickHighlight" {
+            currentTheme.flickHighlightHex = hexStr
         }
         updatePreview()
         tableView.reloadData()

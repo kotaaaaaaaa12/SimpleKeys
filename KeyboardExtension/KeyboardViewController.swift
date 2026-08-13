@@ -839,7 +839,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let existingBlur = b.viewWithTag(8888) as? UIVisualEffectView
         
         let opacity = theme.keyOpacity ?? 1.0
-        let defaultBorderCol = UIColor.white.withAlphaComponent(0.3).cgColor
+        let defaultBorderCol = UIColor.black.withAlphaComponent(0.3).cgColor
         let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
         let clearBgAlpha = 0.15 * opacity
         
@@ -913,6 +913,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 if let btn = sub as? UIButton {
                     btn.setTitleColor(textColor, for: .normal)
                     btn.tintColor = textColor
+                    if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: btn.titleLabel?.font.pointSize ?? 20) {
+                        btn.titleLabel?.font = customFont
+                    }
                     let title = btn.titleLabel?.text ?? ""
                     let isSpecialKey = btn.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
                     applyThemeToQwertyButton(btn, isSpecialKey: isSpecialKey, theme: theme, letterBg: letterBg, specialBg: specialBg)
@@ -921,6 +924,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                         if let b = btn as? UIButton {
                             b.setTitleColor(textColor, for: .normal)
                             b.tintColor = textColor
+                            if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: b.titleLabel?.font.pointSize ?? 20) {
+                                b.titleLabel?.font = customFont
+                            }
                             let title = b.titleLabel?.text ?? ""
                             let isSpecialKey = b.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
                             applyThemeToQwertyButton(b, isSpecialKey: isSpecialKey, theme: theme, letterBg: letterBg, specialBg: specialBg)
