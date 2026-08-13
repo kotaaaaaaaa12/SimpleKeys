@@ -581,25 +581,29 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     private func updateAlternateHighlight(at point: CGPoint) {
-        guard let popup = alternateKeysPopup else { return }
-        let localPoint = view.convert(point, to: popup)
+        guard let popup = alternateKeysPopup, let stack = popup.subviews.first as? UIStackView else { return }
+        let localPoint = view.convert(point, to: stack)
         
-        var found = false
         for lbl in alternateLabels {
-            if lbl.frame.contains(localPoint) {
-                lbl.backgroundColor = .systemBlue
-                lbl.textColor = .white
-                found = true
-            } else {
-                lbl.backgroundColor = .clear
-                lbl.textColor = (textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark) ? .white : .black
-            }
+            lbl.backgroundColor = .clear
+            lbl.textColor = (textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark) ? .white : .black
         }
         
-        if !found && !alternateLabels.isEmpty {
-            let first = alternateLabels[0]
-            first.backgroundColor = .systemBlue
-            first.textColor = .white
+        if !alternateLabels.isEmpty {
+            var closestLabel = alternateLabels[0]
+            var minDistance = CGFloat.greatestFiniteMagnitude
+            
+            for lbl in alternateLabels {
+                let midX = lbl.frame.midX
+                let dist = abs(localPoint.x - midX)
+                if dist < minDistance {
+                    minDistance = dist
+                    closestLabel = lbl
+                }
+            }
+            
+            closestLabel.backgroundColor = .systemBlue
+            closestLabel.textColor = .white
         }
     }
     

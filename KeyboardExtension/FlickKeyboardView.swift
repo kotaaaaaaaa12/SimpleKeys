@@ -34,13 +34,13 @@ struct FlickKeyboardData {
         [
             FlickKey(center: "゛゜小", left: nil, up: nil, right: nil, down: nil),
             FlickKey(center: "わ", left: "を", up: "ん", right: "ー", down: "〜"),
-            FlickKey(center: "、。？！", left: "。", up: "？", right: "！", down: "…")
+            FlickKey(center: "､｡?!", left: "。", up: "？", right: "！", down: "…")
         ]
     ]
 
     static let alphabetKeys: [[FlickKey]] = [
         [
-            FlickKey(center: "@#/", left: "@", up: "#", right: "/", down: "&"),
+            FlickKey(center: "@#/&_", left: "#", up: "/", right: "&", down: "_"),
             FlickKey(center: "ABC", left: "B", up: "C", right: nil, down: nil),
             FlickKey(center: "DEF", left: "E", up: "F", right: nil, down: nil)
         ],
@@ -78,9 +78,9 @@ struct FlickKeyboardData {
             FlickKey(center: "9", left: "＾", up: "｜", right: "＼", down: nil)
         ],
         [
-            FlickKey(center: "()[]", left: "(", up: ")", right: "[", down: "]"),
+            FlickKey(center: "()[]", left: ")", up: "[", right: "]", down: nil),
             FlickKey(center: "0", left: "～", up: "…", right: nil, down: nil),
-            FlickKey(center: ".", left: ",", up: "-", right: "/", down: nil)
+            FlickKey(center: ",.-/", left: ".", up: "-", right: "/", down: nil)
         ]
     ]
 }
@@ -326,13 +326,15 @@ class FlickKeyboardView: UIView {
                 text = text.uppercased() // User wants uppercase
             }
             lbl.text = text
-            if currentPage == .alphabet && text.count >= 3 {
+            if text.count >= 4 {
+                lbl.font = .systemFont(ofSize: 16, weight: .regular)
+            } else if currentPage == .alphabet && text.count >= 3 {
                 lbl.font = .systemFont(ofSize: 17, weight: .regular)
             } else {
                 lbl.font = .systemFont(ofSize: 22, weight: .regular)
             }
             // Center the label if there is no subtitle
-            if currentPage == .kana || (currentPage == .alphabet && keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
+            if currentPage == .kana || text.count >= 4 || (currentPage == .alphabet && keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
             } else {
                 lbl.transform = .identity
@@ -345,6 +347,8 @@ class FlickKeyboardView: UIView {
             } else {
                 // If it's alphabet mode and it's a letter key (ABC, DEF, etc), hide the hint
                 if currentPage == .alphabet && (keyData.center.count >= 3 && keyData.center.first?.isLetter == true) {
+                    sub.text = ""
+                } else if keyData.center.count >= 4 {
                     sub.text = ""
                 } else {
                     var hints = [String]()
@@ -608,10 +612,12 @@ class FlickKeyboardView: UIView {
         case .center:
             if currentPage == .alphabet && key.center.count > 1 && key.center != "a/A" {
                 text = String(key.center.first!)
-            } else if currentPage == .kana && key.center == "、。？！" {
+            } else if currentPage == .kana && key.center == "､｡?!" {
                 text = "、"
             } else if currentPage == .number && key.center == "()[]" {
                 text = "("
+            } else if currentPage == .number && key.center == ",.-/" {
+                text = ","
             } else {
                 text = key.center
             }
