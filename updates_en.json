@@ -1,0 +1,23 @@
+{
+  "latest_version": "1.2.0",
+  "updates": [
+    {
+      "version": "1.2.0",
+      "date": "2026-08-13",
+      "title": "v1.2.0 - New UI & Extended Hepburn!",
+      "body": "・Modernized the main app UI and added an Updates tab.\n・Improved App Group fetching logic so settings sync properly even on free SideStore/AltStore environments!\n・Massively expanded Romaji conversion patterns (qa→くぁ, va→ゔぁ, etc.)\n・Redesigned keyboard UI using SF Symbols for a native iOS feel.\n・Added uppercase toggle (a/A) functionality for flick alphabet input."
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-08-11",
+      "title": "v1.1.0 - QWERTY Long-Press Support",
+      "body": "・Added support for special character input by long-pressing keys on the QWERTY keyboard.\n・Added toggles in the settings app to show/hide specific keyboard modes."
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-08-01",
+      "title": "v1.0.0 - Initial Release",
+      "body": "・Flick Input (Japanese/Alphabet/Numbers)\n・QWERTY Input (English/Romaji)\n・Dark Mode support"
+    }
+  ]
+}
