@@ -146,9 +146,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         // Mark that the keyboard has been activated at least once
         defaults?.set(true, forKey: "keyboardHasLaunched")
         defaults?.synchronize()
-        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
-        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
-        let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
+        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults?.bool(forKey: "enableFlick") ?? true
+        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults?.bool(forKey: "enableQwertyEnglish") ?? true
+        let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults?.bool(forKey: "enableQwertyRomaji") ?? true
         
         if enableFlick {
             currentMode = .flickKana
@@ -186,8 +186,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         
         let defaults = AppGroupHelper.shared.userDefaults
         defaults?.synchronize()
-        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
-        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
+        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults?.bool(forKey: "enableFlick") ?? true
+        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults?.bool(forKey: "enableQwertyEnglish") ?? true
         
         if enableFlick {
             currentMode = .flickKana
@@ -1478,9 +1478,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     @objc private func toggleMainMode() {
         let defaults = AppGroupHelper.shared.userDefaults
-        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
-        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
-        let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
+        let enableFlick = defaults?.object(forKey: "enableFlick") == nil ? true : defaults?.bool(forKey: "enableFlick") ?? true
+        let enableQwertyEn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults?.bool(forKey: "enableQwertyEnglish") ?? true
+        let enableQwertyJa = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults?.bool(forKey: "enableQwertyRomaji") ?? true
         
         var sequence: [InputMode] = []
         if enableFlick { sequence.append(.flickKana) }
