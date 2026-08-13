@@ -12,6 +12,8 @@
 		6B2478EBF01D4B48B735D221 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D78686BB7EE46D682C6CEA1 /* ViewController.swift */; };
 		6D835E5D4FF343A9BFB3CB0E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 81695A31AA1E4F638EC94CD6 /* Assets.xcassets */; };
 		07D7A7B9630C446FBF539BF3 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAA318E14C24688B64D6030 /* KeyboardViewController.swift */; };
+		A1B2C3D4E5F647A8B9C0D1E2 /* RomajiConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A647089A1B2C3D /* RomajiConverter.swift */; };
+		B2C3D4E5F6A748B9C0D1E2F3 /* FlickKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */; };
 		3259926AD30F4595AADD427B /* KeyboardExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 6C8B24F59036483E9B399E08 /* KeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -46,6 +48,8 @@
 		E88F5E118CC2494582BAE89E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		81695A31AA1E4F638EC94CD6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0FAA318E14C24688B64D6030 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		F1E2D3C4B5A647089A1B2C3D /* RomajiConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RomajiConverter.swift; sourceTree = "<group>"; };
+		E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickKeyboardView.swift; sourceTree = "<group>"; };
 		523D4EAE37C84348A7B9F4D9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		677A8463752E4AB391C2B838 /* SimpleKeys.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleKeys.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C8B24F59036483E9B399E08 /* KeyboardExtension.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = KeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -95,6 +99,8 @@
 			isa = PBXGroup;
 			children = (
 				0FAA318E14C24688B64D6030 /* KeyboardViewController.swift */,
+				F1E2D3C4B5A647089A1B2C3D /* RomajiConverter.swift */,
+				E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */,
 				523D4EAE37C84348A7B9F4D9 /* Info.plist */,
 			);
 			path = KeyboardExtension;
@@ -225,6 +231,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				07D7A7B9630C446FBF539BF3 /* KeyboardViewController.swift in Sources */,
+				A1B2C3D4E5F647A8B9C0D1E2 /* RomajiConverter.swift in Sources */,
+				B2C3D4E5F6A748B9C0D1E2F3 /* FlickKeyboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
