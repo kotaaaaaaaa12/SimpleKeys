@@ -618,7 +618,15 @@ class FlickKeyboardView: UIView {
                 let dy = point.y - startPoint.y
                 let direction = detectDirection(dx: dx, dy: dy)
                 if !cancelled || direction != .center {
-                    if let text = textForDirection(direction, key: keyData) {
+                    if btn.accessibilityIdentifier == "delete" {
+                        if direction == .left {
+                            delegate?.flickKeyboardDidFlickDeleteLeft(self)
+                        } else if direction == .up {
+                            delegate?.flickKeyboardDidFlickDeleteUp(self)
+                        } else {
+                            delegate?.flickKeyboardDidPressDelete(self)
+                        }
+                    } else if let text = textForDirection(direction, key: keyData) {
                         if text == "空白" {
                             delegate?.flickKeyboardDidPressSpace(self)
                         } else {
@@ -628,20 +636,7 @@ class FlickKeyboardView: UIView {
                 }
             } else {
                 if !cancelled {
-                    if btn.accessibilityIdentifier == "delete" {
-                        let point = touch.location(in: containerView)
-                        let startPoint = startPoints[touch] ?? point
-                        let dx = point.x - startPoint.x
-                        let dy = point.y - startPoint.y
-                        let direction = detectDirection(dx: dx, dy: dy)
-                        if direction == .left {
-                            delegate?.flickKeyboardDidFlickDeleteLeft(self)
-                        } else if direction == .up {
-                            delegate?.flickKeyboardDidFlickDeleteUp(self)
-                        } else {
-                            delegate?.flickKeyboardDidPressDelete(self)
-                        }
-                    } else if btn.accessibilityIdentifier == "return" {
+                    if btn.accessibilityIdentifier == "return" {
                         delegate?.flickKeyboardDidPressReturn(self)
                     } else if btn.accessibilityIdentifier == "globe" {
                         delegate?.flickKeyboardDidPressGlobe(self)
@@ -860,6 +855,8 @@ class FlickKeyboardView: UIView {
             path.append(arrow)
             bgLayer?.path = path.cgPath
             bgLayer?.fillColor = UIColor.white.cgColor
+            bgLayer?.strokeColor = UIColor(white: 0.8, alpha: 1.0).cgColor
+            bgLayer?.lineWidth = 0.5
         } else {
             bgLayer?.path = nil
         }
@@ -878,14 +875,18 @@ class FlickKeyboardView: UIView {
     private func animateKeyDown(_ view: UIView) {
         UIView.animate(withDuration: 0.05, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             view.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
-            view.alpha = 0.8
+            if view.backgroundColor == .white {
+                view.backgroundColor = UIColor(white: 0.85, alpha: 1.0)
+            }
         }
     }
     
     private func animateKeyUp(_ view: UIView) {
         UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             view.transform = .identity
-            view.alpha = 1.0
+            if view.backgroundColor == UIColor(white: 0.85, alpha: 1.0) {
+                view.backgroundColor = .white
+            }
         }
     }
     
