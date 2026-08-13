@@ -68,14 +68,14 @@ struct FlickKeyboardData {
             FlickKey(center: "3", left: "%", up: "°", right: "#", down: nil)
         ],
         [
-            FlickKey(center: "4", left: "＋", up: "－", right: "×", down: nil),
-            FlickKey(center: "5", left: "＜", up: "＝", right: "＞", down: nil),
-            FlickKey(center: "6", left: "「", up: "」", right: "『", down: nil)
+            FlickKey(center: "4", left: "〇", up: "＊", right: "・", down: nil),
+            FlickKey(center: "5", left: "＋", up: "×", right: "÷", down: nil),
+            FlickKey(center: "6", left: "＜", up: "＝", right: "＞", down: nil)
         ],
         [
-            FlickKey(center: "7", left: ":", up: ";", right: "&", down: nil),
-            FlickKey(center: "8", left: "(", up: ")", right: "[", down: nil),
-            FlickKey(center: "9", left: ".", up: ",", right: "?", down: nil)
+            FlickKey(center: "7", left: "「", up: "」", right: "：", down: nil),
+            FlickKey(center: "8", left: "〒", up: "々", right: "〆", down: nil),
+            FlickKey(center: "9", left: "＾", up: "｜", right: "＼", down: nil)
         ],
         [
             FlickKey(center: "+-*/", left: "+", up: "-", right: "*", down: nil),
@@ -115,6 +115,7 @@ class FlickKeyboardView: UIView {
     private var popupViews: [UITouch: UIView] = [:]
     private var popupLabelsDict: [UITouch: [FlickDirection: UILabel]] = [:]
     private var popupTimers: [UITouch: Timer] = [:]
+    private var fullPopupModes: [UITouch: Bool] = [:]
     
     // State
     private var isDarkMode = false
@@ -444,7 +445,8 @@ class FlickKeyboardView: UIView {
                     let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
                         guard let self = self else { return }
                         if self.activeTouches[touch] == btn {
-                            self.showPopup(for: touch, button: btn)
+                            self.popupTimers.removeValue(forKey: touch)
+                            self.showPopup(for: touch, button: btn, isFull: true)
                         }
                     }
                     popupTimers[touch] = timer
@@ -464,6 +466,13 @@ class FlickKeyboardView: UIView {
                 let dx = currentPoint.x - start.x
                 let dy = currentPoint.y - start.y
                 let direction = detectDirection(dx: dx, dy: dy)
+                
+                if popupViews[touch] == nil && direction != .center {
+                    popupTimers[touch]?.invalidate()
+                    popupTimers.removeValue(forKey: touch)
+                    showPopup(for: touch, button: btn, isFull: false)
+                }
+                
                 updatePopup(direction: direction, for: touch)
             }
         }
@@ -612,8 +621,10 @@ class FlickKeyboardView: UIView {
     
     // MARK: - Popup
     
-    private func showPopup(for touch: UITouch, button: UIView) {
+    private func showPopup(for touch: UITouch, button: UIView, isFull: Bool) {
         guard let keyData = keysMap[button] else { return }
+        
+        fullPopupModes[touch] = isFull
         
         let popup = UIView()
         popup.translatesAutoresizingMaskIntoConstraints = false
@@ -680,17 +691,20 @@ class FlickKeyboardView: UIView {
     
     private func updatePopup(direction: FlickDirection, for touch: UITouch) {
         guard let popup = popupViews[touch], let labels = popupLabelsDict[touch] else { return }
+        let isFull = fullPopupModes[touch] ?? false
         
         for (dir, label) in labels {
             if dir == direction {
                 label.backgroundColor = UIColor.systemBlue
                 label.textColor = .white
                 label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+                label.isHidden = false
                 popup.bringSubviewToFront(label)
             } else {
                 label.backgroundColor = .white
                 label.textColor = .black
                 label.transform = .identity
+                label.isHidden = !isFull
             }
         }
     }
@@ -699,6 +713,7 @@ class FlickKeyboardView: UIView {
         popupViews[touch]?.removeFromSuperview()
         popupViews.removeValue(forKey: touch)
         popupLabelsDict.removeValue(forKey: touch)
+        fullPopupModes.removeValue(forKey: touch)
     }
     
     // MARK: - Animations
@@ -735,10 +750,11 @@ class FlickKeyboardView: UIView {
         // Update sidebar highlights
         let isDark = self.isDarkMode
         let normalColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+        let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
         let activeColor = isDark ? UIColor.systemBlue : UIColor.systemBlue.withAlphaComponent(0.2)
         
-        abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : normalColor
-        numButton.backgroundColor = (currentPage == .number) ? activeColor : normalColor
+        abcButton.backgroundColor = (currentPage == .alphabet) ? activeColor : keyBg
+        numButton.backgroundColor = (currentPage == .number) ? activeColor : keyBg
         
         if let abcLbl = abcButton.subviews.first(where: { $0 is UILabel }) as? UILabel {
             abcLbl.text = (currentPage == .alphabet) ? "あいう" : "ABC"
@@ -772,10 +788,10 @@ class FlickKeyboardView: UIView {
                         btn.accessibilityIdentifier = nil
                     }
                     // Change styling for the special button
-                    btn.backgroundColor = normalColor
+                    btn.backgroundColor = keyBg
                 } else {
                     updateHints(for: btn, keyData: keyData, isShifted: isShifted)
-                    btn.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+                    btn.backgroundColor = keyBg
                 }
             }
         }
@@ -792,8 +808,16 @@ class FlickKeyboardView: UIView {
         
         backgroundColor = bg
         
+        spaceButton.backgroundColor = keyBg
+        abcButton.backgroundColor = keyBg
+        numButton.backgroundColor = keyBg
+        faceButton.backgroundColor = keyBg
+        globeButton.backgroundColor = specialBg
+        deleteButton.backgroundColor = specialBg
+        returnButton.backgroundColor = specialBg
+        
         func apply(to view: UIView) {
-            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton || view == faceButton || view.accessibilityIdentifier == "dakuten" || view.subviews.first(where: { ($0 as? UILabel)?.text == "☆123" || ($0 as? UILabel)?.text == "ABC" || ($0 as? UILabel)?.text == "a/A" || ($0 as? UILabel)?.text == "^_^" }) != nil)
+            let isSpecial = (view == globeButton || view == deleteButton || view == returnButton)
             
             if view.layer.cornerRadius > 0 && view != containerView && view.superview != nil {
                 view.backgroundColor = isSpecial ? specialBg : keyBg
@@ -804,5 +828,6 @@ class FlickKeyboardView: UIView {
             for sub in view.subviews { apply(to: sub) }
         }
         apply(to: self)
+        updatePageUI()
     }
 }

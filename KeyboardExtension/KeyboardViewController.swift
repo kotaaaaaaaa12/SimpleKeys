@@ -19,10 +19,18 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         case qwertyRomaji
     }
     
+    enum ShiftState {
+        case off
+        case shifted
+        case capsLock
+    }
+    
     // MARK: - Properties
     
     private var currentMode: InputMode = .qwertyEnglish
     private var qwertyShifted = false
+    private var shiftState: ShiftState = .off
+    private var lastShiftPressTime: Date = Date.distantPast
     private var qwertyContainer: UIView!
     private var qwertyStack: UIStackView!
     private var qwertyDeleteTimer: Timer?
@@ -106,7 +114,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private func setupConversionBar() {
         conversionBar = UIView()
         conversionBar.translatesAutoresizingMaskIntoConstraints = false
-        conversionBar.isHidden = true
         
         conversionLabel = UILabel()
         conversionLabel.font = .systemFont(ofSize: 16, weight: .medium)
@@ -114,24 +121,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         conversionLabel.translatesAutoresizingMaskIntoConstraints = false
         conversionBar.addSubview(conversionLabel)
         
-        let commitButton = UIButton(type: .system)
-        commitButton.setTitle("OK", for: .normal)
-        commitButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
-        commitButton.backgroundColor = UIColor.systemBlue
-        commitButton.setTitleColor(.white, for: .normal)
-        commitButton.layer.cornerRadius = 4
-        commitButton.translatesAutoresizingMaskIntoConstraints = false
-        commitButton.addTarget(self, action: #selector(commitConversion), for: .touchUpInside)
-        conversionBar.addSubview(commitButton)
-        
         NSLayoutConstraint.activate([
             conversionLabel.leadingAnchor.constraint(equalTo: conversionBar.leadingAnchor, constant: 12),
             conversionLabel.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
-            conversionLabel.trailingAnchor.constraint(equalTo: commitButton.leadingAnchor, constant: -8),
-            commitButton.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor, constant: -8),
-            commitButton.centerYAnchor.constraint(equalTo: conversionBar.centerYAnchor),
-            commitButton.widthAnchor.constraint(equalToConstant: 48),
-            commitButton.heightAnchor.constraint(equalToConstant: 28),
+            conversionLabel.trailingAnchor.constraint(equalTo: conversionBar.trailingAnchor, constant: -12),
         ])
         
         view.addSubview(conversionBar)
@@ -232,7 +225,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let row3 = createLetterRow(letters: rows[2])
         let leftSpecial = createSpecialKeyButton(title: thirdRowSpecials.left)
         if thirdRowSpecials.left == "⇧" {
-            leftSpecial.setTitle(qwertyShifted ? "⬆︎" : "⇧", for: .normal)
+            let shiftTitle: String
+            switch shiftState {
+            case .off: shiftTitle = "⇧"
+            case .shifted: shiftTitle = "⬆︎"
+            case .capsLock: shiftTitle = "⇪"
+            }
+            leftSpecial.setTitle(shiftTitle, for: .normal)
             leftSpecial.addTarget(self, action: #selector(shiftPressed), for: .touchUpInside)
         } else if thirdRowSpecials.left == "#+=" {
             leftSpecial.addTarget(self, action: #selector(switchToSymbols), for: .touchUpInside)
@@ -351,8 +350,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             rebuildQWERTYLayout()
             updateButtonColors()
         }
-        
-        conversionBar.isHidden = (currentMode != .qwertyRomaji)
     }
     
     // MARK: - Conversion Bar
@@ -520,6 +517,13 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 if let sel = selected, gesture.state == .ended {
                     textDocumentProxy.insertText(sel)
                     UIDevice.current.playInputClick()
+                    
+                    if shiftState == .shifted {
+                        shiftState = .off
+                        qwertyShifted = false
+                        rebuildQWERTYLayout()
+                        updateButtonColors()
+                    }
                 }
                 popup.removeFromSuperview()
                 alternateKeysPopup = nil
@@ -617,7 +621,18 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func shiftPressed() {
-        qwertyShifted.toggle()
+        let now = Date()
+        if now.timeIntervalSince(lastShiftPressTime) < 0.3 {
+            shiftState = .capsLock
+        } else {
+            if shiftState == .off {
+                shiftState = .shifted
+            } else {
+                shiftState = .off
+            }
+        }
+        lastShiftPressTime = now
+        qwertyShifted = (shiftState != .off)
         rebuildQWERTYLayout()
         updateButtonColors()
         UIDevice.current.playInputClick()
@@ -839,6 +854,20 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         } else {
             textDocumentProxy.insertText("゛")
         }
+        
+        if title == " " {
+            textDocumentProxy.insertText(" ")
+        } else {
+            textDocumentProxy.insertText(title)
+        }
+        
+        if shiftState == .shifted {
+            shiftState = .off
+            qwertyShifted = false
+            rebuildQWERTYLayout()
+            updateButtonColors()
+        }
+        
         UIDevice.current.playInputClick()
     }
 }
