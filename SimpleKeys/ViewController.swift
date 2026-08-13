@@ -287,7 +287,7 @@ class SettingsViewController: UITableViewController {
         case 3: return 3
         case 4: return 3
         case 5: return 1
-        case 6: return 1
+        case 6: return 5
         default: return 0
         }
     }
@@ -408,6 +408,22 @@ class SettingsViewController: UITableViewController {
                 cell.textLabel?.text = isEn ? "Custom Themes" : "カスタムテーマ"
                 cell.detailTextLabel?.text = isEn ? "Customize background color and images" : "背景色や画像を自由に設定できます"
                 cell.imageView?.image = UIImage(systemName: "paintpalette.fill")
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Real-time AI Translation" : "AIリアルタイム翻訳＆トーン変換"
+                cell.detailTextLabel?.text = isEn ? "Translate or change text tone instantly" : "入力中のテキストを自動翻訳したり、敬語などに変換します"
+                cell.imageView?.image = UIImage(systemName: "character.bubble.fill")
+            } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "Clipboard & Snippets" : "クリップボード履歴＆定型文ボード"
+                cell.detailTextLabel?.text = isEn ? "Access copy history and quick phrases" : "過去のコピー履歴やよく使う定型文をワンタップで入力"
+                cell.imageView?.image = UIImage(systemName: "doc.on.clipboard.fill")
+            } else if indexPath.row == 3 {
+                cell.textLabel?.text = isEn ? "AI Emoji Suggestion" : "AI文脈絵文字・顔文字サジェスト"
+                cell.detailTextLabel?.text = isEn ? "Smart emoji suggestions based on context" : "文章の感情に合わせて最適な絵文字・顔文字をAIが提案"
+                cell.imageView?.image = UIImage(systemName: "face.smiling.fill")
+            } else if indexPath.row == 4 {
+                cell.textLabel?.text = isEn ? "Haptics & Sensitivity Settings" : "振動・カーソル感度の詳細カスタマイズ"
+                cell.detailTextLabel?.text = isEn ? "Fine-tune vibration and cursor speed" : "キーを弾いた時の振動やカーソル移動のスピードを調整"
+                cell.imageView?.image = UIImage(systemName: "slider.horizontal.3")
             }
         }
         
