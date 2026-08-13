@@ -165,6 +165,40 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         }
     }
     
+    private func applyTheme() {
+        if themeBgImageView == nil {
+            themeBgImageView = UIImageView()
+            themeBgImageView?.contentMode = .scaleAspectFill
+            themeBgImageView?.clipsToBounds = true
+            themeBgImageView?.translatesAutoresizingMaskIntoConstraints = false
+            view.insertSubview(themeBgImageView!, at: 0)
+            NSLayoutConstraint.activate([
+                themeBgImageView!.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                themeBgImageView!.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                themeBgImageView!.topAnchor.constraint(equalTo: view.topAnchor),
+                themeBgImageView!.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+        }
+        
+        var theme = ThemeSettings(keyStyle: 0)
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let saved = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            theme = saved
+        }
+        
+        if let bgFile = theme.backgroundImageFileName, let bgImage = AppGroupHelper.shared.loadImage(fileName: bgFile) {
+            themeBgImageView?.image = bgImage
+            themeBgImageView?.isHidden = false
+            view.backgroundColor = .clear
+        } else {
+            themeBgImageView?.isHidden = true
+            // if theme.backgroundColorHex != nil {} 
+            // for now just use standard appearance in updateAppearance
+        }
+        
+        flickKeyboard?.applyTheme(theme)
+    }
+    
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         updateAppearance()
