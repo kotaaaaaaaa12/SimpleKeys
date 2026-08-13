@@ -200,10 +200,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             thirdRowSpecials = ("⇧", "⌫")
             bottomRow = ["123", "globe", "space", "return"]
         default:
-                ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-                ["z", "x", "c", "v", "b", "n", "m"]
-            ]
-            rows = letters
+            return
         }
         
         qwertyStack.addArrangedSubview(createLetterRow(letters: rows[0]))
