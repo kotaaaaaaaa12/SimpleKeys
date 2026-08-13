@@ -58,7 +58,7 @@ class GeminiConverter {
             
             // Check HTTP status code
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                let errorBody = String(data: data, encoding: .utf8) ?? ""
+                let _ = String(data: data, encoding: .utf8) ?? ""
                 DispatchQueue.main.async { completion(["[AI] エラー: \(httpResponse.statusCode)"]) }
                 return
             }

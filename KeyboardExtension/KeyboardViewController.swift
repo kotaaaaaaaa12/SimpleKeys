@@ -356,10 +356,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             }
             
             // Trigger Gemini Conversion if enabled
-            let defaults = AppGroupHelper.shared.userDefaults
-            let enableGemini = defaults?.bool(forKey: "enableGemini") ?? false
-            let apiKey = defaults?.string(forKey: "geminiApiKey") ?? ""
-            
             geminiDebounceTimer?.invalidate()
             if enableGemini && !apiKey.isEmpty && !displayRomaji.isEmpty {
                 let currentText = displayRomaji
@@ -1025,7 +1021,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     @objc private func deletePressed() {
         if romajiConverter.hasPendingInput {
-            romajiConverter.deleteBackward()
+            _ = romajiConverter.deleteBackward()
             let display = romajiConverter.displayText
             if display.isEmpty {
                 textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))

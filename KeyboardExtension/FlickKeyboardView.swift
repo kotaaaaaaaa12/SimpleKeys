@@ -174,13 +174,13 @@ class FlickKeyboardView: UIView {
         var rowGuides: [UILayoutGuide] = []
         var colGuides: [UILayoutGuide] = []
         
-        for i in 0..<4 {
+        for _ in 0..<4 {
             let rg = UILayoutGuide()
             containerView.addLayoutGuide(rg)
             rowGuides.append(rg)
         }
         
-        for i in 0..<5 {
+        for _ in 0..<5 {
             let cg = UILayoutGuide()
             containerView.addLayoutGuide(cg)
             colGuides.append(cg)

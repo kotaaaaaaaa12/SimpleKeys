@@ -14,7 +14,7 @@ class EnglishConverter {
         results.append(text)
         
         // 2. Uppercase / Capitalized
-        let lower = text.lowercased()
+        // let lower = text.lowercased()
         let upper = text.uppercased()
         let cap = text.capitalized
         if upper != text { results.append(upper) }
