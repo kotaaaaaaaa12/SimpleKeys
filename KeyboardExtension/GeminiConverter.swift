@@ -17,7 +17,7 @@ class GeminiConverter {
         
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
-        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/\(cleanModel):generateContent?key=\(cleanApiKey)"
+        let urlString = "https://generativelanguage.googleapis.com/v1beta/models/\(cleanModel):createInteraction?key=\(cleanApiKey)"
         guard let url = URL(string: urlString) else {
             completion(["[AI] URLエラー"])
             return
@@ -31,20 +31,25 @@ class GeminiConverter {
         入力: \(text)
         """
         
-        let requestBody: [String: Any] = [
-            "contents": [
-                ["parts": [["text": prompt]]]
+        let body: [String: Any] = [
+            "model": "models/\(cleanModel)",
+            "input": [
+                "parts": [
+                    ["text": prompt]
+                ]
             ],
-            "generationConfig": [
-                "temperature": 0.2,
-                "maxOutputTokens": 100
-            ]
+            "store": false
         ]
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+            completion(["[AI] エンコードエラー"])
+            return
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -72,20 +77,35 @@ class GeminiConverter {
             }
             
             do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let candidatesArray = json["candidates"] as? [[String: Any]],
-                   let firstCandidate = candidatesArray.first,
-                   let content = firstCandidate["content"] as? [String: Any],
-                   let parts = content["parts"] as? [[String: Any]],
-                   let firstPart = parts.first,
-                   let responseText = firstPart["text"] as? String {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    var responseText = ""
+                    // Interactions API response
+                    if let steps = json["steps"] as? [[String: Any]],
+                       let lastStep = steps.last,
+                       let content = lastStep["content"] as? [[String: Any]],
+                       let firstContent = content.first,
+                       let parsedText = firstContent["text"] as? String {
+                        responseText = parsedText
+                    }
+                    // Fallback to legacy generateContent response just in case
+                    else if let candidates = json["candidates"] as? [[String: Any]],
+                       let firstCandidate = candidates.first,
+                       let content = firstCandidate["content"] as? [String: Any],
+                       let parts = content["parts"] as? [[String: Any]],
+                       let firstPart = parts.first,
+                       let parsedText = firstPart["text"] as? String {
+                        responseText = parsedText
+                    }
                     
-                    let lines = responseText.components(separatedBy: .newlines)
-                        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                        .filter { !$0.isEmpty }
-                    
-                    DispatchQueue.main.async {
-                        completion(lines)
+                    if !responseText.isEmpty {
+                        let lines = responseText.components(separatedBy: .newlines)
+                            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                            .filter { !$0.isEmpty }
+                        DispatchQueue.main.async {
+                            completion(lines)
+                        }
+                    } else {
+                        DispatchQueue.main.async { completion(["[AI] パース失敗"]) }
                     }
                 } else {
                     DispatchQueue.main.async { completion(["[AI] パース失敗"]) }
