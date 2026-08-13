@@ -354,7 +354,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             geminiDebounceTimer?.invalidate()
             if enableGemini && !apiKey.isEmpty && !displayRomaji.isEmpty {
                 let currentText = displayRomaji
-                geminiDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                geminiDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self] _ in
                     GeminiConverter.shared.convert(text: currentText, apiKey: apiKey) { [weak self] geminiCandidates in
                         guard let self = self, self.romajiConverter.displayText == currentText, !geminiCandidates.isEmpty else { return }
                         
