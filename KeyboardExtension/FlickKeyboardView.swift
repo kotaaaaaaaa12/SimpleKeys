@@ -428,6 +428,51 @@ class FlickKeyboardView: UIView {
         return view
     }
     
+    func applyTheme(_ theme: ThemeSettings) {
+        let isGlass = theme.keyStyle == 1
+        let isFlat = theme.keyStyle == 2
+        
+        let allKeys = Array(keysMap.keys) + [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].compactMap { $0 }
+        
+        for keyView in allKeys {
+            // Remove previous visual effect if any
+            keyView.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+            
+            let isSpecial = [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].contains(keyView)
+            
+            if isFlat {
+                keyView.backgroundColor = .clear
+                keyView.layer.shadowOpacity = 0
+                keyView.layer.borderWidth = 1
+                keyView.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+            } else if isGlass {
+                keyView.backgroundColor = .clear
+                keyView.layer.shadowOpacity = 0
+                keyView.layer.borderWidth = 0
+                let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+                blur.layer.cornerRadius = 6
+                blur.clipsToBounds = true
+                blur.isUserInteractionEnabled = false
+                blur.translatesAutoresizingMaskIntoConstraints = false
+                keyView.insertSubview(blur, at: 0)
+                NSLayoutConstraint.activate([
+                    blur.leadingAnchor.constraint(equalTo: keyView.leadingAnchor),
+                    blur.trailingAnchor.constraint(equalTo: keyView.trailingAnchor),
+                    blur.topAnchor.constraint(equalTo: keyView.topAnchor),
+                    blur.bottomAnchor.constraint(equalTo: keyView.bottomAnchor)
+                ])
+            } else {
+                let isDark = self.isDarkMode
+                let keyBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
+                let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
+                keyView.backgroundColor = isSpecial ? specialBg : keyBg
+                keyView.layer.shadowOpacity = 0.3
+                keyView.layer.borderWidth = 0
+            }
+        }
+    }
+    
+    
     func getGlobeButton() -> UIView {
         return globeButton
     }
@@ -952,6 +997,12 @@ class FlickKeyboardView: UIView {
                 }
             }
         }
+        
+        // Re-apply theme if one exists
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            applyTheme(theme)
+        }
     }
     
     // MARK: - Appearance
@@ -963,7 +1014,14 @@ class FlickKeyboardView: UIView {
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         let textCol = isDark ? UIColor.white : UIColor.black
         
-        backgroundColor = bg
+        var hasImage = false
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data),
+           theme.backgroundImageFileName != nil {
+            hasImage = true
+        }
+        
+        backgroundColor = hasImage ? .clear : bg
         
         spaceButton.backgroundColor = specialBg
         abcButton.backgroundColor = specialBg

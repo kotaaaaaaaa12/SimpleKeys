@@ -65,6 +65,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     
     private var qwertySpaceDragStart: CGPoint = .zero
     
+    private var themeBgImageView: UIImageView?
+    
     // UI Elements
     private var geminiDebounceTimer: Timer?
     
@@ -129,6 +131,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         
         updateNextKeyboardButtonVisibility()
         updateAppearance()
+        applyTheme()
     }
     
     override func viewWillLayoutSubviews() {
@@ -763,14 +766,64 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     // MARK: - Appearance
     
     private func updateAppearance() {
-        updateButtonColors()
+        // Only set background colors if theme has no image
+        var hasImage = false
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let theme = try? JSONDecoder().decode(ThemeSettings.self, from: data),
+           theme.backgroundImageFileName != nil {
+            hasImage = true
+        }
+        
         let isDark = textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
-        view.backgroundColor = isDark ? UIColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0) : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1.0)
-        conversionBar.backgroundColor = isDark ? UIColor(white: 0.22, alpha: 1.0) : UIColor(white: 0.95, alpha: 1.0)
+        
+        if !hasImage {
+            view.backgroundColor = isDark ? UIColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0) : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1.0)
+        }
+        
+        conversionBar.backgroundColor = hasImage ? UIColor(white: isDark ? 0.0 : 1.0, alpha: 0.3) : (isDark ? UIColor(white: 0.22, alpha: 1.0) : UIColor(white: 0.95, alpha: 1.0))
+        
         flickKeyboard?.updateAppearance(isDark: isDark)
+        updateButtonColors()
+    }
+    
+    private func applyThemeToQwertyButton(_ b: UIButton, isSpecialKey: Bool, theme: ThemeSettings, letterBg: UIColor, specialBg: UIColor) {
+        // Remove previous visual effect
+        b.subviews.filter { $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+        
+        if theme.keyStyle == 1 { // Glass
+            b.backgroundColor = .clear
+            b.layer.shadowOpacity = 0
+            b.layer.borderWidth = 0
+            let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+            blur.layer.cornerRadius = 5
+            blur.clipsToBounds = true
+            blur.isUserInteractionEnabled = false
+            blur.translatesAutoresizingMaskIntoConstraints = false
+            b.insertSubview(blur, at: 0)
+            NSLayoutConstraint.activate([
+                blur.leadingAnchor.constraint(equalTo: b.leadingAnchor),
+                blur.trailingAnchor.constraint(equalTo: b.trailingAnchor),
+                blur.topAnchor.constraint(equalTo: b.topAnchor),
+                blur.bottomAnchor.constraint(equalTo: b.bottomAnchor)
+            ])
+        } else if theme.keyStyle == 2 { // Flat
+            b.backgroundColor = .clear
+            b.layer.shadowOpacity = 0
+            b.layer.borderWidth = 1
+            b.layer.borderColor = UIColor.label.withAlphaComponent(0.2).cgColor
+        } else {
+            b.backgroundColor = isSpecialKey ? specialBg : letterBg
+            b.layer.shadowOpacity = 0.3
+            b.layer.borderWidth = 0
+        }
     }
     
     private func updateButtonColors() {
+        var theme = ThemeSettings(keyStyle: 0)
+        if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+           let saved = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            theme = saved
+        }
         let isDark = textDocumentProxy.keyboardAppearance == .dark || traitCollection.userInterfaceStyle == .dark
         let letterBg = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
         let specialBg = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
@@ -783,7 +836,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                     btn.tintColor = textColor
                     let title = btn.titleLabel?.text ?? ""
                     let isSpecialKey = btn.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
-                    btn.backgroundColor = isSpecialKey ? specialBg : letterBg
+                    applyThemeToQwertyButton(btn, isSpecialKey: isSpecialKey, theme: theme, letterBg: letterBg, specialBg: specialBg)
                 } else if let nestedStack = sub as? UIStackView {
                     nestedStack.arrangedSubviews.forEach { btn in
                         if let b = btn as? UIButton {
@@ -791,7 +844,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                             b.tintColor = textColor
                             let title = b.titleLabel?.text ?? ""
                             let isSpecialKey = b.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
-                            b.backgroundColor = isSpecialKey ? specialBg : letterBg
+                            applyThemeToQwertyButton(b, isSpecialKey: isSpecialKey, theme: theme, letterBg: letterBg, specialBg: specialBg)
                         }
                     }
                 }
