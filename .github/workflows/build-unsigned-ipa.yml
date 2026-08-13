@@ -36,43 +36,44 @@ jobs:
           echo "Found app at: $APP_PATH"
           cp -R "$APP_PATH" payload/Payload/
           cd payload
-          zip -r ../SimpleKeys-SideStore.ipa Payload
+          zip -r ../SimpleKeys.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SimpleKeys-SideStore-IPA
-          path: SimpleKeys-SideStore.ipa
+          name: SimpleKeys-IPA
+          path: SimpleKeys.ipa
 
-      - name: Generate release tag
-        id: tag
+      - name: Delete existing nightly tag
         run: |
-          TAG="nightly-$(date +'%Y%m%d-%H%M%S')"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "date=$(date +'%Y/%m/%d %H:%M')" >> "$GITHUB_OUTPUT"
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          git tag -d nightly 2>/dev/null || true
+          git push origin :refs/tags/nightly 2>/dev/null || true
+
+      - name: Get build info
+        id: info
+        run: |
+          echo "date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Create Pre-Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: "🌙 Nightly Build - ${{ steps.tag.outputs.date }}"
+          tag_name: nightly
+          name: "Nightly Build"
           body: |
-            ## 🌙 SimpleKeys Nightly Build
+            ## SimpleKeys Nightly Build
 
-            **ビルド日時**: ${{ steps.tag.outputs.date }} UTC
-            **コミット**: `${{ steps.tag.outputs.sha }}` (${{ github.ref_name }})
+            **Date**: ${{ steps.info.outputs.date }}
+            **Commit**: `${{ steps.info.outputs.sha }}` (${{ github.ref_name }})
 
-            ### 📦 インストール方法
-            1. 下の `SimpleKeys-SideStore.ipa` をダウンロード
-            2. SideStore / AltStore でインストール
-            3. 設定 > 一般 > キーボード > 新しいキーボードを追加 から SimpleKeys を有効化
+            ### Installation
+            1. Download `SimpleKeys.ipa` below
+            2. Install via SideStore / AltStore
+            3. Go to Settings > General > Keyboard > Add New Keyboard > SimpleKeys
 
-            ### ⚠️ 注意
-            これは開発版（pre-release）です。安定版ではありません。
+            > This is a development build (pre-release). It may contain bugs.
 
             ---
-            *Automated nightly build from `${{ github.ref_name }}` branch*
+            *Automated build from `${{ github.ref_name }}` branch*
           prerelease: true
-          files: SimpleKeys-SideStore.ipa
+          files: SimpleKeys.ipa
