@@ -27,6 +27,9 @@ No ads. No tracking. Just a keyboard that works.
 - **QWERTY & Flick Input:** Supports both classic QWERTY Romaji input and Japanese Flick input.
 - **Advanced Theme Engine:** Fully customize your keyboard's look and feel with an intuitive in-app editor.
   - **Styles & Shapes:** Choose between Standard, Frosted Glass, Flat, or Clear Glass key styles. Customize key shapes (Rounded, Oval, Rectangle).
+  - **Flick Popup Customization:** Customize the background, text, highlight color, and shape (Rounded, Oval, Rectangle) of the flick hint popups.
+  - **Custom Fonts:** Import and manage TrueType (`.ttf`)/OpenType (`.otf`) custom fonts directly from the app's font manager and apply them to your keyboard.
+  - **Background Images:** Add custom images as your keyboard background. Includes an interactive editor to zoom, pan, and crop your images perfectly.
   - **Live Preview:** See exactly how your keyboard will look with an interactive, pixel-perfect layout preview (switchable between QWERTY and Flick).
   - **Deep Color Customization:** Use the native Apple Color Picker to select exact Hex/RGB colors for key backgrounds, text, and borders with full opacity control.
 - **App Group Syncing:** Dynamically resolves App Group IDs to fully support sideloading (AltStore/SideStore) and syncs custom themes perfectly to the keyboard extension.
