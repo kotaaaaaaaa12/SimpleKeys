@@ -4,7 +4,7 @@
 
 **A lightweight, open-source keyboard for iOS — built for people who value privacy.**
 
-No ads. No tracking. No network access. Just a keyboard that works.
+No ads. No tracking. Just a keyboard that works.
 
 [![iOS 15.0+](https://img.shields.io/badge/iOS-15.0%2B-007AFF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
 [![Swift 5](https://img.shields.io/badge/Swift-5-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org/)
@@ -16,27 +16,6 @@ No ads. No tracking. No network access. Just a keyboard that works.
 🌐 **[日本語](README.ja.md)** · English
 
 </div>
-
----
-
-## 🔥 Featured
-
-What makes SimpleKeys stand out from other keyboards:
-
-### 🧠 Full Romaji Engine
-Type `qa` and get `くぁ`. Type `kya` and get `きゃ`. Our built-in Romaji-to-Hiragana engine covers **every major input style** — Hepburn, Kunrei-shiki, Nihon-shiki, and more. No cloud lookups, no lag. Everything converts instantly, right on your device.
-
-### 👆 Slide-to-Select Special Characters
-Long-press any key on the QWERTY keyboard to reveal accented and special characters — then **slide your finger** to pick the one you want without lifting. Fast, fluid, no popups.
-
-### 🔒 Truly Offline & Private
-This isn't marketing talk. SimpleKeys contains **zero networking code**. There is literally no way for your keystrokes to leave your device. The source code is right here — verify it yourself.
-
-### 🔄 SideStore / AltStore Ready
-Designed with sideloading in mind. SimpleKeys **dynamically resolves App Group IDs** at runtime, so your settings sync correctly even on free developer accounts. No paid Apple Developer membership required.
-
-### 🛠️ In-App Update Notifications
-The app fetches a lightweight JSON from GitHub to check for new versions. If an update is available, you'll see a badge on the Updates tab — no App Store needed.
 
 ---
 
@@ -74,12 +53,14 @@ Settings → General → Keyboard → Keyboards → Add New Keyboard → SimpleK
 
 ## 🔒 Privacy
 
-SimpleKeys requests Full Access solely to read your preferences via a shared App Group. Here's what that means in practice:
+SimpleKeys requests Full Access solely to read your preferences via a shared App Group.
 
-- **No network access** — there is no networking code in this project.
-- **No data collection** — nothing leaves your device. Ever.
+- **No data collection** — your keystrokes never leave your device.
 - **No clipboard monitoring** — your copied data stays yours.
+- **No ads, no analytics** — nothing is tracked.
 - **Fully open source** — audit the code yourself.
+
+> The companion app makes a single HTTPS request to GitHub to check for updates. The keyboard extension itself performs no network access.
 
 ---
 
