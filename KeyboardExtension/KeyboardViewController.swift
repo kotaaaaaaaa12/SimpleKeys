@@ -26,8 +26,14 @@ class MockDocumentProxy: NSObject, UITextDocumentProxy {
     var smartInsertDeleteType: UITextSmartInsertDeleteType = .no
 }
 
+#if APP
+typealias BaseKeyboardViewController = UIViewController
+#else
+typealias BaseKeyboardViewController = UIInputViewController
+#endif
+
 @objc(KeyboardViewController)
-class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
+class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate {
     private var alternateKeysPopup: UIView?
     private var alternateLabels: [UILabel] = []
     private var currentLongPressButton: UIButton?
@@ -100,6 +106,16 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     var previewTheme: ThemeSettings?
     private let mockProxy = MockDocumentProxy()
     
+    #if APP
+    var textDocumentProxy: UITextDocumentProxy {
+        return isPreviewMode ? mockProxy : MockDocumentProxy()
+    }
+    
+    var needsInputModeSwitchKey: Bool {
+        if isPreviewMode { return true }
+        return false
+    }
+    #else
     override var textDocumentProxy: UITextDocumentProxy {
         return isPreviewMode ? mockProxy : super.textDocumentProxy
     }
@@ -108,6 +124,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         if isPreviewMode { return true }
         return super.needsInputModeSwitchKey
     }
+    #endif
     
     private let kanjiConverter = KanjiConverter.shared
     
@@ -272,8 +289,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         updatePreviewTheme()
     }
     
+    #if !APP
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+    #else
+    func textDidChange(_ textInput: UITextInput?) {
+    #endif
         updateAppearance()
         
         // If text was externally cleared (e.g., sent in LINE), clear our buffers
