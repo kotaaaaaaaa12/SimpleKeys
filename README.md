@@ -22,7 +22,8 @@ No ads. No tracking. Just a keyboard that works.
 ## ✨ Features
 
 - **Offline Kanji Conversion:** Powered by the open-source SKK dictionary (~130,000 entries), SimpleKeys converts Hiragana to Kanji completely offline. No network requests are made.
-- **Privacy First:** Your keystrokes never leave your device.
+- **Gemini AI Conversion:** Connect your own Gemini API key to leverage advanced AI for context-aware Japanese input conversion (e.g., fixing typos, or converting casual text into polite business emails).
+- **Privacy First:** Your keystrokes never leave your device (unless using the Gemini AI feature, which connects directly to Google).
 - **QWERTY & Flick Input:** Supports both classic QWERTY Romaji input and Japanese Flick input.
 - **Advanced Theme Engine:** Fully customize your keyboard's look and feel with an intuitive in-app editor.
   - **Styles & Shapes:** Choose between Standard, Frosted Glass, Flat, or Clear Glass key styles. Customize key shapes (Rounded, Oval, Rectangle).
@@ -73,7 +74,9 @@ SimpleKeys requests Full Access solely to read your preferences via a shared App
 - **No ads, no analytics** — nothing is tracked.
 - **Fully open source** — audit the code yourself.
 
-> The companion app makes a single HTTPS request to GitHub to check for updates. The keyboard extension itself performs no network access.
+> **About Gemini AI Conversion:** If you enable the Gemini API feature, your typing data is sent directly to Google's Gemini API for conversion processing. **We (the developers) do not collect, intercept, or extract any of your typing data or API keys.** Your API key is stored securely and locally on your device.
+
+> The companion app makes a single HTTPS request to GitHub to check for updates. The keyboard extension itself performs no network access (unless Gemini AI is explicitly enabled by the user).
 
 ---
 
