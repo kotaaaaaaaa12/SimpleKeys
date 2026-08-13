@@ -1344,4 +1344,3 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     }
 }
 
-}
