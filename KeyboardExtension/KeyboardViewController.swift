@@ -53,6 +53,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var candidateCollectionView: UICollectionView!
     private var isExpanded: Bool = false
     
+    private var englishBuffer: String = ""
+    
     private let kanjiConverter = KanjiConverter.shared
     
     private let letterRows: [[String]] = [
@@ -241,7 +243,10 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     private func updateConversionBar() {
-        let display = romajiConverter.displayText
+        let displayRomaji = romajiConverter.displayText
+        let displayEnglish = englishBuffer
+        
+        let display = !displayRomaji.isEmpty ? displayRomaji : displayEnglish
         
         // Clear previous candidates
         for subview in candidateStack.arrangedSubviews {
@@ -256,7 +261,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             conversionLabel.text = display
             conversionLabel.textColor = .label
             
-            currentCandidates = kanjiConverter.convert(display)
+            if !displayRomaji.isEmpty {
+                currentCandidates = kanjiConverter.convert(displayRomaji)
+            } else {
+                currentCandidates = EnglishConverter.shared.candidates(for: displayEnglish)
+            }
             
             if currentCandidates.isEmpty {
                 currentCandidates = [display]
@@ -313,7 +322,11 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let text = currentCandidates[index]
         
         textDocumentProxy.insertText(text)
-        _ = romajiConverter.commit() // Clear internal state
+        if romajiConverter.hasPendingInput {
+            _ = romajiConverter.commit()
+        } else {
+            englishBuffer = ""
+        }
         
         textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
         
@@ -803,7 +816,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
             updateConversionBar()
         } else {
-            textDocumentProxy.insertText(title)
+            englishBuffer += title
+            textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
+            updateConversionBar()
         }
         
         if shiftState == .shifted {
@@ -860,25 +875,21 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func spacePressed() {
-        if currentMode == .qwertyRomaji && !romajiConverter.displayText.isEmpty {
-            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
-            textDocumentProxy.unmarkText()
-            let text = romajiConverter.commit()
-            if !text.isEmpty { textDocumentProxy.insertText(text) }
-            updateConversionBar()
-            UIDevice.current.playInputClick()
-            return
+        if (romajiConverter.hasPendingInput || !englishBuffer.isEmpty) && !currentCandidates.isEmpty {
+            commitCandidate(at: 0)
+        } else {
+            textDocumentProxy.insertText(" ")
         }
-        textDocumentProxy.insertText(" ")
         UIDevice.current.playInputClick()
     }
     
     @objc private func returnPressed() {
-        if currentMode == .qwertyRomaji && !romajiConverter.displayText.isEmpty {
+        if romajiConverter.hasPendingInput || !englishBuffer.isEmpty {
             textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
             textDocumentProxy.unmarkText()
-            let text = romajiConverter.commit()
+            let text = romajiConverter.hasPendingInput ? romajiConverter.commit() : englishBuffer
             if !text.isEmpty { textDocumentProxy.insertText(text) }
+            englishBuffer = ""
             updateConversionBar()
             UIDevice.current.playInputClick()
             return
@@ -902,7 +913,7 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     @objc private func deletePressed() {
-        if currentMode == .qwertyRomaji && !romajiConverter.displayText.isEmpty {
+        if romajiConverter.hasPendingInput {
             romajiConverter.deleteBackward()
             let display = romajiConverter.displayText
             if display.isEmpty {
@@ -910,6 +921,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
                 textDocumentProxy.unmarkText()
             } else {
                 textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
+            }
+            updateConversionBar()
+        } else if !englishBuffer.isEmpty {
+            englishBuffer.removeLast()
+            if englishBuffer.isEmpty {
+                textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
+                textDocumentProxy.unmarkText()
+            } else {
+                textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
             }
             updateConversionBar()
         } else {
@@ -953,7 +973,9 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
             updateConversionBar()
         } else {
-            textDocumentProxy.insertText(text)
+            englishBuffer += text
+            textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
+            updateConversionBar()
         }
     }
     
@@ -987,39 +1009,15 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressDelete(_ keyboard: FlickKeyboardView) {
-        if keyboard.currentPage == .kana && romajiConverter.hasPendingInput {
-            romajiConverter.deleteBackward()
-            let display = romajiConverter.displayText
-            if display.isEmpty {
-                textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
-            } else {
-                textDocumentProxy.setMarkedText(display, selectedRange: NSRange(location: display.utf16.count, length: 0))
-            }
-            updateConversionBar()
-        } else {
-            textDocumentProxy.deleteBackward()
-        }
+        deletePressed()
     }
     
     func flickKeyboardDidPressReturn(_ keyboard: FlickKeyboardView) {
-        if romajiConverter.hasPendingInput {
-            commitConversion()
-        } else {
-            textDocumentProxy.insertText("\n")
-        }
+        returnPressed()
     }
     
     func flickKeyboardDidPressSpace(_ keyboard: FlickKeyboardView) {
-        if romajiConverter.hasPendingInput && !currentCandidates.isEmpty {
-            // Commit top candidate for now
-            let text = currentCandidates[0]
-            textDocumentProxy.insertText(text)
-            _ = romajiConverter.commit()
-            textDocumentProxy.setMarkedText("", selectedRange: NSRange(location: 0, length: 0))
-            updateConversionBar()
-        } else {
-            textDocumentProxy.insertText(" ")
-        }
+        spacePressed()
     }
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
@@ -1084,19 +1082,24 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             return
         }
         
-        guard let before = textDocumentProxy.documentContextBeforeInput,
-              let lastChar = before.last else { return }
-        
-        if keyboard.currentPage == .alphabet {
+        if keyboard.currentPage == .alphabet && !englishBuffer.isEmpty {
+            guard let lastChar = englishBuffer.last else { return }
             if lastChar.isLowercase {
-                textDocumentProxy.deleteBackward()
-                textDocumentProxy.insertText(lastChar.uppercased())
+                englishBuffer.removeLast()
+                englishBuffer.append(lastChar.uppercased())
+                textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
+                updateConversionBar()
             } else if lastChar.isUppercase {
-                textDocumentProxy.deleteBackward()
-                textDocumentProxy.insertText(lastChar.lowercased())
+                englishBuffer.removeLast()
+                englishBuffer.append(lastChar.lowercased())
+                textDocumentProxy.setMarkedText(englishBuffer, selectedRange: NSRange(location: englishBuffer.utf16.count, length: 0))
+                updateConversionBar()
             }
             return
         }
+        
+        guard let before = textDocumentProxy.documentContextBeforeInput,
+              let lastChar = before.last else { return }
         
         let charString = String(lastChar)
         let map: [String: String] = [

@@ -17,6 +17,7 @@
 		AC8828B81E0C48FEBC3F281F /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F566660790C4999AF0DCE56 /* SceneDelegate.swift */; };
 		B2C3D4E5F6A748B9C0D1E2F3 /* FlickKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */; };
 		D43DF93FFEC34597814DF736 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D11DDBD48E420491C7B850 /* AppDelegate.swift */; };
+		E24A4B5DB7030C9397722D45 /* EnglishConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +54,7 @@
 		73D11DDBD48E420491C7B850 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		81695A31AA1E4F638EC94CD6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8F566660790C4999AF0DCE56 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnglishConverter.swift; path = KeyboardExtension/EnglishConverter.swift; sourceTree = SOURCE_ROOT; };
 		9D78686BB7EE46D682C6CEA1 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6F74809B1C2D3E4 /* FlickKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlickKeyboardView.swift; sourceTree = "<group>"; };
 		E88F5E118CC2494582BAE89E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				523D4EAE37C84348A7B9F4D9 /* Info.plist */,
 				64264595B193456E64B99E42 /* KanjiConverter.swift */,
 				6B1949EE878530580F760DC6 /* dictionary.json */,
+				92974C1FBE92B748EEA839C0 /* EnglishConverter.swift */,
 			);
 			path = KeyboardExtension;
 			sourceTree = "<group>";
@@ -241,6 +244,7 @@
 				A1B2C3D4E5F647A8B9C0D1E2 /* RomajiConverter.swift in Sources */,
 				B2C3D4E5F6A748B9C0D1E2F3 /* FlickKeyboardView.swift in Sources */,
 				590049E99FC882749C9FBFBE /* KanjiConverter.swift in Sources */,
+				E24A4B5DB7030C9397722D45 /* EnglishConverter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
