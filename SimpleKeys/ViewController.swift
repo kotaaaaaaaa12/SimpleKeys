@@ -833,6 +833,35 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     
     private var pickingColorFor: String?
     
+    // For interactive preview
+    private var activePopupView: UIView?
+    private var activePopupBgLayer: CAShapeLayer?
+    private var activePopupLabels: [String: UILabel] = [:]
+    private var activeKeyView: PreviewKeyView?
+    private var touchStartLocation: CGPoint = .zero
+    
+    private let flickMap: [String: [String: String]] = [
+        "あ": ["left": "い", "up": "う", "right": "え", "down": "お"],
+        "か": ["left": "き", "up": "く", "right": "け", "down": "こ"],
+        "さ": ["left": "し", "up": "す", "right": "せ", "down": "そ"],
+        "た": ["left": "ち", "up": "つ", "right": "て", "down": "と"],
+        "な": ["left": "に", "up": "ぬ", "right": "ね", "down": "の"],
+        "は": ["left": "ひ", "up": "ふ", "right": "へ", "down": "ほ"],
+        "ま": ["left": "み", "up": "む", "right": "め", "down": "も"],
+        "や": ["left": "「", "up": "ゆ", "right": "」", "down": "よ"],
+        "ら": ["left": "り", "up": "る", "right": "れ", "down": "ろ"],
+        "わ": ["left": "を", "up": "ん", "right": "ー", "down": "〜"],
+        "、": ["left": "。", "up": "？", "right": "！", "down": "…"],
+        "ABC": ["left": "B", "up": "C"],
+        "DEF": ["left": "E", "up": "F"],
+        "GHI": ["left": "H", "up": "I"],
+        "JKL": ["left": "K", "up": "L"],
+        "MNO": ["left": "N", "up": "O"],
+        "PQRS": ["left": "Q", "up": "R", "right": "S"],
+        "TUV": ["left": "U", "up": "V"],
+        "WXYZ": ["left": "X", "up": "Y", "right": "Z"]
+    ]
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
@@ -893,6 +922,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         previewContainer.layer.cornerRadius = 12
         previewContainer.clipsToBounds = true
         view.addSubview(previewContainer)
+        
+        let gesture = UILongPressGestureRecognizer(target: self, action: #selector(handlePreviewTouch(_:)))
+        gesture.minimumPressDuration = 0
+        previewContainer.addGestureRecognizer(gesture)
         
         previewBgImageView.translatesAutoresizingMaskIntoConstraints = false
         previewBgImageView.contentMode = .scaleAspectFill
@@ -1436,6 +1469,216 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         }
         updatePreview()
         tableView.reloadData()
+    }
+    
+    // MARK: - Interactive Preview
+    
+    private func findPreviewKey(at point: CGPoint) -> PreviewKeyView? {
+        var view = previewGrid.hitTest(previewContainer.convert(point, to: previewGrid), with: nil)
+        while view != nil {
+            if let key = view as? PreviewKeyView {
+                return key
+            }
+            view = view?.superview
+        }
+        return nil
+    }
+    
+    @objc private func handlePreviewTouch(_ gesture: UILongPressGestureRecognizer) {
+        let loc = gesture.location(in: previewContainer)
+        
+        switch gesture.state {
+        case .began:
+            if let hit = findPreviewKey(at: loc) {
+                activeKeyView = hit
+                touchStartLocation = loc
+                
+                hit.alpha = 0.5
+                
+                if keyboardTypeSegment.selectedSegmentIndex == 0, let label = hit.viewWithTag(777) as? UILabel, let text = label.text, flickMap.keys.contains(text) {
+                    showFlickPopup(for: hit, text: text)
+                }
+            }
+        case .changed:
+            guard let hit = activeKeyView else { return }
+            if activePopupView != nil {
+                let dx = loc.x - touchStartLocation.x
+                let dy = loc.y - touchStartLocation.y
+                let threshold: CGFloat = 20
+                var dir = "center"
+                if abs(dx) > abs(dy) && abs(dx) > threshold {
+                    dir = dx > 0 ? "right" : "left"
+                } else if abs(dy) > abs(dx) && abs(dy) > threshold {
+                    dir = dy > 0 ? "down" : "up"
+                }
+                updateFlickPopup(direction: dir)
+            } else {
+                let keyLoc = gesture.location(in: hit)
+                if !hit.bounds.contains(keyLoc) {
+                    hit.alpha = 1.0
+                } else {
+                    hit.alpha = 0.5
+                }
+            }
+        case .ended, .cancelled, .failed:
+            activeKeyView?.alpha = 1.0
+            activeKeyView = nil
+            activePopupView?.removeFromSuperview()
+            activePopupView = nil
+            activePopupBgLayer = nil
+            activePopupLabels.removeAll()
+        default: break
+        }
+    }
+    
+    private func showFlickPopup(for button: UIView, text: String) {
+        guard let mappings = flickMap[text] else { return }
+        
+        var popupBg = UIColor.white
+        var popupTextCol = UIColor.black
+        if let hex = currentTheme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
+        if let hex = currentTheme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
+        
+        let popup = UIView()
+        popup.translatesAutoresizingMaskIntoConstraints = false
+        
+        let keyWidth = button.bounds.width
+        let keyHeight = button.bounds.height
+        let spacing: CGFloat = 6.0
+        
+        let directions = ["center", "left", "up", "right", "down"]
+        activePopupLabels.removeAll()
+        
+        for dir in directions {
+            let labelText = dir == "center" ? text : mappings[dir]
+            if labelText == nil { continue }
+            
+            let label = UILabel()
+            label.font = .systemFont(ofSize: 22, weight: .semibold)
+            label.textColor = popupTextCol
+            label.textAlignment = .center
+            label.backgroundColor = popupBg
+            label.layer.cornerRadius = 6
+            label.layer.masksToBounds = true
+            label.layer.shadowColor = UIColor.black.cgColor
+            label.layer.shadowOpacity = 0.2
+            label.layer.shadowOffset = CGSize(width: 0, height: 1)
+            label.layer.shadowRadius = 2
+            label.text = labelText
+            label.translatesAutoresizingMaskIntoConstraints = false
+            
+            if let fontName = currentTheme.fontName, let customFont = UIFont(name: fontName, size: 22) {
+                label.font = customFont
+            }
+            
+            popup.addSubview(label)
+            activePopupLabels[dir] = label
+            
+            NSLayoutConstraint.activate([
+                label.widthAnchor.constraint(equalToConstant: keyWidth),
+                label.heightAnchor.constraint(equalToConstant: keyHeight)
+            ])
+            
+            var centerXOffset: CGFloat = 0
+            var centerYOffset: CGFloat = 0
+            
+            switch dir {
+            case "center": break
+            case "left": centerXOffset = -(keyWidth + spacing)
+            case "right": centerXOffset = keyWidth + spacing
+            case "up": centerYOffset = -(keyHeight + spacing)
+            case "down": centerYOffset = keyHeight + spacing
+            default: break
+            }
+            
+            NSLayoutConstraint.activate([
+                label.centerXAnchor.constraint(equalTo: popup.centerXAnchor, constant: centerXOffset),
+                label.centerYAnchor.constraint(equalTo: popup.centerYAnchor, constant: centerYOffset)
+            ])
+        }
+        
+        let bgLayer = CAShapeLayer()
+        bgLayer.fillColor = popupBg.cgColor
+        bgLayer.shadowColor = UIColor.black.cgColor
+        bgLayer.shadowOpacity = 0.2
+        bgLayer.shadowOffset = CGSize(width: 0, height: 1)
+        bgLayer.shadowRadius = 2
+        popup.layer.insertSublayer(bgLayer, at: 0)
+        activePopupBgLayer = bgLayer
+        
+        previewContainer.addSubview(popup)
+        activePopupView = popup
+        
+        NSLayoutConstraint.activate([
+            popup.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+            popup.centerYAnchor.constraint(equalTo: button.centerYAnchor)
+        ])
+        
+        updateFlickPopup(direction: "center")
+    }
+    
+    private func updateFlickPopup(direction: String) {
+        guard let popup = activePopupView else { return }
+        let bgLayer = activePopupBgLayer
+        
+        var popupBg = UIColor.white
+        var popupTextCol = UIColor.black
+        var highlightCol = UIColor.systemBlue
+        if let hex = currentTheme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
+        if let hex = currentTheme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
+        if let hex = currentTheme.flickHighlightHex { highlightCol = UIColor(hex: hex) ?? .systemBlue }
+        
+        for (dir, label) in activePopupLabels {
+            if dir == direction {
+                label.isHidden = false
+                popup.bringSubviewToFront(label)
+                label.backgroundColor = highlightCol
+                label.textColor = .white
+                label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+            } else {
+                label.backgroundColor = popupBg
+                label.textColor = popupTextCol
+                label.transform = .identity
+                label.isHidden = false
+            }
+        }
+        
+        if direction != "center" {
+            guard let label = activePopupLabels[direction] else { return }
+            let f = label.frame.insetBy(dx: -6, dy: -6)
+            let path = UIBezierPath(roundedRect: f, cornerRadius: 8)
+            let arrow = UIBezierPath()
+            let aw: CGFloat = 20 // arrow width
+            let ah: CGFloat = 16 // arrow height pointing inward
+            
+            switch direction {
+            case "left":
+                arrow.move(to: CGPoint(x: f.maxX, y: f.midY - aw/2))
+                arrow.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
+                arrow.addLine(to: CGPoint(x: f.maxX, y: f.midY + aw/2))
+            case "right":
+                arrow.move(to: CGPoint(x: f.minX, y: f.midY - aw/2))
+                arrow.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
+                arrow.addLine(to: CGPoint(x: f.minX, y: f.midY + aw/2))
+            case "up":
+                arrow.move(to: CGPoint(x: f.midX - aw/2, y: f.maxY))
+                arrow.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
+                arrow.addLine(to: CGPoint(x: f.midX + aw/2, y: f.maxY))
+            case "down":
+                arrow.move(to: CGPoint(x: f.midX - aw/2, y: f.minY))
+                arrow.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
+                arrow.addLine(to: CGPoint(x: f.midX + aw/2, y: f.minY))
+            default: break
+            }
+            arrow.close()
+            path.append(arrow)
+            bgLayer?.path = path.cgPath
+            bgLayer?.fillColor = popupBg.cgColor
+            bgLayer?.strokeColor = popupBg.withAlphaComponent(0.6).cgColor
+            bgLayer?.lineWidth = 0.5
+        } else {
+            bgLayer?.path = nil
+        }
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
