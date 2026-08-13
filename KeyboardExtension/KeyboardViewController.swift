@@ -617,6 +617,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         } else {
             textDocumentProxy.insertText(title)
         }
+        
+        if shiftState == .shifted {
+            shiftState = .off
+            qwertyShifted = false
+            rebuildQWERTYLayout()
+            updateButtonColors()
+        }
+        
         UIDevice.current.playInputClick()
     }
     
@@ -853,19 +861,6 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             textDocumentProxy.insertText(newChar)
         } else {
             textDocumentProxy.insertText("゛")
-        }
-        
-        if title == " " {
-            textDocumentProxy.insertText(" ")
-        } else {
-            textDocumentProxy.insertText(title)
-        }
-        
-        if shiftState == .shifted {
-            shiftState = .off
-            qwertyShifted = false
-            rebuildQWERTYLayout()
-            updateButtonColors()
         }
         
         UIDevice.current.playInputClick()
