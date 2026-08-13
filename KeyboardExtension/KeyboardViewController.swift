@@ -557,8 +557,8 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     }
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
-        let defaults = UserDefaults(suiteName: "group.com.simplekeys.app")
-        let style = defaults?.integer(forKey: "englishInputStyle") ?? 0
+        let defaults = UserDefaults.standard
+        let style = defaults.integer(forKey: "englishInputStyle")
         
         if style == 0 {
             // Flick Alphabet
@@ -572,6 +572,17 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
             currentMode = .qwertyEnglish
             applyMode()
         }
+    }
+    
+    func flickKeyboardDidLongPressABC(_ keyboard: FlickKeyboardView) {
+        let defaults = UserDefaults.standard
+        let currentStyle = defaults.integer(forKey: "englishInputStyle")
+        let newStyle = (currentStyle == 0) ? 1 : 0
+        defaults.set(newStyle, forKey: "englishInputStyle")
+        
+        // Show temporary toast or feedback (Optional)
+        // Switch immediately
+        flickKeyboardDidPressABC(keyboard)
     }
     
     func flickKeyboardDidPressDakuten(_ keyboard: FlickKeyboardView) {
