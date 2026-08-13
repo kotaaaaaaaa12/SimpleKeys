@@ -128,6 +128,7 @@ class SettingsViewController: UITableViewController {
     private let qwertyRomajiSwitch = UISwitch()
     private let flickAlphabetQwertySwitch = UISwitch()
     private let flickOnlySwitch = UISwitch()
+    private let oneHandedSegment = UISegmentedControl(items: ["左", "オフ", "右"])
     
     private let geminiSwitch = UISwitch()
     private let geminiApiKeyField: UITextField = {
@@ -195,6 +196,7 @@ class SettingsViewController: UITableViewController {
         flickSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         flickAlphabetQwertySwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         flickOnlySwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
+        oneHandedSegment.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyEnglishSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         qwertyRomajiSwitch.addTarget(self, action: #selector(settingsChanged), for: .valueChanged)
         languageSegment.addTarget(self, action: #selector(languageChanged), for: .valueChanged)
@@ -212,6 +214,10 @@ class SettingsViewController: UITableViewController {
         flickSwitch.isOn = defaults?.object(forKey: "enableFlick") == nil ? true : defaults!.bool(forKey: "enableFlick")
         flickAlphabetQwertySwitch.isOn = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         flickOnlySwitch.isOn = defaults?.bool(forKey: "flickOnly") ?? false
+        
+        let ohMode = defaults?.string(forKey: "oneHandedMode") ?? "off"
+        oneHandedSegment.selectedSegmentIndex = ohMode == "left" ? 0 : (ohMode == "right" ? 2 : 1)
+        
         qwertyEnglishSwitch.isOn = defaults?.object(forKey: "enableQwertyEnglish") == nil ? true : defaults!.bool(forKey: "enableQwertyEnglish")
         qwertyRomajiSwitch.isOn = defaults?.object(forKey: "enableQwertyRomaji") == nil ? true : defaults!.bool(forKey: "enableQwertyRomaji")
         
@@ -233,6 +239,10 @@ class SettingsViewController: UITableViewController {
         sharedDefaults?.set(flickSwitch.isOn, forKey: "enableFlick")
         sharedDefaults?.set(flickAlphabetQwertySwitch.isOn, forKey: "flickAlphabetIsQwerty")
         sharedDefaults?.set(flickOnlySwitch.isOn, forKey: "flickOnly")
+        
+        let ohMode = oneHandedSegment.selectedSegmentIndex == 0 ? "left" : (oneHandedSegment.selectedSegmentIndex == 2 ? "right" : "off")
+        sharedDefaults?.set(ohMode, forKey: "oneHandedMode")
+        
         sharedDefaults?.set(qwertyEnglishSwitch.isOn, forKey: "enableQwertyEnglish")
         sharedDefaults?.set(qwertyRomajiSwitch.isOn, forKey: "enableQwertyRomaji")
         sharedDefaults?.set(geminiSwitch.isOn, forKey: "enableGemini")
@@ -260,6 +270,9 @@ class SettingsViewController: UITableViewController {
             let isEn = lang == "en"
             tabBarVC.tabBar.items?[0].title = isEn ? "Settings" : "設定"
             tabBarVC.tabBar.items?[1].title = isEn ? "Updates" : "お知らせ"
+            oneHandedSegment.setTitle(isEn ? "Left" : "左", forSegmentAt: 0)
+            oneHandedSegment.setTitle(isEn ? "Off" : "オフ", forSegmentAt: 1)
+            oneHandedSegment.setTitle(isEn ? "Right" : "右", forSegmentAt: 2)
             tabBarVC.checkForUpdates()
         }
     }
@@ -271,10 +284,10 @@ class SettingsViewController: UITableViewController {
         case 0: return 1
         case 1: return 1
         case 2: return 3
-        case 3: return 2
+        case 3: return 3
         case 4: return 3
         case 5: return 1
-        case 6: return 2
+        case 6: return 1
         default: return 0
         }
     }
@@ -353,6 +366,10 @@ class SettingsViewController: UITableViewController {
                 cell.textLabel?.text = isEn ? "Flick Only (Disable Toggle)" : "フリックのみ (ガラケー打ち無効)"
                 cell.detailTextLabel?.text = isEn ? "Disable multiple taps to cycle characters" : "同じキーを連続タップしたときの文字切り替えを無効にします"
                 cell.accessoryView = flickOnlySwitch
+            } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "One-Handed Mode" : "片手モード"
+                cell.detailTextLabel?.text = isEn ? "Shift keyboard for easy typing" : "キーボードを左右に寄せて片手で入力しやすくします"
+                cell.accessoryView = oneHandedSegment
             }
         } else if indexPath.section == 4 {
             if indexPath.row == 0 {
@@ -391,10 +408,6 @@ class SettingsViewController: UITableViewController {
                 cell.textLabel?.text = isEn ? "Custom Themes" : "カスタムテーマ"
                 cell.detailTextLabel?.text = isEn ? "Customize background color and images" : "背景色や画像を自由に設定できます"
                 cell.imageView?.image = UIImage(systemName: "paintpalette.fill")
-            } else if indexPath.row == 1 {
-                cell.textLabel?.text = isEn ? "One-Handed Mode" : "片手モード"
-                cell.detailTextLabel?.text = isEn ? "Shift keyboard left/right for easy typing" : "キーボードを左右に寄せて片手で入力しやすくします"
-                cell.imageView?.image = UIImage(systemName: "hand.point.up.left")
             }
         }
         
@@ -512,7 +525,8 @@ class UserDictionaryViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "ユーザー辞書"
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        title = isEn ? "User Dictionary" : "ユーザー辞書"
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addButtonTapped))
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
         loadDictionary()
@@ -538,17 +552,19 @@ class UserDictionaryViewController: UITableViewController {
     }
     
     private func showEditAlert(for item: UserDictItem?, at index: Int?) {
-        let alert = UIAlertController(title: item == nil ? "単語の登録" : "単語の編集", message: nil, preferredStyle: .alert)
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        let alertTitle = item == nil ? (isEn ? "Add Word" : "単語の登録") : (isEn ? "Edit Word" : "単語の編集")
+        let alert = UIAlertController(title: alertTitle, message: nil, preferredStyle: .alert)
         alert.addTextField { tf in
-            tf.placeholder = "よみ (例: おつ)"
+            tf.placeholder = isEn ? "Reading (e.g. btw)" : "よみ (例: おつ)"
             tf.text = item?.yomi
         }
         alert.addTextField { tf in
-            tf.placeholder = "単語 (例: お疲れ様です！)"
+            tf.placeholder = isEn ? "Word (e.g. By the way)" : "単語 (例: お疲れ様です！)"
             tf.text = item?.kaki
         }
         
-        let saveAction = UIAlertAction(title: "保存", style: .default) { [weak self] _ in
+        let saveAction = UIAlertAction(title: isEn ? "Save" : "保存", style: .default) { [weak self] _ in
             guard let self = self,
                   let yomi = alert.textFields?[0].text, !yomi.isEmpty,
                   let kaki = alert.textFields?[1].text, !kaki.isEmpty else { return }
@@ -563,7 +579,7 @@ class UserDictionaryViewController: UITableViewController {
             self.tableView.reloadData()
         }
         
-        alert.addAction(UIAlertAction(title: "キャンセル", style: .cancel))
+        alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
         alert.addAction(saveAction)
         present(alert, animated: true)
     }

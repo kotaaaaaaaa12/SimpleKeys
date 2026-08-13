@@ -54,6 +54,12 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     private var isExpanded: Bool = false
     private var expandedStartIndex: Int = 0
     
+    // One-handed mode constraints
+    private var flickLeadingConstraint: NSLayoutConstraint!
+    private var flickTrailingConstraint: NSLayoutConstraint!
+    private var qwertyLeadingConstraint: NSLayoutConstraint!
+    private var qwertyTrailingConstraint: NSLayoutConstraint!
+    
     private var englishBuffer: String = ""
     private var qwertyReturnButton: UIButton?
     
@@ -125,6 +131,32 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         updateAppearance()
+        updateOneHandedMode()
+    }
+    
+    private func updateOneHandedMode() {
+        guard flickLeadingConstraint != nil else { return }
+        
+        let mode = AppGroupHelper.shared.userDefaults?.string(forKey: "oneHandedMode") ?? "off"
+        let screenWidth = UIScreen.main.bounds.width
+        let offset = screenWidth * 0.25 // Shrink to 75% width
+        
+        if mode == "left" {
+            flickLeadingConstraint.constant = 0
+            flickTrailingConstraint.constant = -offset
+            qwertyLeadingConstraint.constant = 0
+            qwertyTrailingConstraint.constant = -offset
+        } else if mode == "right" {
+            flickLeadingConstraint.constant = offset
+            flickTrailingConstraint.constant = 0
+            qwertyLeadingConstraint.constant = offset
+            qwertyTrailingConstraint.constant = 0
+        } else {
+            flickLeadingConstraint.constant = 0
+            flickTrailingConstraint.constant = 0
+            qwertyLeadingConstraint.constant = 0
+            qwertyTrailingConstraint.constant = 0
+        }
     }
     
     override func textDidChange(_ textInput: UITextInput?) {
@@ -484,11 +516,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let qwertyBottom = qwertyContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         qwertyBottom.priority = .defaultHigh
         
+        qwertyLeadingConstraint = qwertyContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        qwertyTrailingConstraint = qwertyContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        
         NSLayoutConstraint.activate([
             qwertyContainer.topAnchor.constraint(equalTo: conversionBar.bottomAnchor, constant: 2),
             qwertyBottom,
-            qwertyContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            qwertyContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            qwertyLeadingConstraint,
+            qwertyTrailingConstraint
         ])
         
         qwertyStack = UIStackView()
@@ -661,11 +696,14 @@ class KeyboardViewController: UIInputViewController, FlickKeyboardDelegate {
         let flickBottom = flickKeyboard.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
         flickBottom.priority = .defaultHigh
         
+        flickLeadingConstraint = flickKeyboard.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        flickTrailingConstraint = flickKeyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        
         NSLayoutConstraint.activate([
             flickKeyboard.topAnchor.constraint(equalTo: conversionBar.bottomAnchor, constant: 2),
             flickBottom,
-            flickKeyboard.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            flickKeyboard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            flickLeadingConstraint,
+            flickTrailingConstraint
         ])
     }
     
