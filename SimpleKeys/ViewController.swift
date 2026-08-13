@@ -768,8 +768,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     
     private var currentTheme = ThemeSettings(keyStyle: 0)
     
-    private let keyStyleSegment = UISegmentedControl(items: [])
-    private let buttonShapeSegment = UISegmentedControl(items: [])
     private let nameField = UITextField()
     private let opacitySlider = UISlider()
     
@@ -798,16 +796,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         
         if currentTheme.keyOpacity == nil {
             currentTheme.keyOpacity = 1.0
-        }
-        
-        let styleItems = isEn ? ["Standard", "Frosted", "Flat", "Clear"] : ["標準", "磨りガラス", "フラット", "クリア"]
-        for (i, item) in styleItems.enumerated() {
-            keyStyleSegment.insertSegment(withTitle: item, at: i, animated: false)
-        }
-        
-        let shapeItems = isEn ? ["Rounded", "Oval", "Rect"] : ["角丸", "楕円", "四角"]
-        for (i, item) in shapeItems.enumerated() {
-            buttonShapeSegment.insertSegment(withTitle: item, at: i, animated: false)
         }
         
         setupUI()
@@ -856,12 +844,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
-        keyStyleSegment.selectedSegmentIndex = currentTheme.keyStyle
-        keyStyleSegment.addTarget(self, action: #selector(settingChanged), for: .valueChanged)
-        
-        buttonShapeSegment.selectedSegmentIndex = currentTheme.buttonShape ?? 0
-        buttonShapeSegment.addTarget(self, action: #selector(settingChanged), for: .valueChanged)
-        
         opacitySlider.minimumValue = 0.0
         opacitySlider.maximumValue = 1.0
         opacitySlider.value = Float(currentTheme.keyOpacity ?? 1.0)
@@ -886,11 +868,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         updatePreview()
     }
     
-    @objc private func settingChanged() {
-        currentTheme.keyStyle = keyStyleSegment.selectedSegmentIndex
-        currentTheme.buttonShape = buttonShapeSegment.selectedSegmentIndex
-        updatePreview()
-    }
     
     @objc private func saveTapped() {
         if currentTheme.name == nil || currentTheme.name!.isEmpty {
@@ -904,6 +881,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     func numberOfSections(in tableView: UITableView) -> Int { return 7 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 1 { return 2 }
+        if section == 2 { return 2 } // Key Style and Button Shape
         if section == 3 { return 1 } // Opacity
         if section == 4 { return 3 } // Colors
         if section == 5 { return 1 } // Font
@@ -944,17 +922,21 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.textLabel?.textColor = .systemRed
             }
         } else if indexPath.section == 2 {
-            let stack = UIStackView(arrangedSubviews: [keyStyleSegment, buttonShapeSegment])
-            stack.axis = .vertical
-            stack.spacing = 16
-            stack.translatesAutoresizingMaskIntoConstraints = false
-            cell.contentView.addSubview(stack)
-            NSLayoutConstraint.activate([
-                stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
-                stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
-                stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
-                stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
-            ])
+            cell.selectionStyle = .default
+            cell.accessoryType = .disclosureIndicator
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Key Style" : "キースタイル"
+                let style = currentTheme.keyStyle
+                let stylesEn = ["Standard", "Frosted", "Flat", "Clear"]
+                let stylesJa = ["標準", "磨りガラス", "フラット", "クリア"]
+                cell.detailTextLabel?.text = isEn ? stylesEn[style] : stylesJa[style]
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Button Shape" : "ボタンの形"
+                let shape = currentTheme.buttonShape ?? 0
+                let shapesEn = ["Rounded", "Oval", "Rect"]
+                let shapesJa = ["角丸", "楕円", "四角"]
+                cell.detailTextLabel?.text = isEn ? shapesEn[shape] : shapesJa[shape]
+            }
         } else if indexPath.section == 3 {
             let stack = UIStackView(arrangedSubviews: [opacitySlider])
             stack.axis = .vertical
@@ -1050,6 +1032,43 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 currentTheme.backgroundImageFileName = nil
                 updatePreview()
             }
+        } else if indexPath.section == 2 {
+            let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+            let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+            
+            if indexPath.row == 0 {
+                alert.title = isEn ? "Key Style" : "キースタイル"
+                let stylesEn = ["Standard", "Frosted", "Flat", "Clear"]
+                let stylesJa = ["標準", "磨りガラス", "フラット", "クリア"]
+                for i in 0..<4 {
+                    let action = UIAlertAction(title: isEn ? stylesEn[i] : stylesJa[i], style: .default) { [weak self] _ in
+                        self?.currentTheme.keyStyle = i
+                        self?.updatePreview()
+                        self?.tableView.reloadData()
+                    }
+                    if currentTheme.keyStyle == i { action.setValue(true, forKey: "checked") }
+                    alert.addAction(action)
+                }
+            } else if indexPath.row == 1 {
+                alert.title = isEn ? "Button Shape" : "ボタンの形"
+                let shapesEn = ["Rounded", "Oval", "Rect"]
+                let shapesJa = ["角丸", "楕円", "四角"]
+                for i in 0..<3 {
+                    let action = UIAlertAction(title: isEn ? shapesEn[i] : shapesJa[i], style: .default) { [weak self] _ in
+                        self?.currentTheme.buttonShape = i
+                        self?.updatePreview()
+                        self?.tableView.reloadData()
+                    }
+                    if (currentTheme.buttonShape ?? 0) == i { action.setValue(true, forKey: "checked") }
+                    alert.addAction(action)
+                }
+            }
+            alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
+            if let popover = alert.popoverPresentationController {
+                popover.sourceView = tableView.cellForRow(at: indexPath)
+                popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
+            }
+            present(alert, animated: true)
         } else if indexPath.section == 4 {
             let picker = UIColorPickerViewController()
             picker.delegate = self

@@ -348,6 +348,10 @@ class FlickKeyboardView: UIView {
     private func updateHints(for btn: UIView, keyData: FlickKey, isShifted: Bool = false) {
         // Determine if this key should actually show a hint
         var shouldShowHint = true
+        if currentPage != .number {
+            shouldShowHint = false
+        }
+        
         // Hide hints for non-flickable keys
         if keyData.left == nil && keyData.up == nil && keyData.right == nil && keyData.down == nil {
             shouldShowHint = false
