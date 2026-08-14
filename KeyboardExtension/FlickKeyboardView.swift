@@ -386,6 +386,8 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 shouldShowHint = false // Don't show hints for wide text
             } else if currentPage == .alphabet && text.count >= 3 {
                 fontSize = 17
+            } else if text == "空白" {
+                fontSize = 12
             } else {
                 fontSize = 22
             }
@@ -400,15 +402,16 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 lbl.transform = .identity
                 let attrStr = NSMutableAttributedString()
                 let pStyle = NSMutableParagraphStyle()
-                pStyle.lineSpacing = -8
                 pStyle.alignment = .center
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
                     .font: lbl.font.withSize(18),
-                    .paragraphStyle: pStyle
+                    .paragraphStyle: pStyle,
+                    .baselineOffset: -6
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
                     .font: lbl.font.withSize(15),
-                    .paragraphStyle: pStyle
+                    .paragraphStyle: pStyle,
+                    .baselineOffset: 4
                 ]))
                 lbl.attributedText = attrStr
                 lbl.numberOfLines = 0
@@ -966,16 +969,17 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             let dirText = textForDirection(dir, key: keyData) ?? ""
             if dirText.contains("゛゜") && dirText.contains("小") {
                 let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.lineSpacing = -8
                 paragraphStyle.alignment = .center
                 let attrStr = NSMutableAttributedString()
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
                     .font: label.font.withSize(20),
-                    .paragraphStyle: paragraphStyle
+                    .paragraphStyle: paragraphStyle,
+                    .baselineOffset: -6
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
                     .font: label.font.withSize(16),
-                    .paragraphStyle: paragraphStyle
+                    .paragraphStyle: paragraphStyle,
+                    .baselineOffset: 4
                 ]))
                 label.attributedText = attrStr
                 label.numberOfLines = 0
