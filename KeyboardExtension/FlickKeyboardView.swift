@@ -286,7 +286,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
         spaceButton.accessibilityIdentifier = "space"
-        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 16) }
+        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 14) }
         place(view: spaceButton, row: 1, col: 4)
         
         returnButton = createSpecialKey(title: "改行")
@@ -403,11 +403,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 pStyle.lineSpacing = -2
                 pStyle.alignment = .center
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
-                    .font: lbl.font.withSize(16),
+                    .font: lbl.font.withSize(18),
                     .paragraphStyle: pStyle
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
-                    .font: lbl.font.withSize(13),
+                    .font: lbl.font.withSize(15),
                     .paragraphStyle: pStyle
                 ]))
                 lbl.attributedText = attrStr
@@ -970,11 +970,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 paragraphStyle.alignment = .center
                 let attrStr = NSMutableAttributedString()
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
-                    .font: label.font.withSize(16),
+                    .font: label.font.withSize(20),
                     .paragraphStyle: paragraphStyle
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
-                    .font: label.font.withSize(13),
+                    .font: label.font.withSize(16),
                     .paragraphStyle: paragraphStyle
                 ]))
                 label.attributedText = attrStr
