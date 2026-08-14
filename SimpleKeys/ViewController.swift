@@ -1848,17 +1848,24 @@ class FontPickerTableViewController: UITableViewController {
     }
     
     @objc func manageTapped() {
-        dismiss(animated: true) { [weak self] in
-            self?.onManage?()
+        let action = self.onManage
+        view.isUserInteractionEnabled = false
+        dismiss(animated: true) {
+            action?()
         }
     }
     
     @objc func cancelTapped() {
+        view.isUserInteractionEnabled = false
         dismiss(animated: true)
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return fontLabels.count
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 48.0 // 固定して当たり判定の巨大化を防ぐ
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -1881,6 +1888,8 @@ class FontPickerTableViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        view.isUserInteractionEnabled = false // 無限タップ防止
         onSelect?(fontNames[indexPath.row])
         dismiss(animated: true)
     }
