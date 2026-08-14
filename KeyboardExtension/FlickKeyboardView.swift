@@ -1187,12 +1187,13 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
     
     // MARK: - Haptic Feedback
     private func triggerHaptic(isSpecialKey: Bool = false) {
+        AppGroupHelper.shared.userDefaults?.synchronize()
         let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
         if mode == 1 && isSpecialKey { return }
         if mode == 2 && !isSpecialKey { return }
         
-        let customSound = AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") as? Bool ?? (AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") ?? false)
-        let customVib = AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") ?? false
+        let customSound = AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") as? Bool ?? true
+        let customVib = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticEnabled") as? Bool ?? true
         
         if customSound {
             KeyboardSoundManager.shared.playClick()
@@ -1201,7 +1202,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         }
         
         if customVib {
-            let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
+            let strength = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticStrength") as? Float ?? 1.0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
                 if strength < 1.5 { return .medium }

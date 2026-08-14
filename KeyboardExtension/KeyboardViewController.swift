@@ -6,52 +6,33 @@ import AVFoundation
 class KeyboardSoundManager {
     static let shared = KeyboardSoundManager()
     
-    private let engine = AVAudioEngine()
-    private var players: [AVAudioPlayerNode] = []
+    private var players: [AVAudioPlayer] = []
     private var currentIndex = 0
-    private var buffer: AVAudioPCMBuffer?
     
     private init() {
         try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
         try? AVAudioSession.sharedInstance().setActive(true)
         
         if let data = Data(base64Encoded: "UklGRggHAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YeQGAAABgAGA/38BgAGA/38BgP9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//39EtAJaUU7/fwGAepMBgLEzAYCjkwGA4asBgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYBMg2aHFoz9j62UgZhMnD+hX6UgqditP7EUtvq5i73FwSXG1snRzWfRatVH2V7duuCX5GroAez871vzQfe4+gD+yQHyBHIItgtCD5US5hXbGCYcRx9hIq0lziiJK5wuoTF4NG43FjrdPJ8/YEIBRaRHUkr3TE5P2VE7VKZWG1ldW7xd9l8BYlFkdGZ+aHVqnWx1bmpwSnI8dA522neOeUl75nyifv9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f3x/wH4Efkh9i3zPexF7VHqXedp4HXhgd6N25nUpdWx0r3PycjZyenG+cAJwR2+MbtFtFm1cbKNr6Wowandpv2gHaFBnmWbjZS1leGTDYw9jW2KoYfZgRGCSX+JeMl6CXdRcJlx4W8xaIFp0WcpYIFh3V89WJ1aAVdpUNVSQU+xSSVKnUQVRZVDFTyZPiE7qTU5NskwXTH1L5EpLSrRJHUmHSPJHXkfKRjhGpkUVRYVE9kNoQ9tCTkLDQThBrkAlQJ0/Fj+PPgo+hT0BPX48/Dt6O/o6ejr8OX45ATmFOAk4jzcVN5w2JDatNTc1wTRNNNkzZjP0MoMyEjKiMTQxxTBYMOwvgC8VL6suQi7ZLXItCy2lLD8s2yt3KxQrsSpQKu8pjykwKdEocygWKLonXicDJ6kmTyb3JZ8lRyXxJJskRSTxI50jSiP3IqUiVCIEIrQhZSEWIcggeyAuIOIflx9MHwIfuR5wHice4B2ZHVIdDR3HHIMcPxz7G7gbdhs0G/MashpyGjMa9Bm1GXcZOhn9GMEYhRhKGA8Y1RebF2IXKRfxFrkWghZLFhUW3xWqFXUVQRUNFdoUpxR0FEIUERTfE68TfhNPEx8T8BLCEpQSZhI5EgwS3xGzEYgRXBExEQcR3RCzEIoQYRA4EBAQ6A/BD5oPcw9NDycPAQ/cDrcOkg5uDkoOJg4DDuANvQ2bDXkNVw02DRUN9AzUDLMMlAx0DFUMNgwXDPkL2wu9C6ALggtlC0kLLAsQC/QK2Qq9CqIKhwptClMKOAofCgUK7AnTCboJoQmJCXEJWQlBCSoJEgn7COUIzgi4CKIIjAh2CGAISwg2CCEIDAj4B+QH0Ae8B6gHlAeBB24HWwdIBzYHIwcRB/8G7QbbBsoGuAanBpYGhQZ1BmQGVAZEBjMGJAYUBgQG9QXmBdYFxwW5BaoFmwWNBX8FcQVjBVUFRwU5BSwFHwURBQQF9wTrBN4E0QTFBLkErQShBJUEiQR9BHEEZgQ=") {
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("click.wav")
-            try? data.write(to: tempURL)
-            
-            if let file = try? AVAudioFile(forReading: tempURL),
-               let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)) {
-                try? file.read(into: buf)
-                self.buffer = buf
-                
-                let mixer = engine.mainMixerNode
-                for _ in 0..<5 {
-                    let player = AVAudioPlayerNode()
-                    engine.attach(player)
-                    engine.connect(player, to: mixer, format: buf.format)
-                    players.append(player)
+            for _ in 0..<15 {
+                if let p = try? AVAudioPlayer(data: data) {
+                    p.prepareToPlay()
+                    players.append(p)
                 }
-                
-                try? engine.start()
             }
         }
     }
     
     func playClick() {
-        guard !players.isEmpty, let buf = buffer else { return }
+        guard !players.isEmpty else { return }
         
-        let volume = AppGroupHelper.shared.userDefaults?.object(forKey: "keyboardSoundVolume") as? Float ?? 1.0
-        // Scale volume so that slider 0.5 = volume 1.0, and slider 1.0 = volume 2.0 (boosted)
+        AppGroupHelper.shared.userDefaults?.synchronize()
+        let volume = AppGroupHelper.shared.userDefaults?.object(forKey: "keyboardSoundVolume") as? Float ?? 0.5
         let actualVolume = volume * 2.0
-        
-        if !engine.isRunning {
-            try? engine.start()
-        }
         
         let player = players[currentIndex]
         player.volume = actualVolume
-        player.stop()
-        player.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
+        if player.isPlaying { player.currentTime = 0 }
         player.play()
         
         currentIndex = (currentIndex + 1) % players.count
@@ -1816,12 +1797,13 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     // MARK: - Haptic Feedback
     func triggerHaptic(isSpecialKey: Bool = false) {
+        AppGroupHelper.shared.userDefaults?.synchronize()
         let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
         if mode == 1 && isSpecialKey { return }
         if mode == 2 && !isSpecialKey { return }
         
-        let customSound = AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") as? Bool ?? (AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") ?? false)
-        let customVib = AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") ?? false
+        let customSound = AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") as? Bool ?? true
+        let customVib = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticEnabled") as? Bool ?? true
         
         if customSound {
             KeyboardSoundManager.shared.playClick()
@@ -1830,7 +1812,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         }
         
         if customVib {
-            let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
+            let strength = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticStrength") as? Float ?? 1.0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
                 if strength < 1.5 { return .medium }
