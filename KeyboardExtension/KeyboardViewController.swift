@@ -10,9 +10,9 @@ class KeyboardSoundManager {
     private var currentIndex = 0
     
     private init() {
-        if let url = URL(string: "file:///System/Library/Audio/UISounds/key_press_click.caf") {
-            for _ in 0..<20 {
-                if let player = try? AVAudioPlayer(contentsOf: url) {
+        if let data = Data(base64Encoded: "UklGRsAIAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YZwIAABcFO40HUrOcDoY1TNqQfZN2mkWbeJwbVSAa7RUH3H/fxx9HH4ie1B1bGJ0aRFd7045QuFKYkvhRAVWulKwPZM9vxsYCpGgsepCoBqsNJKk2WGTZqBYi2KVOaFhhgGJM4vQg/KWLJPmlRiKH4NPiJKNFYy0jLeIX4ZojROatI7+kDujbaE1kPSt/ZlywzbBcMvK0YSvkNHk1/7Vl/au/4sLbSd9Jab62z2OH1cyKh/IPkk2EUTHTABa/UXQRUhQC2UoUo5kHGhGYJBr3lz8aQ9uQGdabgVn+2jIbO9uNm2aadVq/2fEavNv5mvPbEprj2hzaRZuOmcEagxq9W1gZ5doAGTbZYFnM2WvZ1Zk4mj4Zjxjl2SbXNVeolhgW6FbSFfKXBBUlFINVs9QCE7LU85RBlRoSDVPPE3eSOhFGELRR7RAOEmGPoZA60GwNzc7+D1bOPg8njI1MVA5ijL4Lxc0SiqpMisp7S/gJeEtLSt2KUQozCO6KE8gNB8EJm4gwCIVHZ8h2RwhGckdOhgYGd4afRpnHLAZ7heiFMUWARRCF6wS7hIPFVcSfBZkFZ4TqxSTEpISZRTjEqcTphP6FJoReRQpFSsTohRjFe0VhBOJEvQS5RX9FOUUQBWjE90UiBTUFIkWyxZaGBwYxBVVGJkWGxjQGFQZtRq2Gj8Z3Rv5G8wcbhwWHXcclRzEHNsdvB6KH6wfBB/VIDYgpyD9IPkhPyPwIoMjLCUzJdYl8yVuJtcn1CanKF8oiSgkKtQqnCo2KzQrnys5LQUtgi3CLV4u2y5jL2MvojBpMdAxDDLNMeoyYTOtM/AzDzQNNVk14zVHNqI2UzbbNrM36TdCOCY4vjh/Obo5DzrYOYQ6UTo0O1A7Gju6O6074TsMPHo85jzxPPU8Uz1hPZs9nT0MPgA+Rj4nPi8+Iz5kPkk+dz5xPsQ+hD7VPs0+xz62PqE+sz6EPlU+Wj5LPhw+8z3VPf49xj2VPV89RD37PME8kTyKPGM8GDzjO487OzsbO6M6dDopOuI5dzkiOeM4hTgaOLM3bTf0NpE2LjatNU41xTRONM0zUTP4Mlwy6TFeMeQwYjDgL0YvvS4sLoMt9SxVLLUrGyt7KvUpOimnKP8nWSeeJvolRSWJJPQjQiOCItIhGCFLIJQf8x4tHm8dphzqGzMbZRqmGewYKxhVF6AW0xUQFVIUhxO8EvQRPBFmEKwP4Q4XDloNiwy/C/8KQgp4CbMI+wc0B28GrAXuBDoEggO8AggCUAGXAOL/Jf9w/r/9E/1l/Kz7//pd+rP5DPlj+MP3G/d+9uT1R/Wv9Bj0f/Pm8lXyxvE18bHwJ/Cd7xTvle4T7pXtGu2i7Crssus968nqXery6YXpIOm36FLo9OeW5zfn3+aH5izm2eWI5Tnl6+Sh5FfkE+TR443jTeMP49XimeJj4izi++HI4Zrha+FD4Rjh8+DM4KvgiuBo4EvgM+AW4ALg7d/Z38fftN+o35rfj9+I34Dfed9233Pfc99133fffd+B34rfk9+d36nftt/F39Xf59/73w/gJuA84FbgcOCL4KjgxuDl4AThJuFI4W3hkuG34d7hCOIw4lrihuKy4t/iDeM9427jn+PQ4wPkNuRq5KDk1uQN5UTlfOW25e/lKeZk5qDm3OYZ51bnk+fS5xHoUeiQ6NHoEulT6ZXp1+kZ6lzqn+rj6ibra+uv6/PrOOx+7MPsCO1O7ZPt2e0g7mXurO7y7jnvf+/G7wzwU/CZ8ODwJ/Ft8bPx+vFA8obyzPIS81jznvPj8yn0bvSz9Pj0PfWB9cX1CfZN9pD21PYX91n3nPfe9x/4Yfii+OP4I/lj+aP54vki+mD6nvrc+hr7V/uU+9D7DPxH/IL8vfz3/DH9av2j/dv9E/5L/oL+uf7v/iT/Wf+O/8L/9v8oAFsAjgC/APEAIQFSAYIBsQHgAQ8CPAJqApcCwwLvAhsDRQNwA5oDwwPsAxUEPQRkBIsEsgTYBP0EIgVHBWsFjgWxBdQF9gUYBjkGWQZ6BpkGuQbXBvYGFAcxB04HaweGB6IHvQfYB/IHDAglCD4IVwhvCIYIngi0CMsI4Qj2CAsJIAk0CUgJXAlvCYEJlAmmCbcJyAnZCekJ+QkJChgKJwo2CkQKUgpfCmwKeQqGCpIKngqpCrQKvwrJCtMK3QrnCvAK+QoBCwoLEgsZCyELKAsvCzULPAtCC0cLTQtSC1cLWwtgC2QLaAtrC28Lcgt1C3gLegt8C34LgAuCC4MLhAuFC4ULhguGC4YLhguGC4ULhQuEC4ILgQuAC34LfAt6C3gLdgtzC3ELbgtrC2gLZAthC10LWgtWC1ILTgtJC0ULQAs7CzcLMgstCycLIgsdCxcLEQsMCwYLAAv6CvQK7QrnCuAK2grTCswKxQq+CrcKsAqpCqIKmgqTCosKhAp8CnQKbQplCl0KVQpNCkUKPQo0CiwKJAobChMKCgoCCvkJ8AnoCd8J1gnNCcUJvAmzCaoJoQmYCY8JhQl8CXMJaglhCVgJTglFCTwJMgkpCSAJFgkNCQMJ+gjwCOcI3gjUCMsIwQi4CK4IpAibCJEIiAh+CHUIawhiCFgITghFCDsIMggoCB8IFQgMCAII+QfvB+UH3AfSB8kHwAe2B60HoweaB5AHhwd9B3QHawdhB1gHTwdFBzwHMwcqByAHFwcOBwUH/AbzBukG4AbXBs4GxQa8BrMGqgahBpgGjwaHBn4GdQZsBmMGWwZSBkkGQQY4Bi8GJwYeBhYGDQYFBvwF9AXrBeMF2wXSBcoFwgW6BbEFqQWhBZkFkQWJBYEFeQVxBWkFYQVZBVEFSgVCBToFMgUrBSMFHAUUBQwFBQX9BPYE7wTnBOAE2ATRBMoEwwS7BLQErQSmBJ8EmASRBIoEgwR8BHUEbgRoBGEEWgRTBE0ERgQ/BDkEMgQsBA==") {
+            for _ in 0..<15 {
+                if let player = try? AVAudioPlayer(data: data) {
                     player.prepareToPlay()
                     players.append(player)
                 }
@@ -26,19 +26,14 @@ class KeyboardSoundManager {
         try? AVAudioSession.sharedInstance().setActive(true)
         
         let volume = AppGroupHelper.shared.userDefaults?.float(forKey: "keyboardSoundVolume") ?? 1.0
-        let numberOfPlays = max(1, Int(ceil(volume)))
-        let baseVolume = min(Float(1.0), volume / Float(numberOfPlays))
-        
-        for _ in 0..<numberOfPlays {
-            let player = players[currentIndex]
-            player.volume = baseVolume
-            if player.isPlaying {
-                player.currentTime = 0
-            } else {
-                player.play()
-            }
-            currentIndex = (currentIndex + 1) % players.count
+        let player = players[currentIndex]
+        player.volume = volume
+        if player.isPlaying {
+            player.currentTime = 0
+        } else {
+            player.play()
         }
+        currentIndex = (currentIndex + 1) % players.count
     }
 }
 
