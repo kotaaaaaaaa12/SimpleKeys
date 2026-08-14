@@ -180,6 +180,8 @@ struct ThemeSettings: Codable, Equatable {
     var flickHighlightHex: String?     // Highlight color for flick hints
     var flickPopupShape: Int?          // 0: rounded, 1: oval, 2: rect
     var videoAudioEnabled: Bool?       // Toggle for video background audio
+    var keyBorderWidth: CGFloat?
+    var keyBorderStyle: Int? // 0: solid, 1: dashed, 2: dotted, 3: double, 4: dash-dot, 5: dash-dot-dot
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"
@@ -205,5 +207,76 @@ extension UIColor {
                       blue: CGFloat((rgbValue & 0x0000FF00) >> 8) / 255.0,
                       alpha: CGFloat(rgbValue & 0x000000FF) / 255.0)
         }
+    }
+}
+
+extension UIView {
+    func applyCustomBorderStyle(width: CGFloat, style: Int, color: CGColor?, radius: CGFloat, isFrostedOrClear: Bool) {
+        // Remove existing custom border layers
+        self.layer.sublayers?.removeAll(where: { $0.name == "customBorderLayer" })
+        
+        if width == 0 || color == nil {
+            self.layer.borderWidth = 0
+            return
+        }
+        
+        let cgColor = color!
+        
+        if style == 0 {
+            // Solid line
+            self.layer.borderWidth = width
+            self.layer.borderColor = cgColor
+            self.layer.cornerRadius = radius
+            return
+        }
+        
+        // Hide native border for non-solid
+        self.layer.borderWidth = 0
+        self.layer.cornerRadius = radius
+        
+        let borderLayer = CAShapeLayer()
+        borderLayer.name = "customBorderLayer"
+        let path = UIBezierPath(roundedRect: self.bounds, cornerRadius: radius)
+        
+        borderLayer.path = path.cgPath
+        borderLayer.fillColor = UIColor.clear.cgColor
+        borderLayer.strokeColor = cgColor
+        borderLayer.lineWidth = width
+        
+        switch style {
+        case 1: // Dashed
+            borderLayer.lineDashPattern = [NSNumber(value: Float(width * 3)), NSNumber(value: Float(width * 2))]
+        case 2: // Dotted
+            borderLayer.lineDashPattern = [NSNumber(value: Float(width)), NSNumber(value: Float(width * 2))]
+            borderLayer.lineCap = .round
+            borderLayer.lineJoin = .round
+        case 3: // Double
+            let outerLayer = CAShapeLayer()
+            outerLayer.path = UIBezierPath(roundedRect: self.bounds.insetBy(dx: width/3, dy: width/3), cornerRadius: max(0, radius - width/3)).cgPath
+            outerLayer.strokeColor = cgColor
+            outerLayer.fillColor = UIColor.clear.cgColor
+            outerLayer.lineWidth = width / 3.0
+            
+            let innerLayer = CAShapeLayer()
+            innerLayer.path = UIBezierPath(roundedRect: self.bounds.insetBy(dx: -width/3, dy: -width/3), cornerRadius: radius + width/3).cgPath
+            innerLayer.strokeColor = cgColor
+            innerLayer.fillColor = UIColor.clear.cgColor
+            innerLayer.lineWidth = width / 3.0
+            
+            let parentLayer = CALayer()
+            parentLayer.name = "customBorderLayer"
+            parentLayer.frame = self.bounds
+            parentLayer.addSublayer(outerLayer)
+            parentLayer.addSublayer(innerLayer)
+            self.layer.addSublayer(parentLayer)
+            return
+        case 4: // Dash-Dot
+            borderLayer.lineDashPattern = [NSNumber(value: Float(width * 4)), NSNumber(value: Float(width * 2)), NSNumber(value: Float(width)), NSNumber(value: Float(width * 2))]
+        case 5: // Dash-Dot-Dot
+            borderLayer.lineDashPattern = [NSNumber(value: Float(width * 4)), NSNumber(value: Float(width * 2)), NSNumber(value: Float(width)), NSNumber(value: Float(width * 2)), NSNumber(value: Float(width)), NSNumber(value: Float(width * 2))]
+        default: break
+        }
+        
+        self.layer.addSublayer(borderLayer)
     }
 }

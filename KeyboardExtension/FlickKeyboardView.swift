@@ -304,11 +304,18 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         var shape: Int = 0 { didSet { setNeedsLayout() } }
         var blurView: UIVisualEffectView?
         
+        var customBorderWidth: CGFloat = 0 { didSet { setNeedsLayout() } }
+        var customBorderStyle: Int = 0 { didSet { setNeedsLayout() } }
+        var customBorderColor: CGColor? { didSet { setNeedsLayout() } }
+        var isFrostedOrClear: Bool = false { didSet { setNeedsLayout() } }
+        
         override func layoutSubviews() {
             super.layoutSubviews()
             let radius: CGFloat = shape == 0 ? 6 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
             layer.cornerRadius = radius
             blurView?.layer.cornerRadius = radius
+            
+            self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear)
         }
     }
     
@@ -479,9 +486,16 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         let shape = theme.buttonShape ?? 0
         
+        let bWidth = theme.keyBorderWidth ?? (isFrosted || isClear || isFlat ? (isFlat ? 1.0 : 0.5) : 0.0)
+        let bStyle = theme.keyBorderStyle ?? 0
+        
         for keyView in allKeys {
             if let fkv = keyView as? FlickKeyView {
                 fkv.shape = shape
+                fkv.customBorderWidth = bWidth
+                fkv.customBorderStyle = bStyle
+                fkv.customBorderColor = borderCol
+                fkv.isFrostedOrClear = (isFrosted || isClear)
             }
             
             let existingBlur = keyView.viewWithTag(8888) as? UIVisualEffectView
@@ -491,20 +505,16 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 existingBlur?.removeFromSuperview()
                 keyView.backgroundColor = .clear
                 keyView.layer.shadowOpacity = 0
-                keyView.layer.borderWidth = 1
-                keyView.layer.borderColor = borderCol
             } else if isFrosted || isClear {
                 keyView.backgroundColor = isClear ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
                 keyView.layer.shadowOpacity = 0
-                keyView.layer.borderWidth = 0.5
-                keyView.layer.borderColor = borderCol
                 
                 if isFrosted {
                     if existingBlur == nil {
                         let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                         blur.tag = 8888
-                        blur.layer.borderWidth = 0.5
-                        blur.layer.borderColor = borderCol
+                        blur.layer.borderWidth = 0
+                        blur.layer.borderColor = UIColor.clear.cgColor
                         blur.clipsToBounds = true
                         blur.isUserInteractionEnabled = false
                         blur.translatesAutoresizingMaskIntoConstraints = false
@@ -521,7 +531,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                         }
                     } else {
                         existingBlur?.alpha = opacity
-                        existingBlur?.layer.borderColor = borderCol
+                        existingBlur?.layer.borderColor = UIColor.clear.cgColor
                     }
                 } else {
                     existingBlur?.removeFromSuperview()
@@ -530,7 +540,6 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 existingBlur?.removeFromSuperview()
                 keyView.backgroundColor = isSpecial ? specialBg : keyBgCol
                 keyView.layer.shadowOpacity = 0.3
-                keyView.layer.borderWidth = 0
             }
             
             if let lbl = keyView.viewWithTag(100) as? UILabel {

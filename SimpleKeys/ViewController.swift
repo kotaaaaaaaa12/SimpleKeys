@@ -901,14 +901,15 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         return ext == "mp4" || ext == "mov" || ext == "m4v"
     }
 
-    func numberOfSections(in tableView: UITableView) -> Int { return 7 }
+    func numberOfSections(in tableView: UITableView) -> Int { return 8 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 1 { return isVideoBackground() ? 3 : 2 }
         if section == 2 { return 2 } // Key Style and Button Shape
-        if section == 3 { return 1 } // Opacity
-        if section == 4 { return currentTheme.keyStyle == 0 ? 3 : 2 } // Colors
-        if section == 5 { return 1 } // Font
-        if section == 6 { return 4 } // Flick popup bg, text, highlight, shape
+        if section == 3 { return 2 } // Border Width and Style
+        if section == 4 { return 1 } // Opacity
+        if section == 5 { return currentTheme.keyStyle == 0 ? 3 : 2 } // Colors
+        if section == 6 { return 1 } // Font
+        if section == 7 { return 4 } // Flick popup bg, text, highlight, shape
         return 1
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -916,9 +917,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 0 { return isEn ? "Name" : "テーマ名" }
         if section == 1 { return isEn ? "Background Media" : "背景メディア" }
         if section == 2 { return isEn ? "Key Style & Shape" : "キースタイル & 形状" }
-        if section == 3 { return isEn ? "Transparency" : "透過度" }
-        if section == 4 { return isEn ? "Colors" : "色設定" }
-        if section == 5 { return isEn ? "Font" : "フォント" }
+        if section == 3 { return isEn ? "Border" : "フチの太さと種類" }
+        if section == 4 { return isEn ? "Transparency" : "透過度" }
+        if section == 5 { return isEn ? "Colors" : "色設定" }
+        if section == 6 { return isEn ? "Font" : "フォント" }
         return isEn ? "Flick Popup" : "フリック吹き出し"
     }
     
@@ -973,6 +975,29 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.detailTextLabel?.text = isEn ? shapesEn[shape] : shapesJa[shape]
             }
         } else if indexPath.section == 3 {
+            cell.selectionStyle = .default
+            cell.accessoryType = .none
+            if indexPath.row == 0 {
+                // Border Width
+                cell.textLabel?.text = isEn ? "Border Width" : "フチの太さ"
+                let widthSlider = UISlider()
+                widthSlider.minimumValue = 0.0
+                widthSlider.maximumValue = 5.0
+                widthSlider.value = Float(currentTheme.keyBorderWidth ?? 0.0)
+                widthSlider.addTarget(self, action: #selector(borderWidthChanged(_:)), for: .valueChanged)
+                widthSlider.translatesAutoresizingMaskIntoConstraints = false
+                widthSlider.widthAnchor.constraint(equalToConstant: 120).isActive = true
+                cell.accessoryView = widthSlider
+            } else if indexPath.row == 1 {
+                // Border Style
+                cell.textLabel?.text = isEn ? "Border Style" : "フチの種類"
+                cell.accessoryType = .disclosureIndicator
+                let style = currentTheme.keyBorderStyle ?? 0
+                let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
+                let stylesJa = ["実線", "破線", "点線", "二重線", "一点鎖線", "二点鎖線"]
+                cell.detailTextLabel?.text = isEn ? stylesEn[style] : stylesJa[style]
+            }
+        } else if indexPath.section == 4 {
             let stack = UIStackView(arrangedSubviews: [opacitySlider])
             stack.axis = .vertical
             stack.spacing = 8
@@ -984,7 +1009,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
                 stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
             ])
-        } else if indexPath.section == 4 {
+        } else if indexPath.section == 5 {
             cell.selectionStyle = .default
             cell.accessoryType = .disclosureIndicator
             if indexPath.row == 0 {
@@ -1012,12 +1037,12 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
                 }
             }
-        } else if indexPath.section == 5 {
+        } else if indexPath.section == 6 {
             cell.selectionStyle = .default
             cell.accessoryType = .disclosureIndicator
             cell.textLabel?.text = isEn ? "Font Family" : "フォントファミリー"
             cell.detailTextLabel?.text = currentTheme.fontName ?? (isEn ? "System Default" : "システムデフォルト")
-        } else if indexPath.section == 6 {
+        } else if indexPath.section == 7 {
             cell.selectionStyle = .default
             cell.accessoryType = .disclosureIndicator
             if indexPath.row == 0 {
@@ -1106,7 +1131,29 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
             }
             present(alert, animated: true)
-        } else if indexPath.section == 4 {
+        } else if indexPath.section == 3 {
+            if indexPath.row == 1 {
+                let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+                let alert = UIAlertController(title: isEn ? "Border Style" : "フチの種類", message: nil, preferredStyle: .actionSheet)
+                let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
+                let stylesJa = ["実線", "破線", "点線", "二重線", "一点鎖線", "二点鎖線"]
+                for i in 0..<stylesEn.count {
+                    let action = UIAlertAction(title: isEn ? stylesEn[i] : stylesJa[i], style: .default) { [weak self] _ in
+                        self?.currentTheme.keyBorderStyle = i
+                        self?.updatePreview()
+                        self?.tableView.reloadData()
+                    }
+                    if (currentTheme.keyBorderStyle ?? 0) == i { action.setValue(true, forKey: "checked") }
+                    alert.addAction(action)
+                }
+                alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
+                if let popover = alert.popoverPresentationController {
+                    popover.sourceView = tableView.cellForRow(at: indexPath)
+                    popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
+                }
+                present(alert, animated: true)
+            }
+        } else if indexPath.section == 5 {
             let picker = UIColorPickerViewController()
             picker.delegate = self
             picker.supportsAlpha = true
@@ -1122,7 +1169,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 picker.selectedColor = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? .white) : .white
             }
             present(picker, animated: true)
-        } else if indexPath.section == 5 {
+        } else if indexPath.section == 6 {
             var fontNames: [String?] = [
                 nil,
                 "HiraginoSans-W3", "HiraginoSans-W6", "HiraginoSans-W8",

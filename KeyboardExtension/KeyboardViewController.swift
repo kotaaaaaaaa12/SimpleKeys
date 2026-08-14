@@ -914,11 +914,18 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         var shape: Int = 0 { didSet { setNeedsLayout() } }
         var blurView: UIVisualEffectView?
         
+        var customBorderWidth: CGFloat = 0 { didSet { setNeedsLayout() } }
+        var customBorderStyle: Int = 0 { didSet { setNeedsLayout() } }
+        var customBorderColor: CGColor? { didSet { setNeedsLayout() } }
+        var isFrostedOrClear: Bool = false { didSet { setNeedsLayout() } }
+        
         override func layoutSubviews() {
             super.layoutSubviews()
             let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
             layer.cornerRadius = radius
             blurView?.layer.cornerRadius = radius
+            
+            self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear)
         }
     }
     
@@ -1014,22 +1021,26 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
         let clearBgAlpha = 0.15 * opacity
         
+        let bWidth = theme.keyBorderWidth ?? (theme.keyStyle == 1 || theme.keyStyle == 3 || theme.keyStyle == 2 ? (theme.keyStyle == 2 ? 1.0 : 0.5) : 0.0)
+        let bStyle = theme.keyBorderStyle ?? 0
         if let qwertyBtn = b as? QwertyKeyButton {
             qwertyBtn.shape = theme.buttonShape ?? 0
+            qwertyBtn.customBorderWidth = bWidth
+            qwertyBtn.customBorderStyle = bStyle
+            qwertyBtn.customBorderColor = borderCol
+            qwertyBtn.isFrostedOrClear = (theme.keyStyle == 1 || theme.keyStyle == 3)
         }
         
         if theme.keyStyle == 1 || theme.keyStyle == 3 { // Frosted or Clear
             b.backgroundColor = theme.keyStyle == 3 ? UIColor.white.withAlphaComponent(clearBgAlpha) : .clear
             b.layer.shadowOpacity = 0
-            b.layer.borderWidth = 0.5
-            b.layer.borderColor = borderCol
             
             if theme.keyStyle == 1 {
                 if existingBlur == nil {
                     let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
                     blur.tag = 8888
-                    blur.layer.borderWidth = 0.5
-                    blur.layer.borderColor = borderCol
+                    blur.layer.borderWidth = 0 // handled by custom border
+                    blur.layer.borderColor = UIColor.clear.cgColor
                     blur.clipsToBounds = true
                     blur.isUserInteractionEnabled = false
                     blur.translatesAutoresizingMaskIntoConstraints = false
@@ -1046,7 +1057,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                     }
                 } else {
                     existingBlur?.alpha = opacity
-                    existingBlur?.layer.borderColor = borderCol
+                    existingBlur?.layer.borderColor = UIColor.clear.cgColor
                 }
             } else {
                 existingBlur?.removeFromSuperview()
@@ -1056,12 +1067,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             if theme.keyStyle == 2 { // Flat
                 b.backgroundColor = .clear
                 b.layer.shadowOpacity = 0
-                b.layer.borderWidth = 1
-                b.layer.borderColor = borderCol
             } else { // Standard
                 b.backgroundColor = isSpecialKey ? specialBg : letterBg
                 b.layer.shadowOpacity = 0.3
-                b.layer.borderWidth = 0
             }
         }
     }
