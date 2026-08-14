@@ -142,6 +142,17 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     var isPreviewMode: Bool = false
     var previewTheme: ThemeSettings?
+    
+    var activeTheme: ThemeSettings {
+        if let preview = previewTheme {
+            return preview
+        } else if let data = AppGroupHelper.shared.userDefaults?.data(forKey: ThemeSettings.sharedKey),
+                  let saved = try? JSONDecoder().decode(ThemeSettings.self, from: data) {
+            return saved
+        }
+        return ThemeSettings(keyStyle: 0)
+    }
+    
     private let mockProxy = MockDocumentProxy()
     
     #if APP
@@ -575,7 +586,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
-                let scale = currentTheme.fontSizeScale ?? 1.0
+                let scale = activeTheme.fontSizeScale ?? 1.0
                 button.titleLabel?.font = .systemFont(ofSize: 20 * scale)
                 button.setTitleColor(.label, for: .normal)
                 button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
@@ -626,7 +637,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                         for (index, candidate) in self.currentCandidates.enumerated() {
                             let button = UIButton(type: .system)
                             button.setTitle(candidate, for: .normal)
-                            let scale = currentTheme.fontSizeScale ?? 1.0
+                            let scale = activeTheme.fontSizeScale ?? 1.0
                             button.titleLabel?.font = .systemFont(ofSize: 20 * scale)
                             button.setTitleColor(.label, for: .normal)
                             button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
@@ -821,7 +832,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 bottomStack.addArrangedSubview(globe)
             } else if key == "space" {
                 let spaceBtn = createKeyButton(title: currentMode == .qwertyRomaji ? "空白" : "space")
-                let scale = currentTheme.fontSizeScale ?? 1.0
+                let scale = activeTheme.fontSizeScale ?? 1.0
                 spaceBtn.titleLabel?.font = .systemFont(ofSize: 20 * scale, weight: .regular)
                 spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
                 spaceBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
@@ -1000,7 +1011,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     private func createKeyButton(title: String) -> QwertyKeyButton {
         let button = QwertyKeyButton(type: .system)
         button.setTitle(title, for: .normal)
-        let scale = currentTheme.fontSizeScale ?? 1.0
+        let scale = activeTheme.fontSizeScale ?? 1.0
         button.titleLabel?.font = .systemFont(ofSize: 20 * scale, weight: .regular)
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
@@ -1141,7 +1152,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 if let btn = sub as? UIButton {
                     btn.setTitleColor(textColor, for: .normal)
                     btn.tintColor = textColor
-                    let scale = previewTheme?.fontSizeScale ?? currentTheme.fontSizeScale ?? 1.0
+                    let scale = activeTheme.fontSizeScale ?? 1.0
                     let baseSize: CGFloat = btn.accessibilityIdentifier == "globe" ? 14 : 20
                     if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: baseSize * scale) {
                         btn.titleLabel?.font = customFont
@@ -1156,7 +1167,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                         if let b = btn as? UIButton {
                             b.setTitleColor(textColor, for: .normal)
                             b.tintColor = textColor
-                            let scale = previewTheme?.fontSizeScale ?? currentTheme.fontSizeScale ?? 1.0
+                            let scale = activeTheme.fontSizeScale ?? 1.0
                             let baseSize: CGFloat = b.accessibilityIdentifier == "globe" ? 14 : 20
                             if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: baseSize * scale) {
                                 b.titleLabel?.font = customFont
