@@ -1070,42 +1070,62 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 } else { return f.maxY }
             }
             
-            let path = UIBezierPath()
-            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.minY + r), radius: r, startAngle: .pi, endAngle: 3 * .pi / 2, clockwise: true)
+            var tlStart = CGFloat.pi
+            var tlEnd = 3 * CGFloat.pi / 2
+            var trStart = -(CGFloat.pi / 2)
+            var trEnd = 0.0
+            var brStart = 0.0
+            var brEnd = CGFloat.pi / 2
+            var blStart = CGFloat.pi / 2
+            var blEnd = CGFloat.pi
             
-            if direction == .down { // Arrow points UP from top edge
-                let x1 = f.midX - aw/2
-                let x2 = f.midX + aw/2
+            let y1 = f.midY - aw/2
+            let y2 = f.midY + aw/2
+            let x1 = f.midX - aw/2
+            let x2 = f.midX + aw/2
+            
+            if direction == .left {
+                if y1 < f.minY + r { trEnd = asin(max(-1.0, min(1.0, Double(y1 - (f.minY + r)) / Double(r)))) }
+                if y2 > f.maxY - r { brStart = asin(max(-1.0, min(1.0, Double(y2 - (f.maxY - r)) / Double(r)))) }
+            } else if direction == .right {
+                if y2 > f.maxY - r { blEnd = .pi - asin(max(-1.0, min(1.0, Double(y2 - (f.maxY - r)) / Double(r)))) }
+                if y1 < f.minY + r { tlStart = .pi - asin(max(-1.0, min(1.0, Double(y1 - (f.minY + r)) / Double(r)))) }
+            } else if direction == .down {
+                if x1 < f.minX + r { tlEnd = 2 * .pi - acos(max(-1.0, min(1.0, Double(x1 - (f.minX + r)) / Double(r)))) }
+                if x2 > f.maxX - r { trStart = -acos(max(-1.0, min(1.0, Double(x2 - (f.maxX - r)) / Double(r)))) }
+            } else if direction == .up {
+                if x2 > f.maxX - r { brEnd = acos(max(-1.0, min(1.0, Double(x2 - (f.maxX - r)) / Double(r)))) }
+                if x1 < f.minX + r { blStart = acos(max(-1.0, min(1.0, Double(x1 - (f.minX + r)) / Double(r)))) }
+            }
+            
+            let path = UIBezierPath()
+            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.minY + r), radius: r, startAngle: tlStart, endAngle: tlEnd, clockwise: true)
+            
+            if direction == .down {
                 path.addLine(to: CGPoint(x: x1, y: topY(for: x1)))
                 path.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
                 path.addLine(to: CGPoint(x: x2, y: topY(for: x2)))
             }
             
-            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.minY + r), radius: r, startAngle: -(.pi / 2), endAngle: 0, clockwise: true)
+            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.minY + r), radius: r, startAngle: trStart, endAngle: trEnd, clockwise: true)
             
-            if direction == .left { // Arrow points RIGHT from right edge
-                let y1 = f.midY - aw/2
-                let y2 = f.midY + aw/2
+            if direction == .left {
                 path.addLine(to: CGPoint(x: rightX(for: y1), y: y1))
                 path.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
                 path.addLine(to: CGPoint(x: rightX(for: y2), y: y2))
             }
             
-            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.maxY - r), radius: r, startAngle: 0, endAngle: .pi / 2, clockwise: true)
+            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.maxY - r), radius: r, startAngle: brStart, endAngle: brEnd, clockwise: true)
             
-            if direction == .up { // Arrow points DOWN from bottom edge
-                let x2 = f.midX + aw/2
-                let x1 = f.midX - aw/2
+            if direction == .up {
                 path.addLine(to: CGPoint(x: x2, y: bottomY(for: x2)))
                 path.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
                 path.addLine(to: CGPoint(x: x1, y: bottomY(for: x1)))
             }
             
-            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.maxY - r), radius: r, startAngle: .pi / 2, endAngle: .pi, clockwise: true)
+            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.maxY - r), radius: r, startAngle: blStart, endAngle: blEnd, clockwise: true)
             
-            if direction == .right { // Arrow points LEFT from left edge
-                let y2 = f.midY + aw/2
-                let y1 = f.midY - aw/2
+            if direction == .right {
                 path.addLine(to: CGPoint(x: leftX(for: y2), y: y2))
                 path.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
                 path.addLine(to: CGPoint(x: leftX(for: y1), y: y1))
