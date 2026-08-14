@@ -376,28 +376,65 @@ class SettingsViewController: UITableViewController {
             cell.imageView?.image = UIImage(systemName: "book.fill")
             cell.accessoryType = .disclosureIndicator
         } else if indexPath.section == 6 {
-            if indexPath.row > 2 {
-                cell.textLabel?.textColor = .secondaryLabel
-                cell.detailTextLabel?.textColor = .tertiaryLabel
-                cell.imageView?.tintColor = .systemGray
+            var fontNames: [String?] = [
+                nil,
+                "HiraginoSans-W3", "HiraginoSans-W6", "HiraginoSans-W8",
+                "HiraMinProN-W3", "HiraMinProN-W6",
+                "HiraMaruProN-W4",
+                "ToppanBunkyuGothicPr6N-Regular",
+                "ToppanBunkyuMidashiGothicStdN-ExtraBold",
+                "ToppanBunkyuMinchoPr6N-Regular",
+                "TsukuARdGothic-Regular", "TsukuBRdGothic-Regular",
+                "Courier", "Menlo-Regular", "AvenirNext-Regular", "AvenirNext-Bold",
+                "GillSans", "GillSans-Bold", "Georgia", "Georgia-Bold",
+                "Futura-Medium", "Futura-Bold",
+                "HelveticaNeue", "HelveticaNeue-Bold", "HelveticaNeue-Light",
+                "ChalkboardSE-Regular", "MarkerFelt-Thin", "PartyLetPlain",
+                "BradleyHandITCTT-Bold", "SnellRoundhand"
+            ]
+            let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+            var fontLabels = [
+                isEn ? "System Default" : "システムデフォルト",
+                isEn ? "Hiragino Sans" : "ヒラギノ角ゴ",
+                isEn ? "Hiragino Sans Bold" : "ヒラギノ角ゴ (太字)",
+                isEn ? "Hiragino Sans Extra Bold" : "ヒラギノ角ゴ (極太)",
+                isEn ? "Hiragino Mincho" : "ヒラギノ明朝",
+                isEn ? "Hiragino Mincho Bold" : "ヒラギノ明朝 (太字)",
+                isEn ? "Hiragino Maru Gothic" : "ヒラギノ丸ゴ",
+                isEn ? "Toppan Bunkyu Gothic" : "凸版文久ゴシック",
+                isEn ? "Toppan Bunkyu Midashi Go" : "凸版文久見出しゴシック",
+                isEn ? "Toppan Bunkyu Mincho" : "凸版文久明朝",
+                isEn ? "Tsukushi A Maru Gothic" : "筑紫A丸ゴシック",
+                isEn ? "Tsukushi B Maru Gothic" : "筑紫B丸ゴシック",
+                "Courier", "Menlo", "Avenir Next", "Avenir Next Bold",
+                "Gill Sans", "Gill Sans Bold", "Georgia", "Georgia Bold",
+                "Futura", "Futura Bold",
+                "Helvetica Neue", "Helvetica Neue Bold", "Helvetica Neue Light",
+                "Chalkboard SE", "Marker Felt", "Party LET",
+                "Bradley Hand", "Snell Roundhand"
+            ]
+            
+            let customFonts = CustomFontManager.shared.getCustomFonts()
+            for cf in customFonts {
+                fontNames.append(cf.fontName)
+                fontLabels.append(cf.displayName)
             }
             
-            if indexPath.row == 0 {
-                cell.textLabel?.text = isEn ? "Custom Themes" : "カスタムテーマ"
-                cell.detailTextLabel?.text = isEn ? "Customize background color and images" : "背景色や画像を自由に設定できます"
-                cell.imageView?.image = UIImage(systemName: "paintpalette.fill")
-                cell.accessoryType = .disclosureIndicator
-            } else if indexPath.row == 1 {
-                cell.textLabel?.text = isEn ? "Manage Fonts" : "フォント管理"
-                cell.detailTextLabel?.text = isEn ? "Install and manage custom fonts" : "カスタムフォントの追加や管理ができます"
-                cell.imageView?.image = UIImage(systemName: "textformat")
-                cell.accessoryType = .disclosureIndicator
-            } else if indexPath.row == 2 {
-                cell.textLabel?.text = isEn ? "Feedback & Cursor Settings" : "音・振動・カーソル感度のカスタマイズ"
-                cell.detailTextLabel?.text = isEn ? "Fine-tune sound, vibration and cursor speed" : "キー音、振動、カーソル移動のスピードを調整"
-                cell.imageView?.image = UIImage(systemName: "slider.horizontal.3")
-                cell.accessoryType = .disclosureIndicator
+            let fontPickerVC = FontPickerTableViewController()
+            fontPickerVC.fontNames = fontNames
+            fontPickerVC.fontLabels = fontLabels
+            fontPickerVC.currentFont = currentTheme.fontName
+            fontPickerVC.onSelect = { [weak self] selectedFont in
+                self?.currentTheme.fontName = selectedFont
+                self?.updatePreview()
+                self?.tableView.reloadData()
             }
+            fontPickerVC.onManage = { [weak self] in
+                let fontVC = FontManagerViewController()
+                self?.navigationController?.pushViewController(fontVC, animated: true)
+            }
+            let nav = UINavigationController(rootViewController: fontPickerVC)
+            present(nav, animated: true)
         } else if indexPath.section == 7 {
             if indexPath.row == 0 {
                 cell.textLabel?.text = isEn ? "Real-time AI Translation" : "AIリアルタイム翻訳＆トーン変換"
@@ -1191,7 +1228,14 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
             present(alert, animated: true)
         } else if indexPath.section == 3 {
-            if indexPath.row == 1 {
+            if indexPath.row == 0 {
+                let picker = UIColorPickerViewController()
+                picker.delegate = self
+                picker.supportsAlpha = true
+                pickingColorFor = "border"
+                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .black) : .black
+                present(picker, animated: true)
+            } else if indexPath.row == 2 {
                 let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
                 let alert = UIAlertController(title: isEn ? "Border Style" : "フチの種類", message: nil, preferredStyle: .actionSheet)
                 let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
@@ -1762,5 +1806,64 @@ class HapticsSensitivityViewController: UITableViewController {
             
             tableView.reloadData()
         }
+    }
+}
+
+class FontPickerTableViewController: UITableViewController {
+    var fontNames: [String?] = []
+    var fontLabels: [String] = []
+    var currentFont: String?
+    var onSelect: ((String?) -> Void)?
+    var onManage: (() -> Void)?
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+        title = isEn ? "Select Font" : "フォントを選択"
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        
+        let manageBtn = UIBarButtonItem(title: isEn ? "Manage Fonts" : "管理", style: .plain, target: self, action: #selector(manageTapped))
+        navigationItem.rightBarButtonItem = manageBtn
+        
+        let cancelBtn = UIBarButtonItem(title: isEn ? "Cancel" : "キャンセル", style: .plain, target: self, action: #selector(cancelTapped))
+        navigationItem.leftBarButtonItem = cancelBtn
+    }
+    
+    @objc func manageTapped() {
+        dismiss(animated: true) { [weak self] in
+            self?.onManage?()
+        }
+    }
+    
+    @objc func cancelTapped() {
+        dismiss(animated: true)
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return fontLabels.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        cell.textLabel?.text = fontLabels[indexPath.row]
+        let fName = fontNames[indexPath.row]
+        
+        if let fName = fName, let font = UIFont(name: fName, size: 17) {
+            cell.textLabel?.font = font
+        } else {
+            cell.textLabel?.font = UIFont.systemFont(ofSize: 17)
+        }
+        
+        if currentFont == fName {
+            cell.accessoryType = .checkmark
+        } else {
+            cell.accessoryType = .none
+        }
+        return cell
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        onSelect?(fontNames[indexPath.row])
+        dismiss(animated: true)
     }
 }
