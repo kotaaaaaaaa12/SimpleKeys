@@ -1,4 +1,5 @@
 import UIKit
+import AudioToolbox
 import AVFoundation
 
 @objcMembers
@@ -1761,9 +1762,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         if mode == 1 && isSpecialKey { return }
         if mode == 2 && !isSpecialKey { return }
         
-        UIDevice.current.playInputClick()
-        
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
+            AudioServicesPlaySystemSound(1104)
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
@@ -1771,6 +1771,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 return .heavy
             }()
             UIImpactFeedbackGenerator(style: style).impactOccurred()
+        } else {
+            UIDevice.current.playInputClick()
         }
     }
 }
