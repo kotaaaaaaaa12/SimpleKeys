@@ -33,7 +33,7 @@ struct FlickKeyboardData {
             FlickKey(center: "ら", left: "り", up: "る", right: "れ", down: "ろ")
         ],
         [
-            FlickKey(center: "゛゜小", left: nil, up: nil, right: nil, down: nil),
+            FlickKey(center: "゛゜\n小", left: nil, up: nil, right: nil, down: nil),
             FlickKey(center: "わ", left: "を", up: "ん", right: "ー", down: "〜"),
             FlickKey(center: "､｡?!", left: "。", up: "？", right: "！", down: "…")
         ]
@@ -328,6 +328,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         view.layer.shadowRadius = 0
         
         let centerLabel = UILabel()
+        centerLabel.numberOfLines = 2
         centerLabel.tag = 100
         centerLabel.font = .systemFont(ofSize: 22, weight: .regular)
         centerLabel.textAlignment = .center
@@ -1251,7 +1252,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                         btn.accessibilityIdentifier = "dakuten" // Reuse for shift
                     } else if currentPage == .kana {
                         if let label = btn.viewWithTag(100) as? UILabel {
-                            label.text = "゛゜小"
+                            label.text = "゛゜\n小"
                         }
                         btn.accessibilityIdentifier = "dakuten"
                     } else {
