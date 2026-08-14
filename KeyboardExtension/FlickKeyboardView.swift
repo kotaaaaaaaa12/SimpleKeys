@@ -778,6 +778,7 @@ class FlickKeyboardView: UIView {
                             currentPage = .number
                         }
                         updatePageUI()
+                        self.triggerHaptic(isSpecialKey: true)
                     } else if btn.accessibilityIdentifier == "face_mark" {
                         delegate?.flickKeyboard(self, didInputText: "^_^", direction: .center)
                     } else if btn.accessibilityIdentifier == "space" {

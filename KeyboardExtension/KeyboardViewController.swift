@@ -1459,6 +1459,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     }
     
     func flickKeyboard(_ keyboard: FlickKeyboardView, didInputText text: String, direction: FlickKeyboardView.FlickDirection) {
+        triggerHaptic(isSpecialKey: text == "^_^" || text == "空白" || text == "space")
         let flickOnly = AppGroupHelper.shared.userDefaults?.bool(forKey: "flickOnly") ?? false
         var isToggle = false
         var newChar = text
@@ -1627,6 +1628,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     func flickKeyboardDidPressABC(_ keyboard: FlickKeyboardView) {
         lastFlickTapBaseChar = nil
+        triggerHaptic(isSpecialKey: true)
         let defaults = AppGroupHelper.shared.userDefaults
         let flickAlphabetIsQwerty = defaults?.bool(forKey: "flickAlphabetIsQwerty") ?? false
         

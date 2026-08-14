@@ -30,15 +30,16 @@ class CustomFontManager {
     }
     
     func registerAllCustomFonts() {
-        guard let fontsDirectory = fontsDirectory else { return }
-        guard let files = try? FileManager.default.contentsOfDirectory(at: fontsDirectory, includingPropertiesForKeys: nil) else { return }
-        
-        for fileURL in files where fileURL.pathExtension.lowercased() == "ttf" || fileURL.pathExtension.lowercased() == "otf" {
-            var error: Unmanaged<CFError>?
-            CTFontManagerRegisterFontsForURL(fileURL as CFURL, .process, &error)
+        DispatchQueue.global(qos: .background).async {
+            guard let fontsDirectory = self.fontsDirectory else { return }
+            guard let files = try? FileManager.default.contentsOfDirectory(at: fontsDirectory, includingPropertiesForKeys: nil) else { return }
+            
+            for fileURL in files where fileURL.pathExtension.lowercased() == "ttf" || fileURL.pathExtension.lowercased() == "otf" {
+                var error: Unmanaged<CFError>?
+                CTFontManagerRegisterFontsForURL(fileURL as CFURL, .process, &error)
+            }
         }
     }
-    
     func importFont(from url: URL, completion: @escaping (String?, String?) -> Void) {
         guard let fontsDirectory = fontsDirectory else {
             completion(nil, "App Group directory not found")

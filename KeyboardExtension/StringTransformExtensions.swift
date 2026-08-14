@@ -87,21 +87,39 @@ class AppGroupHelper {
     
     func loadImage(fileName: String) -> UIImage? {
         guard let url = containerURL()?.appendingPathComponent(fileName) else { return nil }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: 800
+        ]
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+        return UIImage(cgImage: cgImage)
     }
     
     func loadGIF(fileName: String) -> UIImage? {
         guard let url = containerURL()?.appendingPathComponent(fileName) else { return nil }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         
         var images = [UIImage]()
         let count = CGImageSourceGetCount(source)
         var totalDuration: Double = 0
         
-        for i in 0..<count {
-            if let cgImage = CGImageSourceCreateImageAtIndex(source, i, nil) {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageIfAbsent: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: 800
+        ]
+        
+        // Skip frames if there are too many to save memory (max 30 frames)
+        let step = max(1, count / 30)
+        
+        for i in stride(from: 0, to: count, by: step) {
+            if let cgImage = CGImageSourceCreateThumbnailAtIndex(source, i, options as CFDictionary) {
                 images.append(UIImage(cgImage: cgImage))
                 
                 var delay = 0.1
@@ -113,7 +131,7 @@ class AppGroupHelper {
                         delay = delayTime
                     }
                 }
-                totalDuration += delay
+                totalDuration += delay * Double(step)
             }
         }
         
