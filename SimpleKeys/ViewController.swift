@@ -1093,6 +1093,44 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                     cell.detailTextLabel?.text = isEn ? "Default (Blue)" : "デフォルト（青）"
                 }
             } else if indexPath.row == 3 {
+                cell.textLabel?.text = isEn ? "Border Color" : "フチの色"
+                if let hex = currentTheme.flickPopupBorderColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
+            } else if indexPath.row == 4 {
+                cell.accessoryType = .none
+                let titleLabel = UILabel()
+                titleLabel.text = isEn ? "Border Width" : "フチの太さ"
+                titleLabel.font = .systemFont(ofSize: 16)
+                
+                let widthSlider = UISlider()
+                widthSlider.minimumValue = 0.0
+                widthSlider.maximumValue = 5.0
+                widthSlider.value = Float(currentTheme.flickPopupBorderWidth ?? 0.0)
+                widthSlider.addTarget(self, action: #selector(flickBorderWidthChanged(_:)), for: .valueChanged)
+                
+                let stack = UIStackView(arrangedSubviews: [titleLabel, widthSlider])
+                stack.axis = .vertical
+                stack.spacing = 8
+                stack.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(stack)
+                
+                NSLayoutConstraint.activate([
+                    stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                    stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+                ])
+            } else if indexPath.row == 5 {
+                cell.textLabel?.text = isEn ? "Border Style" : "フチの種類"
+                let style = currentTheme.flickPopupBorderStyle ?? 0
+                let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
+                let stylesJa = ["実線", "破線", "点線", "二重線", "一点鎖線", "二点鎖線"]
+                cell.detailTextLabel?.text = isEn ? stylesEn[style] : stylesJa[style]
+            } else if indexPath.row == 6 {
                 cell.textLabel?.text = isEn ? "Popup Shape" : "吹き出しの形"
                 let shape = currentTheme.flickPopupShape ?? 0
                 let shapesEn = ["Rounded", "Oval", "Rect"]
@@ -1260,7 +1298,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
             }
             present(alert, animated: true)
-        } else if indexPath.section == 6 {
+        } else if indexPath.section == 7 {
             let picker = UIColorPickerViewController()
             picker.delegate = self
             picker.supportsAlpha = true
@@ -1278,6 +1316,35 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 picker.selectedColor = currentTheme.flickHighlightHex != nil ? (UIColor(hex: currentTheme.flickHighlightHex!) ?? .systemBlue) : .systemBlue
                 present(picker, animated: true)
             } else if indexPath.row == 3 {
+                pickingColorFor = "flickBorder"
+                picker.selectedColor = currentTheme.flickPopupBorderColorHex != nil ? (UIColor(hex: currentTheme.flickPopupBorderColorHex!) ?? .black) : .black
+                present(picker, animated: true)
+            } else if indexPath.row == 5 {
+                let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
+                let alert = UIAlertController(title: isEn ? "Border Style" : "フチの種類", message: nil, preferredStyle: .actionSheet)
+                
+                let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
+                let stylesJa = ["実線", "破線", "点線", "二重線", "一点鎖線", "二点鎖線"]
+                
+                for i in 0..<6 {
+                    let action = UIAlertAction(title: isEn ? stylesEn[i] : stylesJa[i], style: .default) { [weak self] _ in
+                        self?.currentTheme.flickPopupBorderStyle = i
+                        self?.updatePreview()
+                        self?.tableView.reloadData()
+                    }
+                    if (currentTheme.flickPopupBorderStyle ?? 0) == i {
+                        action.setValue(true, forKey: "checked")
+                    }
+                    alert.addAction(action)
+                }
+                
+                alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
+                if let popover = alert.popoverPresentationController {
+                    popover.sourceView = tableView.cellForRow(at: indexPath)
+                    popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
+                }
+                present(alert, animated: true)
+            } else if indexPath.row == 6 {
                 let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
                 let alert = UIAlertController(title: isEn ? "Popup Shape" : "吹き出しの形", message: nil, preferredStyle: .actionSheet)
                 
