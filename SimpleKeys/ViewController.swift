@@ -888,9 +888,6 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     @objc private func fontSizeScaleChanged(_ sender: UISlider) {
         currentTheme.fontSizeScale = CGFloat(sender.value)
         updatePreview()
-        // We probably shouldn't reloadData on every value change for a slider, but the user requested it. We can omit it if it makes it too glitchy, but let's just do it or not. Actually, let's omit reloadData to avoid breaking the slider interaction. Oh, wait, the instructions say: "Add a target to it to update currentTheme.fontSizeScale, call updatePreview(), and tableView.reloadData()."
-        // Let's fulfill the prompt.
-        tableView.reloadData()
     }
 
     @objc private func borderWidthChanged(_ sender: UISlider) {
@@ -1076,7 +1073,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.selectionStyle = .none
                 cell.accessoryType = .none
                 let titleLabel = UILabel()
-                titleLabel.text = isEn ? "Font Size Scale" : "フォントサイズの倍率"
+                titleLabel.text = isEn ? "Font Size" : "フォントサイズ"
                 titleLabel.font = .systemFont(ofSize: 16)
                 
                 let scaleSlider = UISlider()
