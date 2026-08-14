@@ -299,56 +299,49 @@ import UIKit
 extension UIBezierPath {
     static func star(in rect: CGRect) -> UIBezierPath {
         let path = UIBezierPath()
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let r = min(rect.width, rect.height) / 2
-        let rc = r * 0.4
         let pts = 5
         for i in 0..<(pts * 2) {
-            let radius = i % 2 == 0 ? r : rc
+            let radius: CGFloat = i % 2 == 0 ? 1.0 : 0.4
             let angle = CGFloat(i) * .pi / CGFloat(pts) - .pi / 2
-            let p = CGPoint(x: center.x + radius * cos(angle), y: center.y + radius * sin(angle))
+            let p = CGPoint(x: radius * cos(angle), y: radius * sin(angle))
             if i == 0 { path.move(to: p) }
             else { path.addLine(to: p) }
         }
         path.close()
-        return path
+        return scaleToFit(path: path, in: rect)
     }
     
     static func triangle(in rect: CGRect) -> UIBezierPath {
         let path = UIBezierPath()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.move(to: CGPoint(x: 0, y: -1))
+        path.addLine(to: CGPoint(x: 1, y: 1))
+        path.addLine(to: CGPoint(x: -1, y: 1))
         path.close()
-        return path
+        return scaleToFit(path: path, in: rect)
     }
     
     static func pentagon(in rect: CGRect) -> UIBezierPath {
         let path = UIBezierPath()
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let r = min(rect.width, rect.height) / 2
         for i in 0..<5 {
             let angle = CGFloat(i) * 2 * .pi / 5 - .pi / 2
-            let p = CGPoint(x: center.x + r * cos(angle), y: center.y + r * sin(angle))
+            let p = CGPoint(x: cos(angle), y: sin(angle))
             if i == 0 { path.move(to: p) }
             else { path.addLine(to: p) }
         }
         path.close()
-        return path
+        return scaleToFit(path: path, in: rect)
     }
     
     static func hexagon(in rect: CGRect) -> UIBezierPath {
         let path = UIBezierPath()
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let r = min(rect.width, rect.height) / 2
         for i in 0..<6 {
             let angle = CGFloat(i) * 2 * .pi / 6 - .pi / 2
-            let p = CGPoint(x: center.x + r * cos(angle), y: center.y + r * sin(angle))
+            let p = CGPoint(x: cos(angle), y: sin(angle))
             if i == 0 { path.move(to: p) }
             else { path.addLine(to: p) }
         }
         path.close()
-        return path
+        return scaleToFit(path: path, in: rect)
     }
     
     static func speechBubble(in rect: CGRect) -> UIBezierPath {
@@ -375,6 +368,18 @@ extension UIBezierPath {
         path.addLine(to: CGPoint(x: bubbleRect.minX, y: bubbleRect.minY + r))
         path.addArc(withCenter: CGPoint(x: bubbleRect.minX + r, y: bubbleRect.minY + r), radius: r, startAngle: CGFloat.pi, endAngle: -CGFloat.pi/2, clockwise: true)
         
+        return path
+    }
+    
+    private static func scaleToFit(path: UIBezierPath, in rect: CGRect) -> UIBezierPath {
+        let bounds = path.bounds
+        guard bounds.width > 0 && bounds.height > 0 else { return path }
+        let scaleX = rect.width / bounds.width
+        let scaleY = rect.height / bounds.height
+        var transform = CGAffineTransform(translationX: -bounds.midX, y: -bounds.midY)
+        transform = transform.scaledBy(x: scaleX, y: scaleY)
+        transform = transform.translatedBy(x: rect.midX, y: rect.midY)
+        path.apply(transform)
         return path
     }
     

@@ -918,26 +918,53 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         var customBorderStyle: Int = 0 { didSet { setNeedsLayout() } }
         var customBorderColor: CGColor? { didSet { setNeedsLayout() } }
         var isFrostedOrClear: Bool = false { didSet { setNeedsLayout() } }
+        var currentBgColor: UIColor?
+        
+        override var backgroundColor: UIColor? {
+            didSet {
+                if backgroundColor != .clear {
+                    currentBgColor = backgroundColor
+                }
+            }
+        }
         
         override func layoutSubviews() {
             super.layoutSubviews()
+            
+            // Clean up custom background layers
+            layer.sublayers?.filter { $0.name == "customShapeBg" }.forEach { $0.removeFromSuperlayer() }
+            
             if shape >= 3 {
                 layer.cornerRadius = 0
+                layer.mask = nil // Remove mask to prevent clipping text
                 blurView?.layer.cornerRadius = 0
                 let path = UIBezierPath.customShape(type: shape, in: bounds)
-                let maskLayer = CAShapeLayer()
-                maskLayer.path = path.cgPath
-                layer.mask = maskLayer
+                
+                // Add background shape layer
+                if !isFrostedOrClear {
+                    let bgLayer = CAShapeLayer()
+                    bgLayer.name = "customShapeBg"
+                    bgLayer.path = path.cgPath
+                    bgLayer.fillColor = currentBgColor?.cgColor ?? UIColor.white.cgColor
+                    layer.insertSublayer(bgLayer, at: 0)
+                    super.backgroundColor = .clear // Hide native square background
+                }
+                
                 if let blur = blurView {
                     let blurMask = CAShapeLayer()
                     blurMask.path = path.cgPath
                     blur.layer.mask = blurMask
                 }
+                layer.shadowPath = path.cgPath
                 self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: 0, isFrostedOrClear: isFrostedOrClear, shape: shape)
             } else {
                 let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
                 layer.cornerRadius = radius
                 layer.mask = nil
+                layer.shadowPath = nil
+                if !isFrostedOrClear {
+                    super.backgroundColor = currentBgColor
+                }
                 blurView?.layer.cornerRadius = radius
                 blurView?.layer.mask = nil
                 self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear, shape: shape)
