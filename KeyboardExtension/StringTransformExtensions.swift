@@ -376,10 +376,14 @@ extension UIBezierPath {
         guard bounds.width > 0 && bounds.height > 0 else { return path }
         let scaleX = rect.width / bounds.width
         let scaleY = rect.height / bounds.height
-        var transform = CGAffineTransform(translationX: -bounds.midX, y: -bounds.midY)
-        transform = transform.scaledBy(x: scaleX, y: scaleY)
-        transform = transform.translatedBy(x: rect.midX, y: rect.midY)
-        path.apply(transform)
+        
+        let scaleTransform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+        path.apply(scaleTransform)
+        
+        let newBounds = path.bounds
+        let translation = CGAffineTransform(translationX: rect.midX - newBounds.midX, y: rect.midY - newBounds.midY)
+        path.apply(translation)
+        
         return path
     }
     
