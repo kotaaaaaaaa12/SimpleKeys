@@ -351,7 +351,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             centerLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -5),
             
             subtitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            subtitleLabel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4)
+            subtitleLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 12)
         ])
         
         updateHints(for: view, keyData: keyData, isShifted: false)
@@ -1303,6 +1303,10 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                     if currentPage == .alphabet {
                         if let label = btn.viewWithTag(100) as? UILabel {
                             label.text = "a/A"
+                            label.transform = .identity
+                        }
+                        if let sub = btn.viewWithTag(105) as? UILabel {
+                            sub.text = ""
                         }
                         btn.accessibilityIdentifier = "dakuten" // Reuse for shift
                     } else if currentPage == .kana {
