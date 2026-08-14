@@ -1138,6 +1138,9 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             
             let finalBorderCol = popupBorderCol ?? popupBg.withAlphaComponent(0.6)
             
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            
             bgLayer?.path = path.cgPath
             bgLayer?.fillColor = popupBg.cgColor
             
@@ -1171,8 +1174,14 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 bgLayer?.lineWidth = 0
                 bgLayer?.strokeColor = UIColor.clear.cgColor
             }
+            
+            CATransaction.commit()
+            
         } else {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
             bgLayer?.path = nil
+            CATransaction.commit()
             bgLayer?.sublayers?.forEach { $0.removeFromSuperlayer() }
         }
     }
