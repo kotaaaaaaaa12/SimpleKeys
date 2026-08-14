@@ -390,7 +390,9 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 lbl.font = .systemFont(ofSize: fontSize, weight: .regular)
             }
             
-            if !shouldShowHint {
+            if text == "゛゜\n小" {
+                lbl.transform = CGAffineTransform(translationX: 0, y: -2) // Shift up to avoid bottom clipping
+            } else if !shouldShowHint {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
             } else {
                 lbl.transform = .identity
@@ -865,6 +867,9 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         fullPopupModes[touch] = isFull
         
+        if let lbl = button.viewWithTag(100) as? UILabel { lbl.isHidden = true }
+        if let sub = button.viewWithTag(105) as? UILabel { sub.isHidden = true }
+        
         // Read theme colors
         var popupBg = UIColor.white
         var popupTextCol = UIColor.black
@@ -964,6 +969,8 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             popup.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             popup.centerYAnchor.constraint(equalTo: button.centerYAnchor)
         ])
+        
+        self.layoutIfNeeded()
         
         updatePopup(direction: .center, for: touch)
     }
@@ -1187,6 +1194,10 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
     }
     
     private func hidePopup(for touch: UITouch) {
+        if let btn = activeTouches[touch] {
+            if let lbl = btn.viewWithTag(100) as? UILabel { lbl.isHidden = false }
+            if let sub = btn.viewWithTag(105) as? UILabel { sub.isHidden = false }
+        }
         popupViews[touch]?.removeFromSuperview()
         popupViews.removeValue(forKey: touch)
         popupLabelsDict.removeValue(forKey: touch)
