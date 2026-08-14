@@ -335,46 +335,46 @@ class SettingsViewController: UITableViewController {
             }
         } else if indexPath.section == 3 {
             if indexPath.row == 0 {
-                let picker = UIColorPickerViewController()
-                picker.delegate = self
-                picker.supportsAlpha = true
-                pickingColorFor = "border"
-                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .black) : .black
-                present(picker, animated: true)
+                cell.textLabel?.text = isEn ? "Alphabet layout is QWERTY" : "アルファベットをQWERTYにする"
+                cell.detailTextLabel?.text = isEn ? "Use QWERTY layout for Alphabet in Flick keyboard" : "フリックキーボードの英字モードをQWERTYにします"
+                cell.accessoryView = flickAlphabetQwertySwitch
+            } else if indexPath.row == 1 {
+                cell.textLabel?.text = isEn ? "Flick Only (Disable Toggle)" : "フリックのみ (ガラケー打ち無効)"
+                cell.detailTextLabel?.text = isEn ? "Disable multiple taps to cycle characters" : "同じキーを連続タップしたときの文字切り替えを無効にします"
+                cell.accessoryView = flickOnlySwitch
             } else if indexPath.row == 2 {
-                let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
-                let alert = UIAlertController(title: isEn ? "Border Style" : "フチの種類", message: nil, preferredStyle: .actionSheet)
-                let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
-                let stylesJa = ["実線", "破線", "点線", "二重線", "一点鎖線", "二点鎖線"]
-                for i in 0..<stylesEn.count {
-                    let action = UIAlertAction(title: isEn ? stylesEn[i] : stylesJa[i], style: .default) { [weak self] _ in
-                        self?.currentTheme.keyBorderStyle = i
-                        self?.updatePreview()
-                        self?.tableView.reloadData()
-                    }
-                    if (currentTheme.keyBorderStyle ?? 0) == i { action.setValue(true, forKey: "checked") }
-                    alert.addAction(action)
-                }
-                alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
-                if let popover = alert.popoverPresentationController {
-                    popover.sourceView = tableView.cellForRow(at: indexPath)
-                    popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
-                }
-                present(alert, animated: true)
+                cell.textLabel?.text = isEn ? "One-Handed Mode" : "片手モード"
+                cell.detailTextLabel?.text = isEn ? "Shift keyboard for easy typing" : "キーボードを左右に寄せて片手で入力しやすくします"
+                cell.accessoryView = oneHandedSegment
+            }
+        } else if indexPath.section == 4 {
+            if indexPath.row == 0 {
+                cell.textLabel?.text = isEn ? "Enable Gemini AI Conversion" : "Gemini AI変換を有効にする"
+                cell.accessoryView = geminiSwitch
+            } else if indexPath.row == 1 {
+                cell.contentView.addSubview(geminiApiKeyField)
+                geminiApiKeyField.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    geminiApiKeyField.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    geminiApiKeyField.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    geminiApiKeyField.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
+                ])
+                geminiApiKeyField.placeholder = isEn ? "Enter Gemini API Key..." : "Gemini APIキーを入力..."
+            } else if indexPath.row == 2 {
+                cell.contentView.addSubview(geminiModelField)
+                geminiModelField.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    geminiModelField.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    geminiModelField.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    geminiModelField.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16)
+                ])
+                geminiModelField.placeholder = isEn ? "Model Name (e.g. gemini-3.5-flash)" : "モデル名 (例: gemini-3.5-flash)"
             }
         } else if indexPath.section == 5 {
-            let picker = UIColorPickerViewController()
-            picker.delegate = self
-            picker.supportsAlpha = true
-            
-            if indexPath.row == 0 {
-                pickingColorFor = "text"
-                picker.selectedColor = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? .black) : .black
-            } else if indexPath.row == 1 {
-                pickingColorFor = "keyBg"
-                picker.selectedColor = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? .white) : .white
-            }
-            present(picker, animated: true)
+            cell.textLabel?.text = isEn ? "User Dictionary" : "ユーザー辞書"
+            cell.detailTextLabel?.text = isEn ? "Register frequently used words" : "よく使う単語を登録できます"
+            cell.imageView?.image = UIImage(systemName: "book.fill")
+            cell.accessoryType = .disclosureIndicator
         } else if indexPath.section == 6 {
             if indexPath.row > 2 {
                 cell.textLabel?.textColor = .secondaryLabel
@@ -424,18 +424,9 @@ class SettingsViewController: UITableViewController {
                 UIApplication.shared.open(url)
             }
         } else if indexPath.section == 5 {
-            let picker = UIColorPickerViewController()
-            picker.delegate = self
-            picker.supportsAlpha = true
-            
-            if indexPath.row == 0 {
-                pickingColorFor = "text"
-                picker.selectedColor = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? .black) : .black
-            } else if indexPath.row == 1 {
-                pickingColorFor = "keyBg"
-                picker.selectedColor = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? .white) : .white
-            }
-            present(picker, animated: true)
+            tableView.deselectRow(at: indexPath, animated: true)
+            let vc = UserDictionaryViewController()
+            navigationController?.pushViewController(vc, animated: true)
         } else if indexPath.section == 6 {
             if indexPath.row == 0 {
                 tableView.deselectRow(at: indexPath, animated: true)
@@ -994,47 +985,79 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.detailTextLabel?.text = isEn ? shapesEn[shape] : shapesJa[shape]
             }
         } else if indexPath.section == 3 {
+            cell.selectionStyle = .default
+            cell.accessoryType = .disclosureIndicator
             if indexPath.row == 0 {
-                let picker = UIColorPickerViewController()
-                picker.delegate = self
-                picker.supportsAlpha = true
-                pickingColorFor = "border"
-                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .black) : .black
-                present(picker, animated: true)
+                cell.textLabel?.text = isEn ? "Border Color" : "フチの色"
+                if let hex = currentTheme.keyBorderColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
+            } else if indexPath.row == 1 {
+                cell.accessoryType = .none
+                let titleLabel = UILabel()
+                titleLabel.text = isEn ? "Border Width" : "フチの太さ"
+                titleLabel.font = .systemFont(ofSize: 16)
+                
+                let widthSlider = UISlider()
+                widthSlider.minimumValue = 0.0
+                widthSlider.maximumValue = 5.0
+                widthSlider.value = Float(currentTheme.keyBorderWidth ?? 0.0)
+                widthSlider.addTarget(self, action: #selector(borderWidthChanged(_:)), for: .valueChanged)
+                
+                let stack = UIStackView(arrangedSubviews: [titleLabel, widthSlider])
+                stack.axis = .vertical
+                stack.spacing = 8
+                stack.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(stack)
+                
+                NSLayoutConstraint.activate([
+                    stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                    stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+                ])
             } else if indexPath.row == 2 {
-                let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
-                let alert = UIAlertController(title: isEn ? "Border Style" : "フチの種類", message: nil, preferredStyle: .actionSheet)
+                cell.textLabel?.text = isEn ? "Border Style" : "フチの種類"
+                let style = currentTheme.keyBorderStyle ?? 0
                 let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
                 let stylesJa = ["実線", "破線", "点線", "二重線", "一点鎖線", "二点鎖線"]
-                for i in 0..<stylesEn.count {
-                    let action = UIAlertAction(title: isEn ? stylesEn[i] : stylesJa[i], style: .default) { [weak self] _ in
-                        self?.currentTheme.keyBorderStyle = i
-                        self?.updatePreview()
-                        self?.tableView.reloadData()
-                    }
-                    if (currentTheme.keyBorderStyle ?? 0) == i { action.setValue(true, forKey: "checked") }
-                    alert.addAction(action)
-                }
-                alert.addAction(UIAlertAction(title: isEn ? "Cancel" : "キャンセル", style: .cancel))
-                if let popover = alert.popoverPresentationController {
-                    popover.sourceView = tableView.cellForRow(at: indexPath)
-                    popover.sourceRect = tableView.cellForRow(at: indexPath)?.bounds ?? .zero
-                }
-                present(alert, animated: true)
+                cell.detailTextLabel?.text = isEn ? stylesEn[style] : stylesJa[style]
             }
+        } else if indexPath.section == 4 {
+            let stack = UIStackView(arrangedSubviews: [opacitySlider])
+            stack.axis = .vertical
+            stack.spacing = 8
+            stack.translatesAutoresizingMaskIntoConstraints = false
+            cell.contentView.addSubview(stack)
+            NSLayoutConstraint.activate([
+                stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+            ])
         } else if indexPath.section == 5 {
-            let picker = UIColorPickerViewController()
-            picker.delegate = self
-            picker.supportsAlpha = true
-            
+            cell.selectionStyle = .default
+            cell.accessoryType = .disclosureIndicator
             if indexPath.row == 0 {
-                pickingColorFor = "text"
-                picker.selectedColor = currentTheme.textColorHex != nil ? (UIColor(hex: currentTheme.textColorHex!) ?? .black) : .black
+                cell.textLabel?.text = isEn ? "Text Color" : "テキストの色"
+                if let hex = currentTheme.textColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
             } else if indexPath.row == 1 {
-                pickingColorFor = "keyBg"
-                picker.selectedColor = currentTheme.keyColorHex != nil ? (UIColor(hex: currentTheme.keyColorHex!) ?? .white) : .white
+                cell.textLabel?.text = isEn ? "Key Background Color" : "キーの背景色 (標準用)"
+                if let hex = currentTheme.keyColorHex {
+                    cell.detailTextLabel?.text = "■"
+                    cell.detailTextLabel?.textColor = UIColor(hex: hex)
+                } else {
+                    cell.detailTextLabel?.text = isEn ? "Default" : "デフォルト"
+                }
             }
-            present(picker, animated: true)
         } else if indexPath.section == 6 {
             cell.selectionStyle = .default
             cell.accessoryType = .disclosureIndicator
@@ -1168,14 +1191,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
             present(alert, animated: true)
         } else if indexPath.section == 3 {
-            if indexPath.row == 0 {
-                let picker = UIColorPickerViewController()
-                picker.delegate = self
-                picker.supportsAlpha = true
-                pickingColorFor = "border"
-                picker.selectedColor = currentTheme.keyBorderColorHex != nil ? (UIColor(hex: currentTheme.keyBorderColorHex!) ?? .black) : .black
-                present(picker, animated: true)
-            } else if indexPath.row == 2 {
+            if indexPath.row == 1 {
                 let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
                 let alert = UIAlertController(title: isEn ? "Border Style" : "フチの種類", message: nil, preferredStyle: .actionSheet)
                 let stylesEn = ["Solid", "Dashed", "Dotted", "Double", "Dash-Dot", "Dash-Dot-Dot"]
