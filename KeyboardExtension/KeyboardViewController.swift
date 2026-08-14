@@ -1388,19 +1388,10 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     @objc private func keyTouchUp(_ sender: UIButton) {
         lastFlickTapBaseChar = nil
-        let text = sender.titleLabel?.text ?? ""
-        let isSpecial = sender.image(for: .normal) != nil || ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+=", "空白", "space"].contains(text)
-        
         UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = .identity
             sender.alpha = 1.0
         }
-        let isDark = textDocumentProxy.keyboardAppearance == .dark
-        sender.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
-        if isSpecial {
-            sender.backgroundColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
-        }
-        flickKeyboard.updateAppearance(isDark: textDocumentProxy.keyboardAppearance == .dark)
     }
     
     // MARK: - QWERTY Space Drag
