@@ -1192,7 +1192,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         if mode == 2 && !isSpecialKey { return }
         
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
-            AudioServicesPlaySystemSound(1104)
+            KeyboardSoundManager.shared.playClick()
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }

@@ -1323,6 +1323,7 @@ class HapticsSensitivityViewController: UITableViewController {
     private let hapticSlider = UISlider()
     private let hapticTargetSegment = UISegmentedControl()
     private let cursorSlider = UISlider()
+    private let soundVolumeSlider = UISlider()
     
     init() {
         super.init(style: .insetGrouped)
@@ -1345,6 +1346,11 @@ class HapticsSensitivityViewController: UITableViewController {
         hapticSlider.isContinuous = false
         hapticSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticStrength") as? Float ?? 0.0
         hapticSlider.addTarget(self, action: #selector(hapticSliderChanged), for: .valueChanged)
+        
+        soundVolumeSlider.minimumValue = 0.1
+        soundVolumeSlider.maximumValue = 5.0
+        soundVolumeSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "keyboardSoundVolume") as? Float ?? 1.0
+        soundVolumeSlider.addTarget(self, action: #selector(soundVolumeSliderChanged), for: .valueChanged)
         
         cursorSlider.minimumValue = 0.5
         cursorSlider.maximumValue = 2.5
@@ -1386,6 +1392,41 @@ class HapticsSensitivityViewController: UITableViewController {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
     
+    private var previewPlayers: [Any]?
+    
+    @objc private func soundVolumeSliderChanged() {
+        AppGroupHelper.shared.userDefaults?.set(soundVolumeSlider.value, forKey: "keyboardSoundVolume")
+        
+        if previewPlayers == nil {
+            var players = [AVAudioPlayer]()
+            if let url = URL(string: "file:///System/Library/Audio/UISounds/key_press_click.caf") {
+                for _ in 0..<15 {
+                    if let p = try? AVAudioPlayer(contentsOf: url) {
+                        p.prepareToPlay()
+                        players.append(p)
+                    }
+                }
+            }
+            previewPlayers = players
+        }
+        
+        if let players = previewPlayers as? [AVAudioPlayer], players.count > 0 {
+            try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+            try? AVAudioSession.sharedInstance().setActive(true)
+            
+            let volume = soundVolumeSlider.value
+            let numberOfPlays = max(1, Int(ceil(volume)))
+            let baseVolume = min(1.0, volume / Float(numberOfPlays))
+            
+            for i in 0..<numberOfPlays {
+                let player = players[i % players.count]
+                player.volume = baseVolume
+                if player.isPlaying { player.currentTime = 0 }
+                player.play()
+            }
+        }
+    }
+    
     @objc private func cursorSliderChanged() {
         AppGroupHelper.shared.userDefaults?.set(cursorSlider.value, forKey: "cursorSensitivity")
     }
@@ -1400,7 +1441,7 @@ class HapticsSensitivityViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
-            return hapticSwitch.isOn ? 3 : 1
+            return hapticSwitch.isOn ? 4 : 1
         }
         return 1
     }
@@ -1463,6 +1504,25 @@ class HapticsSensitivityViewController: UITableViewController {
                     hapticSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
                 ])
             } else if indexPath.row == 2 {
+                soundVolumeSlider.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(soundVolumeSlider)
+                
+                let iconView = UIImageView(image: UIImage(systemName: "speaker.wave.3.fill"))
+                iconView.tintColor = .secondaryLabel
+                iconView.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(iconView)
+                
+                NSLayoutConstraint.activate([
+                    iconView.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    iconView.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    iconView.widthAnchor.constraint(equalToConstant: 24),
+                    iconView.heightAnchor.constraint(equalToConstant: 24),
+                    
+                    soundVolumeSlider.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 16),
+                    soundVolumeSlider.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    soundVolumeSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
+                ])
+            } else if indexPath.row == 3 {
                 cell.textLabel?.text = isEn ? "Target Keys" : "対象キー"
                 hapticTargetSegment.sizeToFit()
                 cell.accessoryView = hapticTargetSegment

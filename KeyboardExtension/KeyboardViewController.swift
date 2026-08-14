@@ -1,5 +1,47 @@
 import UIKit
 import AudioToolbox
+
+import AVFoundation
+
+class KeyboardSoundManager {
+    static let shared = KeyboardSoundManager()
+    
+    private var players: [AVAudioPlayer] = []
+    private var currentIndex = 0
+    
+    private init() {
+        if let url = URL(string: "file:///System/Library/Audio/UISounds/key_press_click.caf") {
+            for _ in 0..<20 {
+                if let player = try? AVAudioPlayer(contentsOf: url) {
+                    player.prepareToPlay()
+                    players.append(player)
+                }
+            }
+        }
+    }
+    
+    func playClick() {
+        guard !players.isEmpty else { return }
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        
+        let volume = AppGroupHelper.shared.userDefaults?.float(forKey: "keyboardSoundVolume") ?? 1.0
+        let numberOfPlays = max(1, Int(ceil(volume)))
+        let baseVolume = min(1.0, volume / Float(numberOfPlays))
+        
+        for _ in 0..<numberOfPlays {
+            let player = players[currentIndex]
+            player.volume = baseVolume
+            if player.isPlaying {
+                player.currentTime = 0
+            } else {
+                player.play()
+            }
+            currentIndex = (currentIndex + 1) % players.count
+        }
+    }
+}
+
 import AVFoundation
 
 @objcMembers
@@ -1763,7 +1805,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         if mode == 2 && !isSpecialKey { return }
         
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
-            AudioServicesPlaySystemSound(1104)
+            KeyboardSoundManager.shared.playClick()
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
