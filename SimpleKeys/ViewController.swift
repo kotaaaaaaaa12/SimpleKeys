@@ -890,6 +890,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         updatePreview()
     }
     
+    @objc private func flickBorderWidthChanged(_ sender: UISlider) {
+        currentTheme.flickPopupBorderWidth = CGFloat(sender.value)
+        updatePreview()
+    }
+    
     
     @objc private func saveTapped() {
         if currentTheme.name == nil || currentTheme.name!.isEmpty {
@@ -914,7 +919,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 4 { return 1 } // Opacity
         if section == 5 { return currentTheme.keyStyle == 0 ? 3 : 2 } // Colors
         if section == 6 { return 1 } // Font
-        if section == 7 { return 4 } // Flick popup bg, text, highlight, shape
+        if section == 7 { return 7 } // Flick popup bg, text, highlight, border col, border width, border style, shape
         return 1
     }
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -1328,6 +1333,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             currentTheme.flickPopupTextHex = hexStr
         } else if pickingColorFor == "flickHighlight" {
             currentTheme.flickHighlightHex = hexStr
+        } else if pickingColorFor == "flickBorder" {
+            currentTheme.flickPopupBorderColorHex = hexStr
         }
         
         updatePreview()

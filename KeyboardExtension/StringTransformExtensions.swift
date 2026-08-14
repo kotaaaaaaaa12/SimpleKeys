@@ -179,6 +179,9 @@ struct ThemeSettings: Codable, Equatable {
     var flickPopupTextHex: String?     // Flick popup text color
     var flickHighlightHex: String?     // Highlight color for flick hints
     var flickPopupShape: Int?          // 0: rounded, 1: oval, 2: rect
+    var flickPopupBorderColorHex: String?
+    var flickPopupBorderWidth: CGFloat?
+    var flickPopupBorderStyle: Int?    // 0: solid, 1: dashed, 2: dotted, 3: double, 4: dash-dot, 5: dash-dot-dot
     var videoAudioEnabled: Bool?       // Toggle for video background audio
     var keyBorderWidth: CGFloat?
     var keyBorderStyle: Int? // 0: solid, 1: dashed, 2: dotted, 3: double, 4: dash-dot, 5: dash-dot-dot

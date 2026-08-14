@@ -874,9 +874,15 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 themeToUse = theme
             }
         }
+        var popupBorderCol: UIColor? = nil
+        var popupBorderWidth: CGFloat = 0.0
+        var popupBorderStyle = 0
         if let theme = themeToUse {
             if let hex = theme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
             if let hex = theme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
+            if let hex = theme.flickPopupBorderColorHex { popupBorderCol = UIColor(hex: hex) }
+            if let width = theme.flickPopupBorderWidth { popupBorderWidth = width }
+            if let style = theme.flickPopupBorderStyle { popupBorderStyle = style }
         }
         
         let popup = UIView()
@@ -906,6 +912,9 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             label.layer.cornerRadius = radius
             label.layer.masksToBounds = true
             label.layer.shadowColor = UIColor.black.cgColor
+            
+            let finalBorderCol = popupBorderCol ?? popupBg.withAlphaComponent(0.6)
+            label.applyCustomBorderStyle(width: popupBorderWidth, style: popupBorderStyle, color: finalBorderCol.cgColor, radius: radius, isFrostedOrClear: false)
             label.layer.shadowOpacity = 0.2
             label.layer.shadowOffset = CGSize(width: 0, height: 1)
             label.layer.shadowRadius = 2
@@ -973,13 +982,20 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 themeToUse = theme
             }
         }
+        var popupBorderCol: UIColor? = nil
+        var popupBorderWidth: CGFloat = 0.0
+        var popupBorderStyle = 0
         if let theme = themeToUse {
             if let hex = theme.flickPopupBgHex { popupBg = UIColor(hex: hex) ?? .white }
             if let hex = theme.flickPopupTextHex { popupTextCol = UIColor(hex: hex) ?? .black }
             if let hex = theme.flickHighlightHex { highlightCol = UIColor(hex: hex) ?? .systemBlue }
+            if let hex = theme.flickPopupBorderColorHex { popupBorderCol = UIColor(hex: hex) }
+            if let width = theme.flickPopupBorderWidth { popupBorderWidth = width }
+            if let style = theme.flickPopupBorderStyle { popupBorderStyle = style }
         }
         
         for (dir, label) in labels {
+            let customBorder = label.layer.sublayers?.first(where: { $0.name == "customBorderLayer" })
             if dir == direction {
                 label.isHidden = false
                 popup.bringSubviewToFront(label)
@@ -987,10 +1003,12 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                     label.backgroundColor = highlightCol
                     label.textColor = .white
                     label.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+                    customBorder?.isHidden = false
                 } else {
                     label.backgroundColor = .clear
                     label.textColor = popupTextCol
                     label.transform = .identity
+                    customBorder?.isHidden = true
                 }
             } else {
                 if isFull {
@@ -998,6 +1016,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                     label.textColor = popupTextCol
                     label.transform = .identity
                     label.isHidden = false
+                    customBorder?.isHidden = false
                 } else {
                     label.isHidden = true
                 }
@@ -1037,8 +1056,44 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             path.append(arrow)
             bgLayer?.path = path.cgPath
             bgLayer?.fillColor = popupBg.cgColor
-            bgLayer?.strokeColor = popupBg.withAlphaComponent(0.6).cgColor
-            bgLayer?.lineWidth = 0.5
+            
+            let finalBorderCol = popupBorderCol ?? popupBg.withAlphaComponent(0.6)
+            
+            if popupBorderWidth > 0 {
+                bgLayer?.strokeColor = finalBorderCol.cgColor
+                bgLayer?.lineWidth = popupBorderWidth
+                bgLayer?.lineDashPattern = nil
+                bgLayer?.lineCap = .butt
+                bgLayer?.lineJoin = .miter
+                
+                // Remove inner double border if any
+                bgLayer?.sublayers?.filter { $0.name == "innerDoubleBorder" }.forEach { $0.removeFromSuperlayer() }
+                
+                switch popupBorderStyle {
+                case 1:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 3)), NSNumber(value: Float(popupBorderWidth * 2))]
+                case 2:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
+                    bgLayer?.lineCap = .round
+                    bgLayer?.lineJoin = .round
+                case 3:
+                    bgLayer?.lineWidth = popupBorderWidth / 3.0
+                    let inner = CAShapeLayer()
+                    inner.name = "innerDoubleBorder"
+                    inner.path = bgLayer?.path
+                    inner.fillColor = UIColor.clear.cgColor
+                    inner.strokeColor = popupBg.cgColor
+                    inner.lineWidth = popupBorderWidth / 3.0
+                    bgLayer?.addSublayer(inner)
+                case 4:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 4)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
+                case 5:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 4)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
+                default: break
+                }
+            } else {
+                bgLayer?.lineWidth = 0
+            }
         } else {
             bgLayer?.path = nil
         }
