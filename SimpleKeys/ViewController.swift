@@ -885,6 +885,14 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         updatePreview()
     }
     
+    @objc private func fontSizeScaleChanged(_ sender: UISlider) {
+        currentTheme.fontSizeScale = CGFloat(sender.value)
+        updatePreview()
+        // We probably shouldn't reloadData on every value change for a slider, but the user requested it. We can omit it if it makes it too glitchy, but let's just do it or not. Actually, let's omit reloadData to avoid breaking the slider interaction. Oh, wait, the instructions say: "Add a target to it to update currentTheme.fontSizeScale, call updatePreview(), and tableView.reloadData()."
+        // Let's fulfill the prompt.
+        tableView.reloadData()
+    }
+
     @objc private func borderWidthChanged(_ sender: UISlider) {
         currentTheme.keyBorderWidth = CGFloat(sender.value)
         updatePreview()
@@ -918,7 +926,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         if section == 3 { return 3 } // Border Color, Width, and Style
         if section == 4 { return 1 } // Opacity
         if section == 5 { return currentTheme.keyStyle == 0 ? 2 : 1 } // Colors
-        if section == 6 { return 1 } // Font
+        if section == 6 { return 2 } // Font
         if section == 7 { return 7 } // Flick popup bg, text, highlight, border col, border width, border style, shape
         return 1
     }
@@ -1059,10 +1067,37 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 }
             }
         } else if indexPath.section == 6 {
-            cell.selectionStyle = .default
-            cell.accessoryType = .disclosureIndicator
-            cell.textLabel?.text = isEn ? "Font Family" : "フォントファミリー"
-            cell.detailTextLabel?.text = currentTheme.fontName ?? (isEn ? "System Default" : "システムデフォルト")
+            if indexPath.row == 0 {
+                cell.selectionStyle = .default
+                cell.accessoryType = .disclosureIndicator
+                cell.textLabel?.text = isEn ? "Font Family" : "フォントファミリー"
+                cell.detailTextLabel?.text = currentTheme.fontName ?? (isEn ? "System Default" : "システムデフォルト")
+            } else if indexPath.row == 1 {
+                cell.selectionStyle = .none
+                cell.accessoryType = .none
+                let titleLabel = UILabel()
+                titleLabel.text = isEn ? "Font Size Scale" : "フォントサイズの倍率"
+                titleLabel.font = .systemFont(ofSize: 16)
+                
+                let scaleSlider = UISlider()
+                scaleSlider.minimumValue = 0.5
+                scaleSlider.maximumValue = 2.0
+                scaleSlider.value = Float(currentTheme.fontSizeScale ?? 1.0)
+                scaleSlider.addTarget(self, action: #selector(fontSizeScaleChanged(_:)), for: .valueChanged)
+                
+                let stack = UIStackView(arrangedSubviews: [titleLabel, scaleSlider])
+                stack.axis = .vertical
+                stack.spacing = 8
+                stack.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(stack)
+                
+                NSLayoutConstraint.activate([
+                    stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                    stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+                ])
+            }
         } else if indexPath.section == 7 {
             cell.selectionStyle = .default
             cell.accessoryType = .disclosureIndicator
@@ -1233,7 +1268,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
             present(picker, animated: true)
         } else if indexPath.section == 6 {
-            var fontNames: [String?] = [
+            if indexPath.row == 0 {
+                var fontNames: [String?] = [
                 nil,
                 "HiraginoSans-W3", "HiraginoSans-W6", "HiraginoSans-W8",
                 "HiraMinProN-W3", "HiraMinProN-W6",
@@ -1292,6 +1328,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             }
             let nav = UINavigationController(rootViewController: fontPickerVC)
             present(nav, animated: true)
+            }
         } else if indexPath.section == 7 {
             let picker = UIColorPickerViewController()
             picker.delegate = self

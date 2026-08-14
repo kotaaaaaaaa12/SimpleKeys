@@ -435,10 +435,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 fontSize = 22
             }
             
-            if let fontName = currentTheme?.fontName, let customFont = UIFont(name: fontName, size: fontSize) {
+            let scale = currentTheme?.fontSizeScale ?? 1.0
+            if let fontName = currentTheme?.fontName, let customFont = UIFont(name: fontName, size: fontSize * scale) {
                 lbl.font = customFont
             } else {
-                lbl.font = .systemFont(ofSize: fontSize, weight: .regular)
+                lbl.font = .systemFont(ofSize: fontSize * scale, weight: .regular)
             }
             
             if text.contains("゛゜") && text.contains("小") {
@@ -448,11 +449,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 pStyle.alignment = .center
                 pStyle.lineSpacing = -12
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
-                    .font: lbl.font.withSize(18),
+                    .font: lbl.font.withSize(18 * scale),
                     .paragraphStyle: pStyle
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
-                    .font: lbl.font.withSize(15),
+                    .font: lbl.font.withSize(15 * scale),
                     .paragraphStyle: pStyle
                 ]))
                 lbl.attributedText = attrStr
@@ -620,8 +621,19 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             
             if let lbl = keyView.viewWithTag(100) as? UILabel {
                 lbl.textColor = textCol
-                if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: lbl.font.pointSize) {
+                let baseSize: CGFloat
+                if keyView == returnButton || lbl.text == "空白" {
+                    baseSize = 16
+                } else if keyView == numButton || keyView == abcButton || keyView == faceButton {
+                    baseSize = 18
+                } else {
+                    baseSize = 22
+                }
+                let scale = theme.fontSizeScale ?? 1.0
+                if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: baseSize * scale) {
                     lbl.font = customFont
+                } else {
+                    lbl.font = .systemFont(ofSize: baseSize * scale, weight: .regular)
                 }
             }
             if let sub = keyView.viewWithTag(105) as? UILabel {
@@ -630,8 +642,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 } else {
                     sub.textColor = textCol.withAlphaComponent(0.5)
                 }
-                if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: sub.font.pointSize) {
+                let scale = theme.fontSizeScale ?? 1.0
+                if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: 10 * scale) {
                     sub.font = customFont
+                } else {
+                    sub.font = .systemFont(ofSize: 10 * scale, weight: .medium)
                 }
             }
             for subview in keyView.subviews {
@@ -990,10 +1005,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             label.minimumScaleFactor = 0.5
             label.lineBreakMode = .byWordWrapping
             
-            if let fontName = themeToUse?.fontName, let customFont = UIFont(name: fontName, size: 22) {
+            let scale = themeToUse?.fontSizeScale ?? 1.0
+            if let fontName = themeToUse?.fontName, let customFont = UIFont(name: fontName, size: 22 * scale) {
                 label.font = customFont
             } else {
-                label.font = .systemFont(ofSize: 22, weight: .semibold)
+                label.font = .systemFont(ofSize: 22 * scale, weight: .semibold)
             }
             label.textColor = popupTextCol
             label.textAlignment = .center
@@ -1015,11 +1031,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 paragraphStyle.lineSpacing = -12
                 let attrStr = NSMutableAttributedString()
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
-                    .font: label.font.withSize(20),
+                    .font: label.font.withSize(20 * (themeToUse?.fontSizeScale ?? 1.0)),
                     .paragraphStyle: paragraphStyle
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
-                    .font: label.font.withSize(16),
+                    .font: label.font.withSize(16 * (themeToUse?.fontSizeScale ?? 1.0)),
                     .paragraphStyle: paragraphStyle
                 ]))
                 label.attributedText = attrStr

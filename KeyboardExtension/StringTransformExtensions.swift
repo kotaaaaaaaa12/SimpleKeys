@@ -185,6 +185,7 @@ struct ThemeSettings: Codable, Equatable {
     var videoAudioEnabled: Bool?       // Toggle for video background audio
     var keyBorderWidth: CGFloat?
     var keyBorderStyle: Int? // 0: solid, 1: dashed, 2: dotted, 3: double, 4: dash-dot, 5: dash-dot-dot
+    var fontSizeScale: CGFloat?
     
     static let sharedKey = "customThemeSettings"
     static let themesArrayKey = "savedCustomThemes"

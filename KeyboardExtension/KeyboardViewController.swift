@@ -575,7 +575,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
             for (index, candidate) in currentCandidates.enumerated() {
                 let button = UIButton(type: .system)
                 button.setTitle(candidate, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 20)
+                let scale = currentTheme.fontSizeScale ?? 1.0
+                button.titleLabel?.font = .systemFont(ofSize: 20 * scale)
                 button.setTitleColor(.label, for: .normal)
                 button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
                 button.tag = index
@@ -625,7 +626,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                         for (index, candidate) in self.currentCandidates.enumerated() {
                             let button = UIButton(type: .system)
                             button.setTitle(candidate, for: .normal)
-                            button.titleLabel?.font = .systemFont(ofSize: 20)
+                            let scale = currentTheme.fontSizeScale ?? 1.0
+                            button.titleLabel?.font = .systemFont(ofSize: 20 * scale)
                             button.setTitleColor(.label, for: .normal)
                             button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
                             button.tag = index
@@ -819,7 +821,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 bottomStack.addArrangedSubview(globe)
             } else if key == "space" {
                 let spaceBtn = createKeyButton(title: currentMode == .qwertyRomaji ? "空白" : "space")
-                spaceBtn.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
+                let scale = currentTheme.fontSizeScale ?? 1.0
+                spaceBtn.titleLabel?.font = .systemFont(ofSize: 20 * scale, weight: .regular)
                 spaceBtn.addTarget(self, action: #selector(spacePressed), for: .touchUpInside)
                 spaceBtn.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
                 spaceBtn.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
@@ -997,7 +1000,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     private func createKeyButton(title: String) -> QwertyKeyButton {
         let button = QwertyKeyButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 20, weight: .regular)
+        let scale = currentTheme.fontSizeScale ?? 1.0
+        button.titleLabel?.font = .systemFont(ofSize: 20 * scale, weight: .regular)
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.layer.shadowRadius = 0
         button.layer.shadowOpacity = 0.3
@@ -1137,8 +1141,12 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 if let btn = sub as? UIButton {
                     btn.setTitleColor(textColor, for: .normal)
                     btn.tintColor = textColor
-                    if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: btn.titleLabel?.font.pointSize ?? 20) {
+                    let scale = previewTheme?.fontSizeScale ?? currentTheme.fontSizeScale ?? 1.0
+                    let baseSize: CGFloat = btn.accessibilityIdentifier == "globe" ? 14 : 20
+                    if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: baseSize * scale) {
                         btn.titleLabel?.font = customFont
+                    } else {
+                        btn.titleLabel?.font = .systemFont(ofSize: baseSize * scale, weight: btn.accessibilityIdentifier == "globe" ? .bold : .regular)
                     }
                     let title = btn.titleLabel?.text ?? ""
                     let isSpecialKey = btn.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
@@ -1148,8 +1156,12 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                         if let b = btn as? UIButton {
                             b.setTitleColor(textColor, for: .normal)
                             b.tintColor = textColor
-                            if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: b.titleLabel?.font.pointSize ?? 20) {
+                            let scale = previewTheme?.fontSizeScale ?? currentTheme.fontSizeScale ?? 1.0
+                            let baseSize: CGFloat = b.accessibilityIdentifier == "globe" ? 14 : 20
+                            if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: baseSize * scale) {
                                 b.titleLabel?.font = customFont
+                            } else {
+                                b.titleLabel?.font = .systemFont(ofSize: baseSize * scale, weight: b.accessibilityIdentifier == "globe" ? .bold : .regular)
                             }
                             let title = b.titleLabel?.text ?? ""
                             let isSpecialKey = b.image(for: .normal) != nil || ["return", "123", "ABC", "#+="].contains(title)
