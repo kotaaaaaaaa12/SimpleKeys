@@ -213,7 +213,7 @@ extension UIColor {
 extension UIView {
     func applyCustomBorderStyle(width: CGFloat, style: Int, color: CGColor?, radius: CGFloat, isFrostedOrClear: Bool) {
         // Remove existing custom border layers
-        self.layer.sublayers?.removeAll(where: { $0.name == "customBorderLayer" })
+        self.layer.sublayers?.filter { $0.name == "customBorderLayer" }.forEach { $0.removeFromSuperlayer() }
         
         if width == 0 || color == nil {
             self.layer.borderWidth = 0

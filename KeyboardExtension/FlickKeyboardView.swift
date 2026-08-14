@@ -486,7 +486,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         let shape = theme.buttonShape ?? 0
         
-        let bWidth = theme.keyBorderWidth ?? (isFrosted || isClear || isFlat ? (isFlat ? 1.0 : 0.5) : 0.0)
+        let bWidth = theme.keyBorderWidth ?? CGFloat(isFrosted || isClear || isFlat ? (isFlat ? 1.0 : 0.5) : 0.0)
         let bStyle = theme.keyBorderStyle ?? 0
         
         for keyView in allKeys {

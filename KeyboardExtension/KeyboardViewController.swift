@@ -1021,7 +1021,7 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         let borderCol = theme.keyBorderColorHex != nil ? (UIColor(hex: theme.keyBorderColorHex!)?.cgColor ?? defaultBorderCol) : defaultBorderCol
         let clearBgAlpha = 0.15 * opacity
         
-        let bWidth = theme.keyBorderWidth ?? (theme.keyStyle == 1 || theme.keyStyle == 3 || theme.keyStyle == 2 ? (theme.keyStyle == 2 ? 1.0 : 0.5) : 0.0)
+        let bWidth = theme.keyBorderWidth ?? CGFloat(theme.keyStyle == 1 || theme.keyStyle == 3 || theme.keyStyle == 2 ? (theme.keyStyle == 2 ? 1.0 : 0.5) : 0.0)
         let bStyle = theme.keyBorderStyle ?? 0
         if let qwertyBtn = b as? QwertyKeyButton {
             qwertyBtn.shape = theme.buttonShape ?? 0
