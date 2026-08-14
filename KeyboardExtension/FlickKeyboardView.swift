@@ -378,7 +378,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             }
             lbl.text = text
             let fontSize: CGFloat
-            if text == "゛゜\n小" {
+            if text.contains("゛゜") && text.contains("小") {
                 fontSize = 14
                 shouldShowHint = false
             } else if text.count >= 4 {
@@ -396,25 +396,40 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 lbl.font = .systemFont(ofSize: fontSize, weight: .regular)
             }
             
-            if text == "゛゜\n小" {
-                lbl.transform = CGAffineTransform(translationX: 0, y: -4)
-                lbl.text = "゛゜"
+            if text.contains("゛゜") && text.contains("小") {
+                lbl.transform = .identity
+                let attrStr = NSMutableAttributedString()
+                let pStyle = NSMutableParagraphStyle()
+                pStyle.lineSpacing = -2
+                pStyle.alignment = .center
+                attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
+                    .font: lbl.font.withSize(16),
+                    .paragraphStyle: pStyle
+                ]))
+                attrStr.append(NSAttributedString(string: "小", attributes: [
+                    .font: lbl.font.withSize(13),
+                    .paragraphStyle: pStyle
+                ]))
+                lbl.attributedText = attrStr
+                lbl.numberOfLines = 0
+                lbl.adjustsFontSizeToFitWidth = false
+                lbl.lineBreakMode = .byWordWrapping
             } else if !shouldShowHint {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
+                lbl.adjustsFontSizeToFitWidth = true
+                lbl.numberOfLines = 2
             } else {
                 lbl.transform = .identity
+                lbl.adjustsFontSizeToFitWidth = true
+                lbl.numberOfLines = 2
             }
         }
         
         if let sub = btn.viewWithTag(105) as? UILabel {
             sub.textColor = .lightGray
             
-            if keyData.center == "゛゜\n小" {
-                sub.text = "小"
-                if let lbl = btn.viewWithTag(100) as? UILabel {
-                    sub.textColor = lbl.textColor
-                    sub.font = lbl.font.withSize(13)
-                }
+            if keyData.center.contains("゛゜") && keyData.center.contains("小") {
+                sub.text = ""
             } else if !shouldShowHint {
                 sub.text = ""
             } else {
@@ -565,7 +580,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 }
             }
             if let sub = keyView.viewWithTag(105) as? UILabel {
-                if keysMap[keyView]?.center == "゛゜\n小" {
+                if let center = keysMap[keyView]?.center, center.contains("゛゜"), center.contains("小") {
                     sub.textColor = textCol
                 } else {
                     sub.textColor = textCol.withAlphaComponent(0.5)
@@ -949,15 +964,22 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             label.layer.shadowOffset = CGSize(width: 0, height: 1)
             label.layer.shadowRadius = 2
             let dirText = textForDirection(dir, key: keyData) ?? ""
-            if dirText == "゛゜\n小" {
+            if dirText.contains("゛゜") && dirText.contains("小") {
                 let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.lineSpacing = -4
+                paragraphStyle.lineSpacing = -2
                 paragraphStyle.alignment = .center
-                let attrStr = NSAttributedString(string: dirText, attributes: [
-                    .font: label.font.withSize(14),
+                let attrStr = NSMutableAttributedString()
+                attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
+                    .font: label.font.withSize(16),
                     .paragraphStyle: paragraphStyle
-                ])
+                ]))
+                attrStr.append(NSAttributedString(string: "小", attributes: [
+                    .font: label.font.withSize(13),
+                    .paragraphStyle: paragraphStyle
+                ]))
                 label.attributedText = attrStr
+                label.numberOfLines = 0
+                label.adjustsFontSizeToFitWidth = false
             } else {
                 label.text = dirText
             }
