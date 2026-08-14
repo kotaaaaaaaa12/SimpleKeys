@@ -74,11 +74,16 @@ class FontManagerViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
         let font = customFonts[indexPath.row]
-        cell.textLabel?.text = font.displayName
-        cell.detailTextLabel?.text = font.fontName
+        
+        var content = cell.defaultContentConfiguration()
+        content.text = font.displayName
+        content.secondaryText = font.fontName
+        
         if let uiFont = UIFont(name: font.fontName, size: 16) {
-            cell.textLabel?.font = uiFont
+            content.textProperties.font = uiFont
         }
+        cell.contentConfiguration = content
+        
         return cell
     }
     

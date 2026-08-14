@@ -1841,14 +1841,17 @@ class FontPickerTableViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = fontLabels[indexPath.row]
+        
+        var content = cell.defaultContentConfiguration()
+        content.text = fontLabels[indexPath.row]
         let fName = fontNames[indexPath.row]
         
         if let fName = fName, let font = UIFont(name: fName, size: 17) {
-            cell.textLabel?.font = font
+            content.textProperties.font = font
         } else {
-            cell.textLabel?.font = UIFont.systemFont(ofSize: 17)
+            content.textProperties.font = UIFont.systemFont(ofSize: 17)
         }
+        cell.contentConfiguration = content
         
         if currentFont == fName {
             cell.accessoryType = .checkmark
