@@ -6,34 +6,54 @@ import AVFoundation
 class KeyboardSoundManager {
     static let shared = KeyboardSoundManager()
     
-    private var players: [AVAudioPlayer] = []
+    private let engine = AVAudioEngine()
+    private var players: [AVAudioPlayerNode] = []
     private var currentIndex = 0
+    private var buffer: AVAudioPCMBuffer?
     
     private init() {
-        if let data = Data(base64Encoded: "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TgtJC0ULQAs7CzcLMgstCycLIgsdCxcLEQsMCwYLAAv6CvQK7QrnCuAK2grTCswKxQq+CrcKsAqpCqIKmgqTCosKhAp8CnQKbQplCl0KVQpNCkUKPQo0CiwKJAobChMKCgoCCvkJ8AnoCd8J1gnNCcUJvAmzCaoJoQmYCY8JhQl8CXMJaglhCVgJTglFCTwJMgkpCSAJFgkNCQMJ+gjwCOcI3gjUCMsIwQi4CK4IpAibCJEIiAh+CHUIawhiCFgITghFCDsIMggoCB8IFQgMCAII+QfvB+UH3AfSB8kHwAe2B60HoweaB5AHhwd9B3QHawdhB1gHTwdFBzwHMwcqByAHFwcOBwUH/AbzBukG4AbXBs4GxQa8BrMGqgahBpgGjwaHBn4GdQZsBmMGWwZSBkkGQQY4Bi8GJwYeBhYGDQYFBvwF9AXrBeMF2wXSBcoFwgW6BbEFqQWhBZkFkQWJBYEFeQVxBWkFYQVZBVEFSgVCBToFMgUrBSMFHAUUBQwFBQX9BPYE7wTnBOAE2ATRBMoEwwS7BLQErQSmBJ8EmASRBIoEgwR8BHUEbgRoBGEEWgRTBE0ERgQ/BDkEMgQsBA==") {
-            for _ in 0..<15 {
-                if let player = try? AVAudioPlayer(data: data) {
-                    player.prepareToPlay()
-                    players.append(player)
-                }
-            }
-        }
-        
         try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
         try? AVAudioSession.sharedInstance().setActive(true)
+        
+        if let data = Data(base64Encoded: "UklGRggHAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YeQGAAABgAGA/38BgAGA/38BgP9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//39EtAJaUU7/fwGAepMBgLEzAYCjkwGA4asBgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYABgAGAAYBMg2aHFoz9j62UgZhMnD+hX6UgqditP7EUtvq5i73FwSXG1snRzWfRatVH2V7duuCX5GroAez871vzQfe4+gD+yQHyBHIItgtCD5US5hXbGCYcRx9hIq0lziiJK5wuoTF4NG43FjrdPJ8/YEIBRaRHUkr3TE5P2VE7VKZWG1ldW7xd9l8BYlFkdGZ+aHVqnWx1bmpwSnI8dA522neOeUl75nyifv9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f/9//3//f3x/wH4Efkh9i3zPexF7VHqXedp4HXhgd6N25nUpdWx0r3PycjZyenG+cAJwR2+MbtFtFm1cbKNr6Wowandpv2gHaFBnmWbjZS1leGTDYw9jW2KoYfZgRGCSX+JeMl6CXdRcJlx4W8xaIFp0WcpYIFh3V89WJ1aAVdpUNVSQU+xSSVKnUQVRZVDFTyZPiE7qTU5NskwXTH1L5EpLSrRJHUmHSPJHXkfKRjhGpkUVRYVE9kNoQ9tCTkLDQThBrkAlQJ0/Fj+PPgo+hT0BPX48/Dt6O/o6ejr8OX45ATmFOAk4jzcVN5w2JDatNTc1wTRNNNkzZjP0MoMyEjKiMTQxxTBYMOwvgC8VL6suQi7ZLXItCy2lLD8s2yt3KxQrsSpQKu8pjykwKdEocygWKLonXicDJ6kmTyb3JZ8lRyXxJJskRSTxI50jSiP3IqUiVCIEIrQhZSEWIcggeyAuIOIflx9MHwIfuR5wHice4B2ZHVIdDR3HHIMcPxz7G7gbdhs0G/MashpyGjMa9Bm1GXcZOhn9GMEYhRhKGA8Y1RebF2IXKRfxFrkWghZLFhUW3xWqFXUVQRUNFdoUpxR0FEIUERTfE68TfhNPEx8T8BLCEpQSZhI5EgwS3xGzEYgRXBExEQcR3RCzEIoQYRA4EBAQ6A/BD5oPcw9NDycPAQ/cDrcOkg5uDkoOJg4DDuANvQ2bDXkNVw02DRUN9AzUDLMMlAx0DFUMNgwXDPkL2wu9C6ALggtlC0kLLAsQC/QK2Qq9CqIKhwptClMKOAofCgUK7AnTCboJoQmJCXEJWQlBCSoJEgn7COUIzgi4CKIIjAh2CGAISwg2CCEIDAj4B+QH0Ae8B6gHlAeBB24HWwdIBzYHIwcRB/8G7QbbBsoGuAanBpYGhQZ1BmQGVAZEBjMGJAYUBgQG9QXmBdYFxwW5BaoFmwWNBX8FcQVjBVUFRwU5BSwFHwURBQQF9wTrBN4E0QTFBLkErQShBJUEiQR9BHEEZgQ=") {
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("click.wav")
+            try? data.write(to: tempURL)
+            
+            if let file = try? AVAudioFile(forReading: tempURL),
+               let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)) {
+                try? file.read(into: buf)
+                self.buffer = buf
+                
+                let mixer = engine.mainMixerNode
+                for _ in 0..<5 {
+                    let player = AVAudioPlayerNode()
+                    engine.attach(player)
+                    engine.connect(player, to: mixer, format: buf.format)
+                    players.append(player)
+                }
+                
+                try? engine.start()
+            }
+        }
     }
     
     func playClick() {
-        guard !players.isEmpty else { return }
+        guard !players.isEmpty, let buf = buffer else { return }
         
         let volume = AppGroupHelper.shared.userDefaults?.float(forKey: "keyboardSoundVolume") ?? 1.0
-        let player = players[currentIndex]
-        player.volume = volume
-        if player.isPlaying {
-            player.currentTime = 0
-        } else {
-            player.play()
+        // Scale volume so that slider 0.5 = volume 1.0, and slider 1.0 = volume 2.0 (boosted)
+        let actualVolume = volume * 2.0
+        
+        if !engine.isRunning {
+            try? engine.start()
         }
+        
+        let player = players[currentIndex]
+        player.volume = actualVolume
+        player.stop()
+        player.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
+        player.play()
+        
         currentIndex = (currentIndex + 1) % players.count
     }
 }
