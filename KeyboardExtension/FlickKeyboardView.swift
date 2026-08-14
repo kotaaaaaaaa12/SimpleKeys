@@ -499,7 +499,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             }
             
             let existingBlur = keyView.viewWithTag(8888) as? UIVisualEffectView
-            let isSpecial = [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton].contains(keyView)
+            let isSpecial = [numButton, abcButton, globeButton, faceButton, deleteButton, returnButton, spaceButton].contains(keyView)
             
             if isFlat {
                 existingBlur?.removeFromSuperview()
@@ -913,6 +913,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             label.layer.masksToBounds = true
             label.layer.shadowColor = UIColor.black.cgColor
             
+            label.bounds = CGRect(x: 0, y: 0, width: keyWidth, height: keyHeight)
             let finalBorderCol = popupBorderCol ?? popupBg.withAlphaComponent(0.6)
             label.applyCustomBorderStyle(width: popupBorderWidth, style: popupBorderStyle, color: finalBorderCol.cgColor, radius: radius, isFrostedOrClear: false)
             label.layer.shadowOpacity = 0.2
