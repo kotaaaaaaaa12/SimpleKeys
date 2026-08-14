@@ -100,7 +100,9 @@ protocol FlickKeyboardDelegate: AnyObject {
     func flickKeyboardDidPressGlobe(_ keyboard: FlickKeyboardView)
 }
 
-class FlickKeyboardView: UIView {
+class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
+    var enableInputClicksWhenVisible: Bool { return true }
+
     
     // MARK: - Types
     
@@ -1188,6 +1190,8 @@ class FlickKeyboardView: UIView {
         if mode == 1 && isSpecialKey { return }
         if mode == 2 && !isSpecialKey { return }
         
+        UIDevice.current.playInputClick()
+        
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
@@ -1196,8 +1200,6 @@ class FlickKeyboardView: UIView {
                 return .heavy
             }()
             UIImpactFeedbackGenerator(style: style).impactOccurred()
-        } else {
-            UIDevice.current.playInputClick()
         }
     }
 }

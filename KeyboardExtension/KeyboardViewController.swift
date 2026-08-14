@@ -868,7 +868,9 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         }
     }
     
-    class QwertyKeyButton: UIButton {
+    class QwertyKeyButton: UIButton, UIInputViewAudioFeedback {
+        var enableInputClicksWhenVisible: Bool { return true }
+
         var shape: Int = 0 { didSet { setNeedsLayout() } }
         var blurView: UIVisualEffectView?
         
@@ -1759,6 +1761,8 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         if mode == 1 && isSpecialKey { return }
         if mode == 2 && !isSpecialKey { return }
         
+        UIDevice.current.playInputClick()
+        
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
@@ -1767,8 +1771,6 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 return .heavy
             }()
             UIImpactFeedbackGenerator(style: style).impactOccurred()
-        } else {
-            UIDevice.current.playInputClick()
         }
     }
 }

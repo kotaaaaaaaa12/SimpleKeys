@@ -290,6 +290,10 @@ class SettingsViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
         cell.selectionStyle = .none
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.numberOfLines = 0
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.numberOfLines = 0
         let isEn = languageSegment.selectedSegmentIndex == 1
         
         if indexPath.section == 0 {
@@ -505,6 +509,8 @@ class UpdatesViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
         cell.selectionStyle = .none
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.numberOfLines = 0
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.font = .systemFont(ofSize: 15)
         
@@ -917,6 +923,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
         cell.selectionStyle = .none
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.numberOfLines = 0
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         
         if indexPath.section == 0 {
@@ -939,6 +947,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.textLabel?.text = isEn ? "Video Audio" : "動画の音声"
                 cell.textLabel?.textColor = .label
                 cell.selectionStyle = .none
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.numberOfLines = 0
                 let toggle = UISwitch()
                 toggle.isOn = currentTheme.videoAudioEnabled ?? false
                 toggle.addTarget(self, action: #selector(videoAudioToggled(_:)), for: .valueChanged)
@@ -1415,6 +1425,8 @@ class HapticsSensitivityViewController: UITableViewController {
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
         cell.selectionStyle = .none
+        cell.textLabel?.numberOfLines = 0
+        cell.detailTextLabel?.numberOfLines = 0
         
         if indexPath.section == 0 {
             if indexPath.row == 0 {
