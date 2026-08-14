@@ -885,6 +885,11 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
         updatePreview()
     }
     
+    @objc private func borderWidthChanged(_ sender: UISlider) {
+        currentTheme.keyBorderWidth = CGFloat(sender.value)
+        updatePreview()
+    }
+    
     
     @objc private func saveTapped() {
         if currentTheme.name == nil || currentTheme.name!.isEmpty {
