@@ -984,15 +984,28 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             cell.accessoryType = .none
             if indexPath.row == 0 {
                 // Border Width
-                cell.textLabel?.text = isEn ? "Border Width" : "フチの太さ"
+                let titleLabel = UILabel()
+                titleLabel.text = isEn ? "Border Width" : "フチの太さ"
+                titleLabel.font = .systemFont(ofSize: 16)
+                
                 let widthSlider = UISlider()
                 widthSlider.minimumValue = 0.0
                 widthSlider.maximumValue = 5.0
                 widthSlider.value = Float(currentTheme.keyBorderWidth ?? 0.0)
                 widthSlider.addTarget(self, action: #selector(borderWidthChanged(_:)), for: .valueChanged)
-                widthSlider.translatesAutoresizingMaskIntoConstraints = false
-                widthSlider.widthAnchor.constraint(equalToConstant: 120).isActive = true
-                cell.accessoryView = widthSlider
+                
+                let stack = UIStackView(arrangedSubviews: [titleLabel, widthSlider])
+                stack.axis = .vertical
+                stack.spacing = 8
+                stack.translatesAutoresizingMaskIntoConstraints = false
+                cell.contentView.addSubview(stack)
+                
+                NSLayoutConstraint.activate([
+                    stack.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor, constant: 16),
+                    stack.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor, constant: -16),
+                    stack.topAnchor.constraint(equalTo: cell.contentView.topAnchor, constant: 12),
+                    stack.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor, constant: -12)
+                ])
             } else if indexPath.row == 1 {
                 // Border Style
                 cell.textLabel?.text = isEn ? "Border Style" : "フチの種類"
