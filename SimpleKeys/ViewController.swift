@@ -1322,6 +1322,7 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
 class HapticsSensitivityViewController: UITableViewController {
     
     private let hapticSwitch = UISwitch()
+    private let soundSwitch = UISwitch()
     private let hapticSlider = UISlider()
     private let hapticTargetSegment = UISegmentedControl()
     private let cursorSlider = UISlider()
@@ -1343,16 +1344,24 @@ class HapticsSensitivityViewController: UITableViewController {
         hapticSwitch.isOn = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticEnabled") as? Bool ?? false
         hapticSwitch.addTarget(self, action: #selector(hapticSwitchChanged), for: .valueChanged)
         
+        if AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") == nil {
+            AppGroupHelper.shared.userDefaults?.set(hapticSwitch.isOn, forKey: "customSoundEnabled")
+        }
+        soundSwitch.isOn = AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") as? Bool ?? false
+        soundSwitch.addTarget(self, action: #selector(soundSwitchChanged), for: .valueChanged)
+        
         hapticSlider.minimumValue = 0
         hapticSlider.maximumValue = 2
         hapticSlider.isContinuous = false
         hapticSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "customHapticStrength") as? Float ?? 0.0
         hapticSlider.addTarget(self, action: #selector(hapticSliderChanged), for: .valueChanged)
+        hapticSlider.isEnabled = hapticSwitch.isOn
         
         soundVolumeSlider.minimumValue = 0.1
         soundVolumeSlider.maximumValue = 1.0
         soundVolumeSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "keyboardSoundVolume") as? Float ?? 1.0
         soundVolumeSlider.addTarget(self, action: #selector(soundVolumeSliderChanged), for: .valueChanged)
+        soundVolumeSlider.isEnabled = soundSwitch.isOn
         
         cursorSlider.minimumValue = 0.5
         cursorSlider.maximumValue = 2.5
@@ -1368,7 +1377,7 @@ class HapticsSensitivityViewController: UITableViewController {
     
     @objc private func hapticSwitchChanged() {
         AppGroupHelper.shared.userDefaults?.set(hapticSwitch.isOn, forKey: "customHapticEnabled")
-        tableView.reloadData()
+        hapticSlider.isEnabled = hapticSwitch.isOn
         
         if hapticSwitch.isOn {
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
@@ -1378,6 +1387,15 @@ class HapticsSensitivityViewController: UITableViewController {
                 return .heavy
             }()
             UIImpactFeedbackGenerator(style: style).impactOccurred()
+        }
+    }
+    
+    @objc private func soundSwitchChanged() {
+        AppGroupHelper.shared.userDefaults?.set(soundSwitch.isOn, forKey: "customSoundEnabled")
+        soundVolumeSlider.isEnabled = soundSwitch.isOn
+        
+        if soundSwitch.isOn {
+            soundVolumeSliderChanged()
         }
     }
     
@@ -1410,15 +1428,13 @@ class HapticsSensitivityViewController: UITableViewController {
                 }
             }
             previewPlayers = players
+            try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+            try? AVAudioSession.sharedInstance().setActive(true)
         }
         
         if let players = previewPlayers as? [AVAudioPlayer], players.count > 0 {
-            try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
-            try? AVAudioSession.sharedInstance().setActive(true)
-            
             let volume = soundVolumeSlider.value
-            
-            let player = players[0] // Just play one instance, file is already boosted!
+            let player = players[0]
             player.volume = volume
             if player.isPlaying { player.currentTime = 0 }
             player.play()
@@ -1439,7 +1455,7 @@ class HapticsSensitivityViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if section == 0 {
-            return hapticSwitch.isOn ? 4 : 1
+            return 5
         }
         return 1
     }
@@ -1448,16 +1464,20 @@ class HapticsSensitivityViewController: UITableViewController {
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         if section == 0 {
             return isEn ? "Feedback (Sound & Vibration)" : "キーボードの音と振動"
+        } else if section == 1 {
+            return isEn ? "Cursor Sensitivity" : "カーソル移動の感度"
         }
-        return isEn ? "Cursor Sensitivity" : "カーソル移動の感度"
+        return nil
     }
     
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
         if section == 0 {
             return isEn ? "Customize custom haptics and keyboard sounds." : "キーボードの音と振動をカスタマイズします。"
+        } else if section == 1 {
+            return isEn ? "Adjust how fast the cursor moves when dragging the space bar." : "空白キーを長押しして左右にスライドした時の、カーソル移動の速さを調整します。"
         }
-        return isEn ? "Adjust how fast the cursor moves when dragging the space bar." : "空白キーを長押しして左右にスライドした時の、カーソル移動の速さを調整します。"
+        return nil
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -1469,7 +1489,7 @@ class HapticsSensitivityViewController: UITableViewController {
         
         if indexPath.section == 0 {
             if indexPath.row == 0 {
-                cell.textLabel?.text = isEn ? "Enable Custom Sound/Vibration" : "音と独自の振動をオン"
+                cell.textLabel?.text = isEn ? "Enable Custom Vibration" : "独自の振動をオン"
                 cell.accessoryView = hapticSwitch
             } else if indexPath.row == 1 {
                 hapticSlider.translatesAutoresizingMaskIntoConstraints = false
@@ -1506,6 +1526,9 @@ class HapticsSensitivityViewController: UITableViewController {
                     hapticSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
                 ])
             } else if indexPath.row == 2 {
+                cell.textLabel?.text = isEn ? "Enable Custom Sound" : "独自の音をオン"
+                cell.accessoryView = soundSwitch
+            } else if indexPath.row == 3 {
                 soundVolumeSlider.translatesAutoresizingMaskIntoConstraints = false
                 cell.contentView.addSubview(soundVolumeSlider)
                 
@@ -1536,7 +1559,7 @@ class HapticsSensitivityViewController: UITableViewController {
                     soundVolumeSlider.trailingAnchor.constraint(equalTo: maxIcon.leadingAnchor, constant: -16),
                     soundVolumeSlider.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor)
                 ])
-            } else if indexPath.row == 3 {
+            } else if indexPath.row == 4 {
                 cell.textLabel?.text = isEn ? "Target Keys" : "対象キー"
                 hapticTargetSegment.sizeToFit()
                 cell.accessoryView = hapticTargetSegment
@@ -1584,14 +1607,21 @@ class HapticsSensitivityViewController: UITableViewController {
         if indexPath.section == 2 {
             tableView.deselectRow(at: indexPath, animated: true)
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customHapticEnabled")
+            AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customSoundEnabled")
+            AppGroupHelper.shared.userDefaults?.removeObject(forKey: "keyboardSoundVolume")
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "customHapticStrength")
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "hapticTriggerMode")
             AppGroupHelper.shared.userDefaults?.removeObject(forKey: "cursorSensitivity")
             
             hapticSwitch.isOn = false
+            soundSwitch.isOn = false
             hapticSlider.value = 0.0
+            soundVolumeSlider.value = 1.0
             hapticTargetSegment.selectedSegmentIndex = 0
             cursorSlider.value = 1.0
+            
+            hapticSlider.isEnabled = false
+            soundVolumeSlider.isEnabled = false
             
             tableView.reloadData()
         }

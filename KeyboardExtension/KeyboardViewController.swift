@@ -18,12 +18,13 @@ class KeyboardSoundManager {
                 }
             }
         }
+        
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
+        try? AVAudioSession.sharedInstance().setActive(true)
     }
     
     func playClick() {
         guard !players.isEmpty else { return }
-        try? AVAudioSession.sharedInstance().setCategory(.ambient, options: .mixWithOthers)
-        try? AVAudioSession.sharedInstance().setActive(true)
         
         let volume = AppGroupHelper.shared.userDefaults?.float(forKey: "keyboardSoundVolume") ?? 1.0
         let player = players[currentIndex]
@@ -1799,8 +1800,16 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         if mode == 1 && isSpecialKey { return }
         if mode == 2 && !isSpecialKey { return }
         
-        if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
+        let customSound = AppGroupHelper.shared.userDefaults?.object(forKey: "customSoundEnabled") as? Bool ?? (AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") ?? false)
+        let customVib = AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") ?? false
+        
+        if customSound {
             KeyboardSoundManager.shared.playClick()
+        } else {
+            UIDevice.current.playInputClick()
+        }
+        
+        if customVib {
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
@@ -1808,8 +1817,6 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
                 return .heavy
             }()
             UIImpactFeedbackGenerator(style: style).impactOccurred()
-        } else {
-            UIDevice.current.playInputClick()
         }
     }
 }
