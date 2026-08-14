@@ -1028,118 +1028,128 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             guard let label = labels[direction] else { return }
             let f = label.frame.insetBy(dx: -6, dy: -6)
             let shape = themeToUse?.flickPopupShape ?? 0
-            let radius: CGFloat = shape == 0 ? 8 : (shape == 1 ? min(f.width, f.height) / 2.0 : 0)
+            let r: CGFloat = shape == 0 ? 8 : (shape == 1 ? min(f.width, f.height) / 2.0 : 0)
             
-            let rectPath = UIBezierPath(roundedRect: f, cornerRadius: radius)
-            let arrowFill = UIBezierPath()
-            let arrowStroke = UIBezierPath()
             let aw: CGFloat = 20
             let ah: CGFloat = 16
             
-            switch direction {
-            case .left:
-                arrowFill.move(to: CGPoint(x: f.maxX, y: f.midY - aw/2))
-                arrowFill.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
-                arrowFill.addLine(to: CGPoint(x: f.maxX, y: f.midY + aw/2))
-                arrowStroke.move(to: CGPoint(x: f.maxX, y: f.midY - aw/2))
-                arrowStroke.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
-                arrowStroke.addLine(to: CGPoint(x: f.maxX, y: f.midY + aw/2))
-            case .right:
-                arrowFill.move(to: CGPoint(x: f.minX, y: f.midY - aw/2))
-                arrowFill.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
-                arrowFill.addLine(to: CGPoint(x: f.minX, y: f.midY + aw/2))
-                arrowStroke.move(to: CGPoint(x: f.minX, y: f.midY - aw/2))
-                arrowStroke.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
-                arrowStroke.addLine(to: CGPoint(x: f.minX, y: f.midY + aw/2))
-            case .up:
-                arrowFill.move(to: CGPoint(x: f.midX - aw/2, y: f.maxY))
-                arrowFill.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
-                arrowFill.addLine(to: CGPoint(x: f.midX + aw/2, y: f.maxY))
-                arrowStroke.move(to: CGPoint(x: f.midX - aw/2, y: f.maxY))
-                arrowStroke.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
-                arrowStroke.addLine(to: CGPoint(x: f.midX + aw/2, y: f.maxY))
-            case .down:
-                arrowFill.move(to: CGPoint(x: f.midX - aw/2, y: f.minY))
-                arrowFill.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
-                arrowFill.addLine(to: CGPoint(x: f.midX + aw/2, y: f.minY))
-                arrowStroke.move(to: CGPoint(x: f.midX - aw/2, y: f.minY))
-                arrowStroke.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
-                arrowStroke.addLine(to: CGPoint(x: f.midX + aw/2, y: f.minY))
-            default: break
+            func rightX(for y: CGFloat) -> CGFloat {
+                if y <= f.minY + r {
+                    let dy = y - (f.minY + r)
+                    return (f.maxX - r) + sqrt(max(0, r*r - dy*dy))
+                } else if y >= f.maxY - r {
+                    let dy = y - (f.maxY - r)
+                    return (f.maxX - r) + sqrt(max(0, r*r - dy*dy))
+                } else { return f.maxX }
             }
-            arrowFill.close()
-            // arrowStroke is left OPEN (V-shape)
+            func leftX(for y: CGFloat) -> CGFloat {
+                if y <= f.minY + r {
+                    let dy = y - (f.minY + r)
+                    return (f.minX + r) - sqrt(max(0, r*r - dy*dy))
+                } else if y >= f.maxY - r {
+                    let dy = y - (f.maxY - r)
+                    return (f.minX + r) - sqrt(max(0, r*r - dy*dy))
+                } else { return f.minX }
+            }
+            func topY(for x: CGFloat) -> CGFloat {
+                if x <= f.minX + r {
+                    let dx = x - (f.minX + r)
+                    return (f.minY + r) - sqrt(max(0, r*r - dx*dx))
+                } else if x >= f.maxX - r {
+                    let dx = x - (f.maxX - r)
+                    return (f.minY + r) - sqrt(max(0, r*r - dx*dx))
+                } else { return f.minY }
+            }
+            func bottomY(for x: CGFloat) -> CGFloat {
+                if x <= f.minX + r {
+                    let dx = x - (f.minX + r)
+                    return (f.maxY - r) + sqrt(max(0, r*r - dx*dx))
+                } else if x >= f.maxX - r {
+                    let dx = x - (f.maxX - r)
+                    return (f.maxY - r) + sqrt(max(0, r*r - dx*dx))
+                } else { return f.maxY }
+            }
             
-            // We use bgLayer as the container.
-            bgLayer?.path = nil // Clear the main path so it doesn't draw anything itself
-            bgLayer?.fillColor = UIColor.clear.cgColor
-            bgLayer?.strokeColor = UIColor.clear.cgColor
+            let path = UIBezierPath()
+            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.minY + r), radius: r, startAngle: .pi, endAngle: 3 * .pi / 2, clockwise: true)
             
-            // Clean up old sublayers
+            if direction == .down { // Arrow points UP from top edge
+                let x1 = f.midX - aw/2
+                let x2 = f.midX + aw/2
+                path.addLine(to: CGPoint(x: x1, y: topY(for: x1)))
+                path.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
+                path.addLine(to: CGPoint(x: x2, y: topY(for: x2)))
+            }
+            
+            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.minY + r), radius: r, startAngle: -(.pi / 2), endAngle: 0, clockwise: true)
+            
+            if direction == .left { // Arrow points RIGHT from right edge
+                let y1 = f.midY - aw/2
+                let y2 = f.midY + aw/2
+                path.addLine(to: CGPoint(x: rightX(for: y1), y: y1))
+                path.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
+                path.addLine(to: CGPoint(x: rightX(for: y2), y: y2))
+            }
+            
+            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.maxY - r), radius: r, startAngle: 0, endAngle: .pi / 2, clockwise: true)
+            
+            if direction == .up { // Arrow points DOWN from bottom edge
+                let x2 = f.midX + aw/2
+                let x1 = f.midX - aw/2
+                path.addLine(to: CGPoint(x: x2, y: bottomY(for: x2)))
+                path.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
+                path.addLine(to: CGPoint(x: x1, y: bottomY(for: x1)))
+            }
+            
+            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.maxY - r), radius: r, startAngle: .pi / 2, endAngle: .pi, clockwise: true)
+            
+            if direction == .right { // Arrow points LEFT from left edge
+                let y2 = f.midY + aw/2
+                let y1 = f.midY - aw/2
+                path.addLine(to: CGPoint(x: leftX(for: y2), y: y2))
+                path.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
+                path.addLine(to: CGPoint(x: leftX(for: y1), y: y1))
+            }
+            
+            path.close()
+            
             bgLayer?.sublayers?.forEach { $0.removeFromSuperlayer() }
             
             let finalBorderCol = popupBorderCol ?? popupBg.withAlphaComponent(0.6)
             
-            // 1. Rect Layer (draws the rounded rect with border)
-            let rectLayer = CAShapeLayer()
-            rectLayer.path = rectPath.cgPath
-            rectLayer.fillColor = popupBg.cgColor
-            
-            // 2. Arrow Fill Layer (covers the rect border at the base)
-            let arrowFillLayer = CAShapeLayer()
-            arrowFillLayer.path = arrowFill.cgPath
-            arrowFillLayer.fillColor = popupBg.cgColor
-            arrowFillLayer.strokeColor = UIColor.clear.cgColor
-            arrowFillLayer.lineWidth = 0
-            
-            // 3. Arrow Stroke Layer (draws the V-shape border)
-            let arrowStrokeLayer = CAShapeLayer()
-            arrowStrokeLayer.path = arrowStroke.cgPath
-            arrowStrokeLayer.fillColor = UIColor.clear.cgColor
+            bgLayer?.path = path.cgPath
+            bgLayer?.fillColor = popupBg.cgColor
             
             if popupBorderWidth > 0 {
-                rectLayer.strokeColor = finalBorderCol.cgColor
-                rectLayer.lineWidth = popupBorderWidth
-                arrowStrokeLayer.strokeColor = finalBorderCol.cgColor
-                arrowStrokeLayer.lineWidth = popupBorderWidth
+                bgLayer?.strokeColor = finalBorderCol.cgColor
+                bgLayer?.lineWidth = popupBorderWidth
+                bgLayer?.lineCap = .round
+                bgLayer?.lineJoin = .round
                 
-                let configureBorder: (CAShapeLayer) -> Void = { layer in
-                    layer.lineCap = .butt
-                    layer.lineJoin = .miter
-                    switch popupBorderStyle {
-                    case 1:
-                        layer.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 3)), NSNumber(value: Float(popupBorderWidth * 2))]
-                    case 2:
-                        layer.lineDashPattern = [NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
-                        layer.lineCap = .round
-                        layer.lineJoin = .round
-                    case 3: // Double
-                        layer.lineWidth = popupBorderWidth
-                        let inner = CAShapeLayer()
-                        inner.path = layer.path
-                        inner.fillColor = UIColor.clear.cgColor
-                        inner.strokeColor = popupBg.cgColor
-                        inner.lineWidth = popupBorderWidth / 3.0
-                        layer.addSublayer(inner)
-                    case 4:
-                        layer.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 4)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
-                    case 5:
-                        layer.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 4)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
-                    default: break
-                    }
+                switch popupBorderStyle {
+                case 1:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 3)), NSNumber(value: Float(popupBorderWidth * 2))]
+                case 2:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
+                case 3: // Double
+                    bgLayer?.lineDashPattern = nil
+                    let inner = CAShapeLayer()
+                    inner.path = bgLayer?.path
+                    inner.fillColor = UIColor.clear.cgColor
+                    inner.strokeColor = popupBg.cgColor
+                    inner.lineWidth = popupBorderWidth / 3.0
+                    bgLayer?.addSublayer(inner)
+                case 4:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 4)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
+                case 5:
+                    bgLayer?.lineDashPattern = [NSNumber(value: Float(popupBorderWidth * 4)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2)), NSNumber(value: Float(popupBorderWidth)), NSNumber(value: Float(popupBorderWidth * 2))]
+                default:
+                    bgLayer?.lineDashPattern = nil
                 }
-                
-                configureBorder(rectLayer)
-                configureBorder(arrowStrokeLayer)
             } else {
-                rectLayer.lineWidth = 0
-                arrowStrokeLayer.lineWidth = 0
+                bgLayer?.lineWidth = 0
+                bgLayer?.strokeColor = UIColor.clear.cgColor
             }
-            
-            bgLayer?.addSublayer(rectLayer)
-            bgLayer?.addSublayer(arrowFillLayer)
-            bgLayer?.addSublayer(arrowStrokeLayer)
-            
         } else {
             bgLayer?.path = nil
             bgLayer?.sublayers?.forEach { $0.removeFromSuperlayer() }
