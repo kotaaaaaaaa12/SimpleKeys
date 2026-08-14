@@ -1184,10 +1184,11 @@ class FlickKeyboardView: UIView {
     
     // MARK: - Haptic Feedback
     private func triggerHaptic(isSpecialKey: Bool = false) {
+        let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
+        if mode == 1 && isSpecialKey { return }
+        if mode == 2 && !isSpecialKey { return }
+        
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
-            let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
-            if mode == 1 && isSpecialKey { return }
-            if mode == 2 && !isSpecialKey { return }
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }

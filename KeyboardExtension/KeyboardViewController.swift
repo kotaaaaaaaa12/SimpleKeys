@@ -1346,16 +1346,16 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     @objc private func keyTouchUp(_ sender: UIButton) {
         lastFlickTapBaseChar = nil
-        triggerHaptic(isSpecialKey: ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+=", "空白", "space"].contains(sender.titleLabel?.text ?? ""))
+        let text = sender.titleLabel?.text ?? ""
+        let isSpecial = sender.image(for: .normal) != nil || ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+=", "空白", "space"].contains(text)
+        
         UIView.animate(withDuration: 0.1, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction]) {
             sender.transform = .identity
             sender.alpha = 1.0
         }
         let isDark = textDocumentProxy.keyboardAppearance == .dark
         sender.backgroundColor = isDark ? UIColor(white: 0.35, alpha: 1.0) : .white
-        let title = sender.titleLabel?.text ?? ""
-        let isSpecialKey = ["⇧", "⬆︎", "⌫", "return", "123", "ABC", "#+="].contains(title)
-        if isSpecialKey {
+        if isSpecial {
             sender.backgroundColor = isDark ? UIColor(white: 0.25, alpha: 1.0) : UIColor(red: 0.68, green: 0.70, blue: 0.74, alpha: 1.0)
         }
         flickKeyboard.updateAppearance(isDark: textDocumentProxy.keyboardAppearance == .dark)
@@ -1755,11 +1755,11 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
     
     // MARK: - Haptic Feedback
     func triggerHaptic(isSpecialKey: Bool = false) {
+        let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
+        if mode == 1 && isSpecialKey { return }
+        if mode == 2 && !isSpecialKey { return }
+        
         if AppGroupHelper.shared.userDefaults?.bool(forKey: "customHapticEnabled") == true {
-            let mode = AppGroupHelper.shared.userDefaults?.integer(forKey: "hapticTriggerMode") ?? 0
-            if mode == 1 && isSpecialKey { return }
-            if mode == 2 && !isSpecialKey { return }
-            
             let strength = AppGroupHelper.shared.userDefaults?.float(forKey: "customHapticStrength") ?? 0
             let style: UIImpactFeedbackGenerator.FeedbackStyle = {
                 if strength < 0.5 { return .light }
