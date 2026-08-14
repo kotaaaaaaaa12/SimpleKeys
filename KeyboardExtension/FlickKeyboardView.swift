@@ -329,6 +329,9 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         let centerLabel = UILabel()
         centerLabel.numberOfLines = 2
+        centerLabel.lineBreakMode = .byWordWrapping
+        centerLabel.adjustsFontSizeToFitWidth = true
+        centerLabel.minimumScaleFactor = 0.5
         centerLabel.tag = 100
         centerLabel.font = .systemFont(ofSize: 22, weight: .regular)
         centerLabel.textAlignment = .center
@@ -375,7 +378,10 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             }
             lbl.text = text
             let fontSize: CGFloat
-            if text.count >= 4 {
+            if text == "゛゜\n小" {
+                fontSize = 14
+                shouldShowHint = false
+            } else if text.count >= 4 {
                 fontSize = 16
                 shouldShowHint = false // Don't show hints for wide text
             } else if currentPage == .alphabet && text.count >= 3 {
@@ -391,7 +397,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             }
             
             if text == "゛゜\n小" {
-                lbl.transform = CGAffineTransform(translationX: 0, y: -2) // Shift up to avoid bottom clipping
+                lbl.transform = CGAffineTransform(translationX: 0, y: -4) // Shift up more aggressively
             } else if !shouldShowHint {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
             } else {
@@ -907,6 +913,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             if dir != .center && textForDirection(dir, key: keyData) == nil { continue }
             
             let label = UILabel()
+            label.numberOfLines = 2
+            label.adjustsFontSizeToFitWidth = true
+            label.minimumScaleFactor = 0.5
+            label.lineBreakMode = .byWordWrapping
+            
             if let fontName = themeToUse?.fontName, let customFont = UIFont(name: fontName, size: 22) {
                 label.font = customFont
             } else {
@@ -1271,9 +1282,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                         }
                         btn.accessibilityIdentifier = "dakuten" // Reuse for shift
                     } else if currentPage == .kana {
-                        if let label = btn.viewWithTag(100) as? UILabel {
-                            label.text = "゛゜\n小"
-                        }
+                        updateHints(for: btn, keyData: keyData, isShifted: isShifted)
                         btn.accessibilityIdentifier = "dakuten"
                     } else {
                         updateHints(for: btn, keyData: keyData, isShifted: isShifted)
