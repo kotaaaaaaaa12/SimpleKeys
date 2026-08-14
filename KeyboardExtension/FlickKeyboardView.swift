@@ -286,7 +286,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
         spaceButton.accessibilityIdentifier = "space"
-        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 14) }
+        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 12) }
         place(view: spaceButton, row: 1, col: 4)
         
         returnButton = createSpecialKey(title: "改行")
@@ -400,7 +400,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 lbl.transform = .identity
                 let attrStr = NSMutableAttributedString()
                 let pStyle = NSMutableParagraphStyle()
-                pStyle.lineSpacing = -2
+                pStyle.lineSpacing = -8
                 pStyle.alignment = .center
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
                     .font: lbl.font.withSize(18),
@@ -966,7 +966,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             let dirText = textForDirection(dir, key: keyData) ?? ""
             if dirText.contains("゛゜") && dirText.contains("小") {
                 let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.lineSpacing = -2
+                paragraphStyle.lineSpacing = -8
                 paragraphStyle.alignment = .center
                 let attrStr = NSMutableAttributedString()
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
