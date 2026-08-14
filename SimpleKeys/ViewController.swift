@@ -1360,7 +1360,8 @@ class HapticsSensitivityViewController: UITableViewController {
         soundVolumeSlider.minimumValue = 0.1
         soundVolumeSlider.maximumValue = 1.0
         soundVolumeSlider.value = AppGroupHelper.shared.userDefaults?.object(forKey: "keyboardSoundVolume") as? Float ?? 1.0
-        soundVolumeSlider.addTarget(self, action: #selector(soundVolumeSliderChanged), for: [.touchUpInside, .touchUpOutside])
+        soundVolumeSlider.isContinuous = false
+        soundVolumeSlider.addTarget(self, action: #selector(soundVolumeSliderChanged), for: .valueChanged)
         soundVolumeSlider.isEnabled = soundSwitch.isOn
         
         cursorSlider.minimumValue = 0.5

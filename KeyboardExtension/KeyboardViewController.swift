@@ -40,7 +40,7 @@ class KeyboardSoundManager {
     func playClick() {
         guard !players.isEmpty, let buf = buffer else { return }
         
-        let volume = AppGroupHelper.shared.userDefaults?.float(forKey: "keyboardSoundVolume") ?? 1.0
+        let volume = AppGroupHelper.shared.userDefaults?.object(forKey: "keyboardSoundVolume") as? Float ?? 1.0
         // Scale volume so that slider 0.5 = volume 1.0, and slider 1.0 = volume 2.0 (boosted)
         let actualVolume = volume * 2.0
         
