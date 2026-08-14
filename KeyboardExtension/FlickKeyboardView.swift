@@ -286,7 +286,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         spaceButton = createFlickKey(FlickKey(center: "空白", left: nil, up: nil, right: nil, down: nil))
         spaceButton.accessibilityIdentifier = "space"
-        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 12) }
+        if let lbl = spaceButton.viewWithTag(100) as? UILabel { lbl.font = .systemFont(ofSize: 16) }
         place(view: spaceButton, row: 1, col: 4)
         
         returnButton = createSpecialKey(title: "改行")
@@ -387,7 +387,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             } else if currentPage == .alphabet && text.count >= 3 {
                 fontSize = 17
             } else if text == "空白" {
-                fontSize = 12
+                fontSize = 16
             } else {
                 fontSize = 22
             }
@@ -403,15 +403,14 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 let attrStr = NSMutableAttributedString()
                 let pStyle = NSMutableParagraphStyle()
                 pStyle.alignment = .center
+                pStyle.lineSpacing = -12
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
                     .font: lbl.font.withSize(18),
-                    .paragraphStyle: pStyle,
-                    .baselineOffset: -6
+                    .paragraphStyle: pStyle
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
                     .font: lbl.font.withSize(15),
-                    .paragraphStyle: pStyle,
-                    .baselineOffset: 4
+                    .paragraphStyle: pStyle
                 ]))
                 lbl.attributedText = attrStr
                 lbl.numberOfLines = 0
@@ -970,16 +969,15 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             if dirText.contains("゛゜") && dirText.contains("小") {
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.alignment = .center
+                paragraphStyle.lineSpacing = -12
                 let attrStr = NSMutableAttributedString()
                 attrStr.append(NSAttributedString(string: "゛゜\n", attributes: [
                     .font: label.font.withSize(20),
-                    .paragraphStyle: paragraphStyle,
-                    .baselineOffset: -6
+                    .paragraphStyle: paragraphStyle
                 ]))
                 attrStr.append(NSAttributedString(string: "小", attributes: [
                     .font: label.font.withSize(16),
-                    .paragraphStyle: paragraphStyle,
-                    .baselineOffset: 4
+                    .paragraphStyle: paragraphStyle
                 ]))
                 label.attributedText = attrStr
                 label.numberOfLines = 0
@@ -1405,7 +1403,7 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
     }
     
     func setReturnKeyTitle(_ title: String) {
-        if let lbl = returnButton?.viewWithTag(999) as? UILabel {
+        if let lbl = returnButton?.viewWithTag(100) as? UILabel {
             lbl.text = title
         }
     }
