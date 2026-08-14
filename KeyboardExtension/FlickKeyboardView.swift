@@ -1029,32 +1029,89 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             let f = label.frame.insetBy(dx: -6, dy: -6)
             let shape = themeToUse?.flickPopupShape ?? 0
             let radius: CGFloat = shape == 0 ? 8 : (shape == 1 ? min(f.width, f.height) / 2.0 : 0)
-            let path = UIBezierPath(roundedRect: f, cornerRadius: radius)
-            let arrow = UIBezierPath()
             let aw: CGFloat = 20 // arrow width
             let ah: CGFloat = 16 // arrow height pointing inward
             
-            switch direction {
-            case .left:
-                arrow.move(to: CGPoint(x: f.maxX, y: f.midY - aw/2))
-                arrow.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
-                arrow.addLine(to: CGPoint(x: f.maxX, y: f.midY + aw/2))
-            case .right:
-                arrow.move(to: CGPoint(x: f.minX, y: f.midY - aw/2))
-                arrow.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
-                arrow.addLine(to: CGPoint(x: f.minX, y: f.midY + aw/2))
-            case .up:
-                arrow.move(to: CGPoint(x: f.midX - aw/2, y: f.maxY))
-                arrow.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
-                arrow.addLine(to: CGPoint(x: f.midX + aw/2, y: f.maxY))
-            case .down:
-                arrow.move(to: CGPoint(x: f.midX - aw/2, y: f.minY))
-                arrow.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
-                arrow.addLine(to: CGPoint(x: f.midX + aw/2, y: f.minY))
-            default: break
+            let path = UIBezierPath()
+            let minX = f.minX, maxX = f.maxX, minY = f.minY, maxY = f.maxY
+            let r = radius
+            
+            // Safe limits for straight edges
+            let safeTop = minX + r <= f.midX - aw/2
+            let safeRight = minY + r <= f.midY - aw/2
+            
+            if safeTop && safeRight {
+                // We have enough straight edge space to place the arrow without intersecting the corner arcs
+                path.move(to: CGPoint(x: minX + r, y: minY))
+                
+                // Top edge & Top-right corner
+                if direction == .down {
+                    path.addLine(to: CGPoint(x: f.midX - aw/2, y: minY))
+                    path.addLine(to: CGPoint(x: f.midX, y: minY - ah))
+                    path.addLine(to: CGPoint(x: f.midX + aw/2, y: minY))
+                }
+                path.addLine(to: CGPoint(x: maxX - r, y: minY))
+                path.addArc(withCenter: CGPoint(x: maxX - r, y: minY + r), radius: r, startAngle: -CGFloat.pi/2, endAngle: 0, clockwise: true)
+                
+                // Right edge & Bottom-right corner
+                if direction == .left {
+                    path.addLine(to: CGPoint(x: maxX, y: f.midY - aw/2))
+                    path.addLine(to: CGPoint(x: maxX + ah, y: f.midY))
+                    path.addLine(to: CGPoint(x: maxX, y: f.midY + aw/2))
+                }
+                path.addLine(to: CGPoint(x: maxX, y: maxY - r))
+                path.addArc(withCenter: CGPoint(x: maxX - r, y: maxY - r), radius: r, startAngle: 0, endAngle: CGFloat.pi/2, clockwise: true)
+                
+                // Bottom edge & Bottom-left corner
+                if direction == .up {
+                    path.addLine(to: CGPoint(x: f.midX + aw/2, y: maxY))
+                    path.addLine(to: CGPoint(x: f.midX, y: maxY + ah))
+                    path.addLine(to: CGPoint(x: f.midX - aw/2, y: maxY))
+                }
+                path.addLine(to: CGPoint(x: minX + r, y: maxY))
+                path.addArc(withCenter: CGPoint(x: minX + r, y: maxY - r), radius: r, startAngle: CGFloat.pi/2, endAngle: CGFloat.pi, clockwise: true)
+                
+                // Left edge & Top-left corner
+                if direction == .right {
+                    path.addLine(to: CGPoint(x: minX, y: f.midY + aw/2))
+                    path.addLine(to: CGPoint(x: minX - ah, y: f.midY))
+                    path.addLine(to: CGPoint(x: minX, y: f.midY - aw/2))
+                }
+                path.addLine(to: CGPoint(x: minX, y: minY + r))
+                path.addArc(withCenter: CGPoint(x: minX + r, y: minY + r), radius: r, startAngle: CGFloat.pi, endAngle: CGFloat.pi * 1.5, clockwise: true)
+                
+                path.close()
+            } else {
+                // Oval shape or extremely rounded rect. Arrow intersects the arc!
+                // To avoid complex math, we use a masking approach or a simplified oval path
+                // For a circle/oval, we can calculate the angles.
+                let cx = f.midX
+                let cy = f.midY
+                
+                // We use UIBezierPath to draw the arc, but we leave a gap for the arrow.
+                let a = asin(min(aw / 2.0 / r, 1.0))
+                
+                switch direction {
+                case .down:
+                    path.addArc(withCenter: CGPoint(x: cx, y: cy), radius: r, startAngle: -CGFloat.pi/2 + a, endAngle: CGFloat.pi * 1.5 - a, clockwise: true)
+                    path.addLine(to: CGPoint(x: cx, y: cy - r - ah))
+                case .up:
+                    path.addArc(withCenter: CGPoint(x: cx, y: cy), radius: r, startAngle: CGFloat.pi/2 + a, endAngle: CGFloat.pi/2 - a + CGFloat.pi * 2, clockwise: true)
+                    path.addLine(to: CGPoint(x: cx, y: cy + r + ah))
+                case .left:
+                    path.addArc(withCenter: CGPoint(x: cx, y: cy), radius: r, startAngle: -a, endAngle: CGFloat.pi * 2 + a, clockwise: false) // wait, clockwise: true is easier
+                    // Actually, from +a to 2pi - a
+                    path.removeAllPoints()
+                    path.addArc(withCenter: CGPoint(x: cx, y: cy), radius: r, startAngle: a, endAngle: CGFloat.pi * 2 - a, clockwise: true)
+                    path.addLine(to: CGPoint(x: cx + r + ah, y: cy))
+                case .right:
+                    path.addArc(withCenter: CGPoint(x: cx, y: cy), radius: r, startAngle: CGFloat.pi + a, endAngle: CGFloat.pi * 3 - a, clockwise: true)
+                    path.addLine(to: CGPoint(x: cx - r - ah, y: cy))
+                default:
+                    path.addArc(withCenter: CGPoint(x: cx, y: cy), radius: r, startAngle: 0, endAngle: CGFloat.pi * 2, clockwise: true)
+                }
+                path.close()
             }
-            arrow.close()
-            path.append(arrow)
             bgLayer?.path = path.cgPath
             bgLayer?.fillColor = popupBg.cgColor
             
