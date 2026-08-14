@@ -311,11 +311,27 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         
         override func layoutSubviews() {
             super.layoutSubviews()
-            let radius: CGFloat = shape == 0 ? 6 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
-            layer.cornerRadius = radius
-            blurView?.layer.cornerRadius = radius
-            
-            self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear)
+            if shape >= 3 {
+                layer.cornerRadius = 0
+                blurView?.layer.cornerRadius = 0
+                let path = UIBezierPath.customShape(type: shape, in: bounds)
+                let maskLayer = CAShapeLayer()
+                maskLayer.path = path.cgPath
+                layer.mask = maskLayer
+                if let blur = blurView {
+                    let blurMask = CAShapeLayer()
+                    blurMask.path = path.cgPath
+                    blur.layer.mask = blurMask
+                }
+                self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: 0, isFrostedOrClear: isFrostedOrClear, shape: shape)
+            } else {
+                let radius: CGFloat = shape == 0 ? 6 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
+                layer.cornerRadius = radius
+                layer.mask = nil
+                blurView?.layer.cornerRadius = radius
+                blurView?.layer.mask = nil
+                self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear, shape: shape)
+            }
         }
     }
     
@@ -1165,40 +1181,45 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 if x1 < f.minX + r { blStart = acos(max(-1.0, min(1.0, Double(x1 - (f.minX + r)) / Double(r)))) }
             }
             
-            let path = UIBezierPath()
-            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.minY + r), radius: r, startAngle: tlStart, endAngle: tlEnd, clockwise: true)
-            
-            if direction == .down {
-                path.addLine(to: CGPoint(x: x1, y: topY(for: x1)))
-                path.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
-                path.addLine(to: CGPoint(x: x2, y: topY(for: x2)))
+            let path: UIBezierPath
+            if shape >= 3 {
+                path = UIBezierPath.customShape(type: shape, in: f)
+            } else {
+                path = UIBezierPath()
+                path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.minY + r), radius: r, startAngle: tlStart, endAngle: tlEnd, clockwise: true)
+                
+                if direction == .down {
+                    path.addLine(to: CGPoint(x: x1, y: topY(for: x1)))
+                    path.addLine(to: CGPoint(x: f.midX, y: f.minY - ah))
+                    path.addLine(to: CGPoint(x: x2, y: topY(for: x2)))
+                }
+                
+                path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.minY + r), radius: r, startAngle: trStart, endAngle: trEnd, clockwise: true)
+                
+                if direction == .left {
+                    path.addLine(to: CGPoint(x: rightX(for: y1), y: y1))
+                    path.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
+                    path.addLine(to: CGPoint(x: rightX(for: y2), y: y2))
+                }
+                
+                path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.maxY - r), radius: r, startAngle: brStart, endAngle: brEnd, clockwise: true)
+                
+                if direction == .up {
+                    path.addLine(to: CGPoint(x: x2, y: bottomY(for: x2)))
+                    path.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
+                    path.addLine(to: CGPoint(x: x1, y: bottomY(for: x1)))
+                }
+                
+                path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.maxY - r), radius: r, startAngle: blStart, endAngle: blEnd, clockwise: true)
+                
+                if direction == .right {
+                    path.addLine(to: CGPoint(x: leftX(for: y2), y: y2))
+                    path.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
+                    path.addLine(to: CGPoint(x: leftX(for: y1), y: y1))
+                }
+                
+                path.close()
             }
-            
-            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.minY + r), radius: r, startAngle: trStart, endAngle: trEnd, clockwise: true)
-            
-            if direction == .left {
-                path.addLine(to: CGPoint(x: rightX(for: y1), y: y1))
-                path.addLine(to: CGPoint(x: f.maxX + ah, y: f.midY))
-                path.addLine(to: CGPoint(x: rightX(for: y2), y: y2))
-            }
-            
-            path.addArc(withCenter: CGPoint(x: f.maxX - r, y: f.maxY - r), radius: r, startAngle: brStart, endAngle: brEnd, clockwise: true)
-            
-            if direction == .up {
-                path.addLine(to: CGPoint(x: x2, y: bottomY(for: x2)))
-                path.addLine(to: CGPoint(x: f.midX, y: f.maxY + ah))
-                path.addLine(to: CGPoint(x: x1, y: bottomY(for: x1)))
-            }
-            
-            path.addArc(withCenter: CGPoint(x: f.minX + r, y: f.maxY - r), radius: r, startAngle: blStart, endAngle: blEnd, clockwise: true)
-            
-            if direction == .right {
-                path.addLine(to: CGPoint(x: leftX(for: y2), y: y2))
-                path.addLine(to: CGPoint(x: f.minX - ah, y: f.midY))
-                path.addLine(to: CGPoint(x: leftX(for: y1), y: y1))
-            }
-            
-            path.close()
             
             bgLayer?.sublayers?.forEach { $0.removeFromSuperlayer() }
             

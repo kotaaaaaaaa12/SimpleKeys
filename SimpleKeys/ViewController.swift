@@ -980,8 +980,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             } else if indexPath.row == 1 {
                 cell.textLabel?.text = isEn ? "Button Shape" : "ボタンの形"
                 let shape = currentTheme.buttonShape ?? 0
-                let shapesEn = ["Rounded", "Oval", "Rect"]
-                let shapesJa = ["角丸", "楕円", "四角"]
+                let shapesEn = ["Rounded", "Oval", "Rect", "Star", "Triangle", "Pentagon", "Hexagon", "Speech Bubble"]
+                let shapesJa = ["角丸", "楕円", "四角", "星", "三角形", "五角形", "六角形", "吹き出し"]
                 cell.detailTextLabel?.text = isEn ? shapesEn[shape] : shapesJa[shape]
             }
         } else if indexPath.section == 3 {
@@ -1131,8 +1131,8 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
             } else if indexPath.row == 6 {
                 cell.textLabel?.text = isEn ? "Popup Shape" : "吹き出しの形"
                 let shape = currentTheme.flickPopupShape ?? 0
-                let shapesEn = ["Rounded", "Oval", "Rect"]
-                let shapesJa = ["角丸", "楕円", "四角"]
+                let shapesEn = ["Rounded", "Oval", "Rect", "Star", "Triangle", "Pentagon", "Hexagon", "Speech Bubble"]
+                let shapesJa = ["角丸", "楕円", "四角", "星", "三角形", "五角形", "六角形", "吹き出し"]
                 cell.detailTextLabel?.text = isEn ? shapesEn[shape] : shapesJa[shape]
             }
         }
@@ -1172,9 +1172,9 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 }
             } else if indexPath.row == 1 {
                 alert.title = isEn ? "Button Shape" : "ボタンの形"
-                let shapesEn = ["Rounded", "Oval", "Rect"]
-                let shapesJa = ["角丸", "楕円", "四角"]
-                for i in 0..<3 {
+                let shapesEn = ["Rounded", "Oval", "Rect", "Star", "Triangle", "Pentagon", "Hexagon", "Speech Bubble"]
+                let shapesJa = ["角丸", "楕円", "四角", "星", "三角形", "五角形", "六角形", "吹き出し"]
+                for i in 0..<8 {
                     let action = UIAlertAction(title: isEn ? shapesEn[i] : shapesJa[i], style: .default) { [weak self] _ in
                         self?.currentTheme.buttonShape = i
                         self?.updatePreview()
@@ -1342,10 +1342,10 @@ class ThemeEditorViewController: UIViewController, UITableViewDelegate, UITableV
                 let isEn = AppGroupHelper.shared.userDefaults?.string(forKey: "appLanguage") == "en"
                 let alert = UIAlertController(title: isEn ? "Popup Shape" : "吹き出しの形", message: nil, preferredStyle: .actionSheet)
                 
-                let shapesEn = ["Rounded", "Oval", "Rect"]
-                let shapesJa = ["角丸", "楕円", "四角"]
+                let shapesEn = ["Rounded", "Oval", "Rect", "Star", "Triangle", "Pentagon", "Hexagon", "Speech Bubble"]
+                let shapesJa = ["角丸", "楕円", "四角", "星", "三角形", "五角形", "六角形", "吹き出し"]
                 
-                for i in 0..<3 {
+                for i in 0..<8 {
                     let action = UIAlertAction(title: isEn ? shapesEn[i] : shapesJa[i], style: .default) { [weak self] _ in
                         self?.currentTheme.flickPopupShape = i
                         self?.updatePreview()

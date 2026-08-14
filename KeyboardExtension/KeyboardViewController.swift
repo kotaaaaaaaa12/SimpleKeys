@@ -921,11 +921,27 @@ class KeyboardViewController: BaseKeyboardViewController, FlickKeyboardDelegate 
         
         override func layoutSubviews() {
             super.layoutSubviews()
-            let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
-            layer.cornerRadius = radius
-            blurView?.layer.cornerRadius = radius
-            
-            self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear)
+            if shape >= 3 {
+                layer.cornerRadius = 0
+                blurView?.layer.cornerRadius = 0
+                let path = UIBezierPath.customShape(type: shape, in: bounds)
+                let maskLayer = CAShapeLayer()
+                maskLayer.path = path.cgPath
+                layer.mask = maskLayer
+                if let blur = blurView {
+                    let blurMask = CAShapeLayer()
+                    blurMask.path = path.cgPath
+                    blur.layer.mask = blurMask
+                }
+                self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: 0, isFrostedOrClear: isFrostedOrClear, shape: shape)
+            } else {
+                let radius: CGFloat = shape == 0 ? 5 : (shape == 1 ? min(bounds.width, bounds.height) / 2.0 : 0)
+                layer.cornerRadius = radius
+                layer.mask = nil
+                blurView?.layer.cornerRadius = radius
+                blurView?.layer.mask = nil
+                self.applyCustomBorderStyle(width: customBorderWidth, style: customBorderStyle, color: customBorderColor, radius: radius, isFrostedOrClear: isFrostedOrClear, shape: shape)
+            }
         }
     }
     
