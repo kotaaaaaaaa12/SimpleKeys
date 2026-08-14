@@ -1,5 +1,7 @@
 
 import UIKit
+import AVFoundation
+import AudioToolbox
 
 // MARK: - Models
 struct UpdateInfo: Codable {
@@ -1416,7 +1418,7 @@ class HapticsSensitivityViewController: UITableViewController {
             
             let volume = soundVolumeSlider.value
             let numberOfPlays = max(1, Int(ceil(volume)))
-            let baseVolume = min(1.0, volume / Float(numberOfPlays))
+            let baseVolume = min(Float(1.0), volume / Float(numberOfPlays))
             
             for i in 0..<numberOfPlays {
                 let player = players[i % players.count]

@@ -27,7 +27,7 @@ class KeyboardSoundManager {
         
         let volume = AppGroupHelper.shared.userDefaults?.float(forKey: "keyboardSoundVolume") ?? 1.0
         let numberOfPlays = max(1, Int(ceil(volume)))
-        let baseVolume = min(1.0, volume / Float(numberOfPlays))
+        let baseVolume = min(Float(1.0), volume / Float(numberOfPlays))
         
         for _ in 0..<numberOfPlays {
             let player = players[currentIndex]
