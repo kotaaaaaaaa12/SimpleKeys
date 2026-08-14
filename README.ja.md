@@ -1,4 +1,23 @@
-# SimpleKeys - カスタマイズ可能なiOSキーボード
+<div align="center">
+
+# ⌨️ SimpleKeys
+
+**スピードと柔軟性、そして美しいネイティブ感を追求した、高度にカスタマイズ可能な軽量iOSキーボード拡張アプリ。**
+
+[![iOS 15.0+](https://img.shields.io/badge/iOS-15.0%2B-007AFF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
+[![Swift 5](https://img.shields.io/badge/Swift-5-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![Build](https://img.shields.io/badge/Build-Nightly-blueviolet?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/kotaaaaaaaa12/SimpleKeys/releases/tag/nightly)
+
+<br>
+
+日本語 · **[English](README.md)**
+
+</div>
+
+---
+
+
 
 SimpleKeysは、スピードと柔軟性、そして美しいネイティブ感を追求した、高度にカスタマイズ可能な軽量iOSキーボード拡張アプリです。日本語のフリック入力と英語のQWERTY入力の両方に対応し、充実したテーマ着せ替え機能を備えています。
 
