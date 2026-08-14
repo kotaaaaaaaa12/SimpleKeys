@@ -397,7 +397,8 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             }
             
             if text == "゛゜\n小" {
-                lbl.transform = CGAffineTransform(translationX: 0, y: -4) // Shift up more aggressively
+                lbl.transform = CGAffineTransform(translationX: 0, y: -4)
+                lbl.text = "゛゜"
             } else if !shouldShowHint {
                 lbl.transform = CGAffineTransform(translationX: 0, y: 5)
             } else {
@@ -408,7 +409,13 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
         if let sub = btn.viewWithTag(105) as? UILabel {
             sub.textColor = .lightGray
             
-            if !shouldShowHint {
+            if keyData.center == "゛゜\n小" {
+                sub.text = "小"
+                if let lbl = btn.viewWithTag(100) as? UILabel {
+                    sub.textColor = lbl.textColor
+                    sub.font = lbl.font.withSize(13)
+                }
+            } else if !shouldShowHint {
                 sub.text = ""
             } else {
                 var hints = [String]()
@@ -558,6 +565,11 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
                 }
             }
             if let sub = keyView.viewWithTag(105) as? UILabel {
+                if keysMap[keyView]?.center == "゛゜\n小" {
+                    sub.textColor = textCol
+                } else {
+                    sub.textColor = textCol.withAlphaComponent(0.5)
+                }
                 if let fontName = theme.fontName, let customFont = UIFont(name: fontName, size: sub.font.pointSize) {
                     sub.font = customFont
                 }
@@ -936,7 +948,19 @@ class FlickKeyboardView: UIView, UIInputViewAudioFeedback {
             label.layer.shadowOpacity = 0.2
             label.layer.shadowOffset = CGSize(width: 0, height: 1)
             label.layer.shadowRadius = 2
-            label.text = textForDirection(dir, key: keyData) ?? ""
+            let dirText = textForDirection(dir, key: keyData) ?? ""
+            if dirText == "゛゜\n小" {
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.lineSpacing = -4
+                paragraphStyle.alignment = .center
+                let attrStr = NSAttributedString(string: dirText, attributes: [
+                    .font: label.font.withSize(14),
+                    .paragraphStyle: paragraphStyle
+                ])
+                label.attributedText = attrStr
+            } else {
+                label.text = dirText
+            }
             label.translatesAutoresizingMaskIntoConstraints = false
             popup.addSubview(label)
             labels[dir] = label
